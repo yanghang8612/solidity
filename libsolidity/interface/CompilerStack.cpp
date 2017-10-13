@@ -104,6 +104,8 @@ void CompilerStack::reset(bool _keepSources)
 		m_stackState = Empty;
 		m_sources.clear();
 	}
+	m_smtlib2Responses.clear();
+	m_unhandledSMTLib2Queries.clear();
 	m_libraries.clear();
 	m_evmVersion = EVMVersion();
 	m_optimize = false;
@@ -280,9 +282,10 @@ bool CompilerStack::analyze()
 
 		if (noErrors)
 		{
-			SMTChecker smtChecker(m_errorReporter, m_smtQuery);
+			SMTChecker smtChecker(m_errorReporter, m_smtlib2Responses);
 			for (Source const* source: m_sourceOrder)
 				smtChecker.analyze(*source->ast);
+			m_unhandledSMTLib2Queries += smtChecker.unhandledQueries();
 		}
 	}
 	catch(FatalError const&)
