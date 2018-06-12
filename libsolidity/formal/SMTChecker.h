@@ -67,6 +67,7 @@ private:
 	virtual void endVisit(FunctionCall const& _node) override;
 	virtual void endVisit(Identifier const& _node) override;
 	virtual void endVisit(Literal const& _node) override;
+	virtual void endVisit(Return const& _node) override;
 
 	void arithmeticOperation(BinaryOperation const& _op);
 	void compareOperation(BinaryOperation const& _op);
@@ -113,6 +114,7 @@ private:
 	smt::CheckResult checkSatisfiable();
 
 	void initializeLocalVariables(FunctionDefinition const& _function);
+	void initializeFunctionParameters(FunctionDefinition const& _function);
 	void resetStateVariables();
 	void resetVariables(std::vector<VariableDeclaration const*> _variables);
 	/// Given two different branches and the touched variables,
@@ -147,8 +149,17 @@ private:
 	smt::Expression expr(Expression const& _e);
 	/// Creates the expression (value can be arbitrary)
 	void createExpr(Expression const& _e);
+	/// Checks if expression was created
+	bool hasExpr(Expression const& _e) const;
 	/// Creates the expression and sets its value.
 	void defineExpr(Expression const& _e, smt::Expression _value);
+
+	/// Declares an SMT function
+	void declareFunction(FunctionDefinition const& _fun);
+	/// Returns the SMT function
+	smt::Expression function(FunctionDefinition const& _fun);
+	smt::Sort SMTSort(Type const& _type);
+	smt::Sort SMTSort(Type::Category const& _category);
 
 	/// Adds a new path condition
 	void pushPathCondition(smt::Expression const& _e);
@@ -163,16 +174,25 @@ private:
 
 	/// Removes the local variables of a function.
 	void removeLocalVariables();
+	//void removeLocalVariables(FunctionDefinition const& _function);
+
+	/// Checks if VariableDeclaration exists
+	bool hasVariable(VariableDeclaration const& _e) const;
 
 	std::shared_ptr<smt::SolverInterface> m_interface;
 	std::shared_ptr<VariableUsage> m_variableUsage;
 	bool m_loopExecutionHappened = false;
-	std::map<Expression const*, smt::Expression> m_expressions;
+	std::multimap<Expression const*, smt::Expression> m_expressions;
 	std::map<VariableDeclaration const*, SSAVariable> m_variables;
+	std::map<FunctionDefinition const*, smt::Expression> m_functions;
 	std::vector<smt::Expression> m_pathConditions;
 	ErrorReporter& m_errorReporter;
 
-	FunctionDefinition const* m_currentFunction = nullptr;
+	std::vector<FunctionDefinition const*> m_currentFunction;
+	std::vector<std::vector<smt::Expression>> m_functionArguments;
+	std::vector<smt::Expression> m_functionReturn;
+	bool isRootFunction();
+	bool visitedFunction(FunctionDefinition const*);
 };
 
 }

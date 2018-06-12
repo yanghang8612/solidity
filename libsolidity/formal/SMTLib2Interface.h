@@ -49,7 +49,7 @@ public:
 	void push() override;
 	void pop() override;
 
-	void declareFunction(std::string _name, Sort _domain, Sort _codomain) override;
+	void declareFunction(std::string _name, std::vector<Sort> const& _domain, Sort _codomain) override;
 	void declareInteger(std::string _name) override;
 	void declareBool(std::string _name) override;
 
@@ -58,6 +58,8 @@ public:
 
 private:
 	std::string toSExpr(Expression const& _expr);
+	std::string smtlib2Sort(Sort _sort);
+	std::vector<std::string> smtlib2Sort(std::vector<Sort> const& _sort);
 
 	void write(std::string _data);
 

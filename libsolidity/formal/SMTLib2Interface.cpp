@@ -64,19 +64,22 @@ void SMTLib2Interface::pop()
 	m_accumulatedOutput.pop_back();
 }
 
-void SMTLib2Interface::declareFunction(string _name, Sort _domain, Sort _codomain)
+void SMTLib2Interface::declareFunction(string _name, std::vector<Sort> const& _domain, Sort _codomain)
 {
 	// TODO Use domain and codomain as key as well
 	if (!m_functions.count(_name))
 	{
+		auto smtlib2Sorts = smtlib2Sort(_domain);
+		string domain;
+		for_each(smtlib2Sorts.begin(), smtlib2Sorts.end(), [&domain](string const& s) { domain += s + ' '; });
 		m_functions.insert(_name);
 		write(
 			"(declare-fun |" +
 			_name +
 			"| (" +
-			(_domain == Sort::Int ? "Int" : "Bool") +
+			domain +
 			") " +
-			(_codomain == Sort::Int ? "Int" : "Bool") +
+			smtlib2Sort(_codomain) +
 			")"
 		);
 	}
@@ -196,4 +199,26 @@ string SMTLib2Interface::querySolver(string const& _input)
 	if (!queryResult.success)
 		BOOST_THROW_EXCEPTION(SolverError() << errinfo_comment(queryResult.responseOrErrorMessage));
 	return queryResult.responseOrErrorMessage;
+}
+
+string SMTLib2Interface::smtlib2Sort(Sort _sort)
+{
+	switch (_sort)
+	{
+	case Sort::Bool:
+		return "Bool";
+	case Sort::Int:
+		return "Int";
+	default:
+		break;
+	}
+	solAssert(false, "");
+}
+
+vector<string> SMTLib2Interface::smtlib2Sort(vector<Sort> const& _sorts)
+{
+	vector<string> smtlib2Sorts;
+	for (auto _sort: _sorts)
+		smtlib2Sorts.push_back(smtlib2Sort(_sort));
+	return smtlib2Sorts;
 }

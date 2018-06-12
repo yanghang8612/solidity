@@ -98,6 +98,7 @@ Compiler Features:
  * Tests: Determine transaction status during IPC calls.
  * Code Generator: Allocate and free local variables according to their scope.
  * Removed ``pragma experimental "v0.5.0";``.
+ * SMTChecker: Support non-recursive calls to internal functions that return a single value.
 
 Bugfixes:
  * Build System: Support versions of CVC4 linked against CLN instead of GMP. In case of compilation issues due to the experimental SMT solver support, the solvers can be disabled when configuring the project with CMake using ``-DUSE_CVC4=OFF`` or ``-DUSE_Z3=OFF``.

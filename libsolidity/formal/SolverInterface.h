@@ -46,8 +46,8 @@ enum class Sort
 {
 	Int,
 	Bool,
-	IntIntFun, // Function of one Int returning a single Int
-	IntBoolFun // Function of one Int returning a single Bool
+	IntFun, // Function returning a single Int
+	BoolFun // Function returning a single Bool
 };
 
 /// C++ representation of an SMTLIB2 expression.
@@ -150,7 +150,7 @@ public:
 	{
 		return Expression("/", std::move(_a), std::move(_b), Sort::Int);
 	}
-	Expression operator()(Expression _a) const
+	Expression operator()(std::vector<Expression> _arguments) const
 	{
 		solAssert(
 			arguments.empty(),
@@ -158,10 +158,10 @@ public:
 		);
 		switch (sort)
 		{
-		case Sort::IntIntFun:
-			return Expression(name, _a, Sort::Int);
-		case Sort::IntBoolFun:
-			return Expression(name, _a, Sort::Bool);
+		case Sort::IntFun:
+			return Expression(name, _arguments, Sort::Int);
+		case Sort::BoolFun:
+			return Expression(name, _arguments, Sort::Bool);
 		default:
 			solAssert(
 				false,
@@ -199,18 +199,25 @@ public:
 	virtual void push() = 0;
 	virtual void pop() = 0;
 
-	virtual void declareFunction(std::string _name, Sort _domain, Sort _codomain) = 0;
+	virtual void declareFunction(std::string _name, Sort _domain, Sort _codomain)
+	{
+		declareFunction(_name, {_domain}, _codomain);
+	}
+	virtual void declareFunction(std::string _name, std::vector<Sort> const& _domain, Sort _codomain) = 0;
 	Expression newFunction(std::string _name, Sort _domain, Sort _codomain)
 	{
+		return newFunction(_name, {_domain}, _codomain);
+	}
+	Expression newFunction(std::string _name, std::vector<Sort> const& _domain, Sort _codomain)
+	{
 		declareFunction(_name, _domain, _codomain);
-		solAssert(_domain == Sort::Int, "Function sort not supported.");
 		// Subclasses should do something here
 		switch (_codomain)
 		{
 		case Sort::Int:
-			return Expression(std::move(_name), {}, Sort::IntIntFun);
+			return Expression(std::move(_name), {}, Sort::IntFun);
 		case Sort::Bool:
-			return Expression(std::move(_name), {}, Sort::IntBoolFun);
+			return Expression(std::move(_name), {}, Sort::BoolFun);
 		default:
 			solAssert(false, "Function sort not supported.");
 			break;
