@@ -48,7 +48,7 @@ public:
 	/// This is used if the SMT solver is not directly linked into this binary.
 	/// @returns a list of inputs to the SMT solver that were not part of the argument to
 	/// the constructor.
-	std::vector<std::string> unhandledQueries();
+	std::vector<std::string> unhandledQueries() { return m_interface->unhandledQueries(); }
 
 private:
 	// TODO: Check that we do not have concurrent reads and writes to a variable,

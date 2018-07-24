@@ -188,7 +188,7 @@ public:
 	std::tuple<int, int, int, int> positionFromSourceLocation(SourceLocation const& _sourceLocation) const;
 
 	/// @returns a list of unhandled queries to the SMT solver (has to be supplied in a second run
-	/// by calling @a addSMTLib2Response.
+	/// by calling @a addSMTLib2Response).
 	std::vector<std::string> const& unhandledSMTLib2Queries() const { return m_unhandledSMTLib2Queries; }
 
 	/// @returns a list of the contract names in the sources.
