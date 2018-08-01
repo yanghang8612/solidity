@@ -277,6 +277,7 @@ int main(int argc, char *argv[])
 		TestTool::editor = "/usr/bin/editor";
 
 	fs::path testPath;
+	bool disableSMT = false;
 	bool formatted = true;
 	po::options_description options(
 		R"(isoltest, tool for interactively managing test contracts.
@@ -289,6 +290,7 @@ Allowed options)",
 	options.add_options()
 		("help", "Show this help screen.")
 		("testpath", po::value<fs::path>(&testPath), "path to test files")
+		("no-smt", "disable SMT checker")
 		("no-color", "don't use colors")
 		("editor", po::value<string>(&TestTool::editor), "editor for opening contracts");
 
@@ -309,6 +311,9 @@ Allowed options)",
 			formatted = false;
 
 		po::notify(arguments);
+
+		if (arguments.count("no-smt"))
+			disableSMT = true;
 	}
 	catch (std::exception const& _exception)
 	{
@@ -379,11 +384,30 @@ Allowed options)",
 		return 1;
 	}
 
+	if (!disableSMT)
+	{
+		fs::path smtCheckerTestPath = testPath / "libsolidity" / "smtCheckerTests";
+		if (fs::exists(smtCheckerTestPath) && fs::is_directory(smtCheckerTestPath))
+		{
+			auto stats = TestTool::processPath(SyntaxTest::create, testPath / "libsolidity", "smtCheckerTests", formatted);
+			cout << endl << "SMT Checker Test Summary: ";
+			FormattedScope(cout, formatted, {BOLD, stats ? GREEN : RED}) <<
+				 stats.successCount << "/" << stats.runCount;
+			cout << " tests successful." << endl << endl;
+			global_stats.runCount += stats.runCount;
+			global_stats.successCount += stats.successCount;
+		}
+		else
+		{
+			cerr << "SMT Checker tests not found." << endl;
+			return 1;
+		}
+	}
+
 	cout << endl << "Summary: ";
 	FormattedScope(cout, formatted, {BOLD, global_stats ? GREEN : RED}) <<
 		 global_stats.successCount << "/" << global_stats.runCount;
 	cout << " tests successful." << endl;
-
 
 	return global_stats ? 0 : 1;
 }
