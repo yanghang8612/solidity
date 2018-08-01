@@ -138,6 +138,13 @@ test_suite* init_unit_test_suite( int /*argc*/, char* /*argv*/[] )
 		"ASTJSON",
 		ASTJSONTest::create
 	) > 0, "no JSON AST tests found");
+	if (!dev::test::Options::get().disableSMT)
+		solAssert(registerTests(
+			master,
+			dev::test::Options::get().testPath / "libsolidity",
+			"smtCheckerTests",
+			SyntaxTest::create
+		) > 0, "no SMT checker tests found");
 	if (dev::test::Options::get().disableIPC)
 	{
 		for (auto suite: {
