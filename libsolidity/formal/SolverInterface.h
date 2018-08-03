@@ -240,7 +240,6 @@ public:
 
 	/// @returns a list of queries that the system was not able to respond to.
 	virtual std::vector<std::string> unhandledQueries() { return {}; }
-};
 
 protected:
 	// SMT query timeout in milliseconds.

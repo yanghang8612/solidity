@@ -22,8 +22,11 @@
 
 #include <libsolidity/interface/ReadFile.h>
 
+#include <libdevcore/FixedHash.h>
+
 #include <boost/noncopyable.hpp>
 
+#include <map>
 #include <vector>
 
 namespace dev
@@ -42,7 +45,7 @@ namespace smt
 class SMTPortfolio: public SolverInterface, public boost::noncopyable
 {
 public:
-	SMTPortfolio(std::map<h256, string> const& _smtlib2Responses);
+	SMTPortfolio(std::map<h256, std::string> const& _smtlib2Responses);
 
 	void reset() override;
 

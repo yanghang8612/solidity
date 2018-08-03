@@ -328,7 +328,7 @@ Json::Value StandardCompiler::compileInternal(Json::Value const& _input)
 				{
 					hash = h256(hashString);
 				}
-				catch (dev::BadHexCharacter)
+				catch (dev::BadHexCharacter const&)
 				{
 					return formatFatalError("JSONError", "Invalid hex encoding of SMTLib2 auxiliary input.");
 				}
