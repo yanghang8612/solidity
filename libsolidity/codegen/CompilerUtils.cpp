@@ -28,6 +28,7 @@
 #include <libsolidity/codegen/ABIFunctions.h>
 
 #include <libevmasm/Instruction.h>
+#include <libevmasm/GasMeter.h>
 
 #include <libdevcore/Whiskers.h>
 
@@ -1193,9 +1194,32 @@ void CompilerUtils::computeHashStatic()
 
 void CompilerUtils::storeStringData(bytesConstRef _data)
 {
-	//@todo provide both alternatives to the optimiser
+	// @todo provide both alternatives to the optimiser
 	// stack: mempos
-	if (_data.size() <= 128)
+	bool storeAsData = false;
+	if (_data.size() > 32)
+	{
+		unsigned numWords = (_data.size() + 31) / 32;
+		// @todo this does not take the constant optimiser into account,
+		// which could reduce the costs of individual PUSHes
+		// NOTE: assumes the C++ compiler will optimise these statements
+		unsigned pushCost =
+			(eth::GasCosts::tier2Gas * numWords) + // PUSH value
+			(eth::GasCosts::tier2Gas * numWords) + // PUSH offset
+			(eth::GasCosts::tier2Gas * numWords); // MSTORE
+		unsigned copyCost =
+			eth::GasCosts::tier2Gas + // PUSH offset
+			eth::GasCosts::tier2Gas + // PUSH size
+			eth::GasCosts::tier2Gas + // CODECOPY
+			(eth::GasCosts::copyGas * numWords); // CODECOPY word cost
+
+		std::cout << "storeStringData: dataSize=" << _data.size() << " pushCost=" << pushCost << " copyCost=" << copyCost << std::endl;
+
+		if (copyCost < pushCost)
+			storeAsData = true;
+	}
+
+	if (!storeAsData)
 	{
 		for (unsigned i = 0; i < _data.size(); i += 32)
 		{
