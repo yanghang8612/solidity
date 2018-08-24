@@ -14,6 +14,7 @@ In addition, types can interact with each other in expressions containing
 operators. For a quick reference of the various operators, see :ref:`order`.
 
 .. index:: ! value type, ! type;value
+.. _value-types:
 
 Value Types
 ===========
@@ -720,6 +721,8 @@ Another example that uses external function types::
 
 .. index:: ! type;reference, ! reference type, storage, memory, location, array, struct
 
+.. _reference-types:
+
 Reference Types
 ===============
 
@@ -753,14 +756,17 @@ non-persistent area where function arguments are stored, and behaves mostly like
     depending on the kind of variable, function type, etc., but all complex types must now give an explicit
     data location.
 
+.. _data-location-assignment:
+
+Data location and assignment behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Data locations are not only relevant for persistency of data, but also for the semantics of assignments:
-assignments between storage and memory (or from calldata) always create an independent copy.
-Assignments from memory to memory only create references. This means that changes to one memory variable
-are also visible in all other memory variables that refer to the same data.
-Assignments from storage to a local storage variables also only assign a reference.
-In contrast, all other assignments to storage always copy. Examples for this case
-are assignments to state variables or to members of local variables of storage struct type, even
-if the local variable itself is just a reference.
+
+* Assignments between ``storage`` and ``memory`` (or from calldata) always create an independent copy.
+* Assignments from ``memory`` to ``memory`` only create references. This means that changes to one memory variable are also visible in all other memory variables that refer to the same data.
+* Assignments from ``storage`` to a local storage variables also only assign a reference.
+* All other assignments to storage always copy. Examples for this case are assignments to state variables or to members of local variables of storage struct type, even if the local variable itself is just a reference.
 
 ::
 
@@ -1108,10 +1114,62 @@ Of course, you can also directly access the members of the struct without
 assigning it to a local variable, as in
 ``campaigns[campaignID].amount = 0``.
 
-.. index:: !mapping
+Types as input and output parameters
+====================================
 
-Mappings
---------
+.. index:: !function parameters, functions, parameters
+
+Allowed function parameter types
+--------------------------------
+
+**All** :ref:`value type <value-types>` variables are allowed as input and
+output function parameter types.
+
+**All** :ref:`reference type <reference-types>` variables are allowed as input
+and output function parameter types for internal functions, and for external
+functions if you enable the experimental ``ABIEncoderV2`` feature.
+
+:ref:`Mapping type <mapping-types>` variables **are not** allowed as input or output function types.
+
+.. index:: copying types, referencing types
+
+.. _ref-copy-types:
+
+Copying vs referencing
+----------------------
+
+When you use variables as an input or output parameter to functions, how the
+compiler treats the variable depends on its type.
+
+Any variable that is a :ref:`value-types`, has its value **copied** from the
+calling function to the called function.
+
+For variables that are more complex types (or :ref:`reference-types`), whether
+the variable is copied to or referenced to the calling function depends on the :ref:`storage location <data-location-assignment>` appended to the variable, in summary:
+
+- Variables appended with ``storage`` in the calling function and ``memory`` in the called function have their values **copied** between the functions.
+- Variables appended with ``storage`` in the calling function and ``storage`` in the called function have their values **referenced** between the functions.
+- Variables already stored in ``memory`` in the calling function and variables already stored in ``memory`` in the called function have their values **referenced** between the functions.
+
+When a complex variable is copied from an calling function to a called function
+the mapping of the target is ignored as there is no list of mapped keys and
+it's impossible to know which values to copy. For example::
+
+  struct User {
+      mapping(string => string) comments;
+  }
+
+  function somefunction public {
+     User user1;
+     user1.comments["Hello"] = "World";
+     User user2 = user1;
+  }
+
+.. index:: !mapping
+.. _mapping-types:
+
+Mapping types
+=============
 
 You declare mapping types with the syntax ``mapping(_KeyType => _ValueType)``.
 The ``_KeyType`` can be any elementary type. This means it can be any of
