@@ -190,75 +190,6 @@ No, a function call from one contract to another does not create its own transac
 you have to look in the overall transaction. This is also the reason why several
 block explorer do not show Ether sent between contracts correctly.
 
-=======
-What is the ``memory`` keyword? What does it do?
-================================================
-
-The Ethereum Virtual Machine has three areas where it can store items.
-
-The first is "storage", where all the contract state variables reside.
-Every contract has its own storage and it is persistent between function calls
-and quite expensive to use.
-
-The second is "memory", this is used to hold temporary values. It
-is erased between (external) function calls and is cheaper to use.
-
-The third one is the stack, which is used to hold small local variables.
-It is almost free to use, but can only hold a limited amount of values.
-
-For almost all types, you cannot specify where they should be stored, because
-they are copied every time they are used.
-
-The types where the so-called storage location is important are structs
-and arrays. If you e.g. pass such variables in function calls, their
-data is not copied if it can stay in memory or stay in storage.
-This means that you can modify their content in the called function
-and these modifications will still be visible in the caller.
-
-There are defaults for the storage location depending on which type
-of variable it concerns:
-
-* state variables are always in storage
-* function arguments are in memory by default
-* local variables of struct, array or mapping type reference storage by default
-* local variables of value type (i.e. neither array, nor struct nor mapping) are stored in the stack
-
-Example::
-
-    pragma solidity ^0.4.0;
-
-    contract C {
-        uint[] data1;
-        uint[] data2;
-
-        function appendOne() public {
-            append(data1);
-        }
-
-        function appendTwo() public {
-            append(data2);
-        }
-
-        function append(uint[] storage d) internal {
-            d.push(1);
-        }
-    }
-
-The function ``append`` can work both on ``data1`` and ``data2`` and its modifications will be
-stored permanently. If you remove the ``storage`` keyword, the default
-is to use ``memory`` for function arguments. This has the effect that
-at the point where ``append(data1)`` or ``append(data2)`` is called, an
-independent copy of the state variable is created in memory and
-``append`` operates on this copy (which does not support ``.push`` - but that
-is another issue). The modifications to this independent copy do not
-carry back to ``data1`` or ``data2``.
-
-.. warning::
-    Prior to version 0.5.0, a common mistake was to declare a local variable and assume that it will
-    be created in memory, although it will be created in storage. Using such a variable without initializing
-    it could lead to unexpected behavior. Starting from 0.5.0, however, storage variables have to be initialized,
-    which should prevent these kinds of mistakes.
-
 ******************
 Advanced Questions
 ******************
@@ -437,28 +368,6 @@ case in C or Java).
 =====================================================================================
 
 Not yet, as this requires two levels of dynamic arrays (``string`` is a dynamic array itself).
-=======
-If you issue a call for an array, it is possible to retrieve the whole array? Or must you write a helper function for that?
-===========================================================================================================================
-
-The automatic :ref:`getter function<getter-functions>`  for a public state variable of array type only returns
-individual elements. If you want to return the complete array, you have to
-manually write a function to do that.
-
-
-What could have happened if an account has storage value(s) but no code?  Example: http://test.ether.camp/account/5f740b3a43fbb99724ce93a879805f4dc89178b5
-==========================================================================================================================================================
-
-The last thing a constructor does is returning the code of the contract.
-The gas costs for this depend on the length of the code and it might be
-that the supplied gas is not enough. This situation is the only one
-where an "out of gas" exception does not revert changes to the state,
-i.e. in this case the initialisation of the state variables.
-
-https://github.com/ethereum/wiki/wiki/Subtleties
-
-After a successful CREATE operation's sub-execution, if the operation returns x, 5 * len(x) gas is subtracted from the remaining gas before the contract is created. If the remaining gas is less than 5 * len(x), then no gas is subtracted, the code of the created contract becomes the empty string, but this is not treated as an exceptional condition - no reverts happen.
-
 
 What does the following strange check do in the Custom Token contract?
 ======================================================================
