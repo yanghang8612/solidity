@@ -81,6 +81,12 @@ private:
 	/// This is done by inserting a specific push constant as the first instruction
 	/// whose data will be modified in memory at deploy time.
 	void appendDelegatecallCheck();
+	/// Appends the function selector. Is called recursively to create a binary search tree.
+	void appendInternalSelector(
+		std::map<FixedHash<4>, eth::AssemblyItem const> const& _entryPoints,
+		std::vector<FixedHash<4>> const& _ids,
+		eth::AssemblyItem const& _notFoundTag
+	);
 	void appendFunctionSelector(ContractDefinition const& _contract);
 	void appendCallValueCheck();
 	void appendReturnValuePacker(TypePointers const& _typeParameters, bool _isLibrary);

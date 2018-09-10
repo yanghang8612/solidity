@@ -267,6 +267,40 @@ void ContractCompiler::appendDelegatecallCheck()
 	// "We have not been called via DELEGATECALL".
 }
 
+void ContractCompiler::appendInternalSelector(
+	map<FixedHash<4>, eth::AssemblyItem const> const& _entryPoints,
+	vector<FixedHash<4>> const& _ids,
+	eth::AssemblyItem const& _notFoundTag
+)
+{
+	// TODO tune this
+
+	if (_ids.size() < 8)
+	{
+		for (auto const& id: _ids)
+		{
+			m_context << dupInstruction(1) << u256(FixedHash<4>::Arith(id)) << Instruction::EQ;
+			m_context.appendConditionalJumpTo(_entryPoints.at(id));
+		}
+		m_context.appendJumpTo(_notFoundTag);
+	}
+	else
+	{
+		size_t pivotIndex = _ids.size() / 2;
+		FixedHash<4> pivot{_ids.at(pivotIndex)};
+		// TODO we could also use a constant that is not identical to pivot but rather a
+		// constant with as many trailing zeros as possible that lies between
+		// _ids.at(pivotIndex) and _ids.at(pivotIndex + 1).
+		m_context << dupInstruction(1) << u256(FixedHash<4>::Arith(pivot)) << Instruction::GT;
+		eth::AssemblyItem lessTag{m_context.appendConditionalJump()};
+		// Here, we have funid >= pivot
+		appendInternalSelector(_entryPoints, vector<FixedHash<4>>{_ids.begin() + pivotIndex, _ids.end()}, _notFoundTag);
+		m_context << lessTag;
+		// Here, we have funid < pivot
+		appendInternalSelector(_entryPoints, vector<FixedHash<4>>{_ids.begin(), _ids.begin() + pivotIndex}, _notFoundTag);
+	}
+}
+
 void ContractCompiler::appendFunctionSelector(ContractDefinition const& _contract)
 {
 	map<FixedHash<4>, FunctionTypePointer> interfaceFunctions = _contract.interfaceFunctions();
@@ -289,13 +323,14 @@ void ContractCompiler::appendFunctionSelector(ContractDefinition const& _contrac
 		CompilerUtils(m_context).loadFromMemory(0, IntegerType(CompilerUtils::dataStartOffset * 8), true);
 
 	// stack now is: <can-call-non-view-functions>? <funhash>
+	vector<FixedHash<4>> sortedIDs;
 	for (auto const& it: interfaceFunctions)
 	{
 		callDataUnpackerEntryPoints.insert(std::make_pair(it.first, m_context.newTag()));
-		m_context << dupInstruction(1) << u256(FixedHash<4>::Arith(it.first)) << Instruction::EQ;
-		m_context.appendConditionalJumpTo(callDataUnpackerEntryPoints.at(it.first));
+		sortedIDs.emplace_back(it.first);
 	}
-	m_context.appendJumpTo(notFound);
+	std::sort(sortedIDs.begin(), sortedIDs.end());
+	appendInternalSelector(callDataUnpackerEntryPoints, sortedIDs, notFound);
 
 	m_context << notFound;
 	if (fallback)
