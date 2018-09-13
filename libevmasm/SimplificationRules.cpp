@@ -87,7 +87,7 @@ Rules::Rules()
 	Y.setMatchGroup(5, m_matchGroups);
 
 	try {
-		glDebugInit() += "Initializing rules - v3.\n";
+		glDebugInit() += "Initializing rules - v4.\n";
 
 		addRules(simplificationRuleList<Pattern>(A, B, C, X, Y));
 		glDebugInit() += "Done with constructor.\n";

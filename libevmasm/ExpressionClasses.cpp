@@ -31,6 +31,8 @@
 #include <libevmasm/CommonSubexpressionEliminator.h>
 #include <libevmasm/SimplificationRules.h>
 
+#include <boost/stacktrace.hpp>
+
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -183,9 +185,11 @@ string ExpressionClasses::fullDAGToString(ExpressionClasses::Id _id) const
 
 ExpressionClasses::Id ExpressionClasses::tryToSimplify(Expression const& _expr)
 {
-	glDebugOutput() += "EnteringTryToSim";
+	glDebugInit() += "EnteringTryToSim\n";
+	glDebugInit() += boost::stacktrace::stacktrace::to_string();
 	static shared_ptr<Rules> rules;
-	if (!rules)
+
+	if (!rules && glDebugInit().size() < 1000)
 		rules = make_shared<Rules>();
 
 	for (size_t i = 0; i < 256; i++)
