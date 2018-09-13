@@ -183,10 +183,13 @@ string ExpressionClasses::fullDAGToString(ExpressionClasses::Id _id) const
 
 ExpressionClasses::Id ExpressionClasses::tryToSimplify(Expression const& _expr)
 {
-	static Rules rules;
+	glDebugOutput() += "EnteringTryToSim";
+	static shared_ptr<Rules> rules;
+	if (!rules)
+		rules = make_shared<Rules>();
 
 	for (size_t i = 0; i < 256; i++)
-		glDebugOutput() += to_string(i) + ": " + to_string(rules.m_rules[i].size()) + ", ";
+		glDebugOutput() += to_string(i) + ": " + to_string(rules->m_rules[i].size()) + ", ";
 	glDebugOutput() += "\n";
 
 	if (
@@ -196,7 +199,7 @@ ExpressionClasses::Id ExpressionClasses::tryToSimplify(Expression const& _expr)
 	)
 		return -1;
 
-	if (auto match = rules.findFirstMatch(_expr, *this))
+	if (auto match = rules->findFirstMatch(_expr, *this))
 	{
 		// Debug info
 		std::stringstream str;
