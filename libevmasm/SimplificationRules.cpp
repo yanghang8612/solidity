@@ -47,6 +47,8 @@ SimplificationRule<Pattern> const* Rules::findFirstMatch(
 	assertThrow(_expr.item, OptimizerException, "");
 	for (auto const& rule: m_rules[byte(_expr.item->instruction())])
 	{
+		glDebugOutput() += "Trying rule: " + rule.pattern.toString() + "\n";
+
 		if (rule.pattern.matches(_expr, _classes))
 			return &rule;
 		resetMatchGroups();
@@ -56,13 +58,15 @@ SimplificationRule<Pattern> const* Rules::findFirstMatch(
 
 void Rules::addRules(std::vector<SimplificationRule<Pattern>> const& _rules)
 {
+	glDebugInit() += "Called addrules with " + to_string(_rules.size()) + " rules\n";
 	for (auto const& r: _rules)
 		addRule(r);
+	glDebugInit() += "Done addrules\n";
 }
 
 void Rules::addRule(SimplificationRule<Pattern> const& _rule)
 {
-	glDebugOutput() += "Adding rule: " + _rule.pattern.toString() + "\n";
+	glDebugInit() += "Adding rule " + _rule.pattern.toString() + "\n";
 	m_rules[byte(_rule.pattern.instruction())].push_back(_rule);
 }
 
@@ -82,7 +86,17 @@ Rules::Rules()
 	X.setMatchGroup(4, m_matchGroups);
 	Y.setMatchGroup(5, m_matchGroups);
 
-	addRules(simplificationRuleList(A, B, C, X, Y));
+	try {
+		glDebugInit() += "Initializing rules - v2.\n";
+
+		addRules(simplificationRuleList(A, B, C, X, Y));
+		glDebugInit() += "Done with constructor.\n";
+	} catch (...) {
+		glDebugInit() += "Got an exception.\n";
+		throw;
+
+	}
+	glDebugInit() += "Really done with constructor.\n";
 }
 
 Pattern::Pattern(Instruction _instruction, std::vector<Pattern> const& _arguments):

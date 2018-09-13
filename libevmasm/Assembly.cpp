@@ -383,6 +383,8 @@ map<u256, u256> Assembly::optimiseInternal(
 	std::set<size_t> const& _tagsReferencedFromOutside
 )
 {
+	debugOutput += "Init:\n";
+	debugOutput += glDebugInit();
 	debugOutput += "Entering debug\n";
 	// Run optimisation for sub-assemblies.
 	for (size_t subId = 0; subId < m_subs.size(); ++subId)
@@ -499,6 +501,8 @@ map<u256, u256> Assembly::optimiseInternal(
 			debugOutput += "Outside iter\\n\n";
 		}
 	}
+	debugOutput += "Init:\n";
+	debugOutput += glDebugInit();
 
 	if (_settings.runConstantOptimiser)
 		ConstantOptimisationMethod::optimiseConstants(

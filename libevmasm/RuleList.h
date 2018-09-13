@@ -23,11 +23,13 @@
 
 #include <vector>
 #include <functional>
+#include <string>
 
 #include <libevmasm/Instruction.h>
 #include <libevmasm/SimplificationRule.h>
 
 #include <libdevcore/CommonData.h>
+#include <libdevcore/CommonIO.h>
 
 namespace dev
 {
@@ -57,6 +59,7 @@ std::vector<SimplificationRule<Pattern>> simplificationRuleList(
 	Pattern Y
 )
 {
+	glDebugInit() += "Perparing rule list.\n";
 	std::vector<SimplificationRule<Pattern>> rules;
 	rules += std::vector<SimplificationRule<Pattern>>{
 		// arithmetic on constants
@@ -289,6 +292,7 @@ std::vector<SimplificationRule<Pattern>> simplificationRuleList(
 			false
 		}
 	};
+	glDebugInit() += "Returning rule list of size: " + std::to_string(rules.size()) + "\n";
 	return rules;
 }
 

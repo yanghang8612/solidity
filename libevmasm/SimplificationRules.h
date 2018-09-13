@@ -62,6 +62,7 @@ private:
 	std::map<unsigned, Expression const*> m_matchGroups;
 	/// Pattern to match, replacement to be applied and flag indicating whether
 	/// the replacement might remove some elements (except constants).
+public:
 	std::vector<SimplificationRule<Pattern>> m_rules[256];
 };
 

@@ -185,6 +185,10 @@ ExpressionClasses::Id ExpressionClasses::tryToSimplify(Expression const& _expr)
 {
 	static Rules rules;
 
+	for (size_t i = 0; i < 256; i++)
+		glDebugOutput() += to_string(i) + ": " + to_string(rules.m_rules[i].size()) + ", ";
+	glDebugOutput() += "\n";
+
 	if (
 		!_expr.item ||
 		_expr.item->type() != Operation ||
