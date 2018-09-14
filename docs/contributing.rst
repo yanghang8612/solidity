@@ -91,7 +91,7 @@ The option ``--no-smt`` disables the tests that require ``libz3`` and
 ``--no-ipc`` disables those that require ``aleth``.
 
 If you want to run the ipc tests (those test the semantics of the generated code),
-you need to install `aleth <https://github.com/ethereum/cpp-ethereum/releases/download/solidityTester/aleth_2018-06-20_artful>`_ and run it in testing mode: ``aleth --test -d /tmp/testeth`` (make sure to rename it).
+you need to install `aleth <https://github.com/ethereum/aleth/releases/download/v1.5.0-alpha.5/aleth-1.5.0-alpha.5-linux-x86_64.tar.gz>`_ and run it in testing mode: ``aleth --test -d /tmp/testeth`` (make sure to rename it).
 
 Then you run the actual tests: ``./scripts/soltest.sh --ipcpath /tmp/testeth/geth.ipc``.
 
@@ -107,7 +107,7 @@ The CI even runs some additional tests (including ``solc-js`` and testing third 
 .. note ::
 
     Some versions of ``aleth`` cannot be used for testing. We suggest using the same version that is used by the Solidity continuous integration tests.
-    Currently the CI uses ``d661ac4fec0aeffbedcdc195f67f5ded0c798278`` of ``aleth``.
+    Currently the CI uses version ``1.5.0-alpha.5`` of ``aleth``.
 
 Writing and running syntax tests
 --------------------------------
