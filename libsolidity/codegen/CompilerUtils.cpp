@@ -27,8 +27,11 @@
 #include <libsolidity/codegen/LValue.h>
 #include <libsolidity/codegen/ABIFunctions.h>
 
+#include <libevmasm/AssemblyItem.h>
 #include <libevmasm/Instruction.h>
 #include <libevmasm/GasMeter.h>
+#include <libevmasm/PathGasMeter.h>
+#include <libevmasm/KnownState.h>
 
 #include <libdevcore/Whiskers.h>
 
@@ -1197,21 +1200,27 @@ void CompilerUtils::storeStringData(bytesConstRef _data)
 	// @todo provide both alternatives to the optimiser
 	// stack: mempos
 	bool storeAsData = false;
+	std::cout << "storeStringData: dataSize=" << _data.size() << std::endl;
 	if (_data.size() > 32)
 	{
-		unsigned numWords = (_data.size() + 31) / 32;
 		// @todo this does not take the constant optimiser into account,
 		// which could reduce the costs of individual PUSHes
-		// NOTE: assumes the C++ compiler will optimise these statements
-		unsigned pushCost =
-			(eth::GasCosts::tier2Gas * numWords) + // PUSH value
-			(eth::GasCosts::tier2Gas * numWords) + // PUSH offset
-			(eth::GasCosts::tier2Gas * numWords); // MSTORE
-		unsigned copyCost =
-			eth::GasCosts::tier2Gas + // PUSH offset
-			eth::GasCosts::tier2Gas + // PUSH size
-			eth::GasCosts::tier2Gas + // CODECOPY
-			(eth::GasCosts::copyGas * numWords); // CODECOPY word cost
+		eth::AssemblyItems pushItems;
+		unsigned numWords = (_data.size() + 31) / 32;
+		for (unsigned i = 0; i < numWords; i++)
+		{
+			pushItems.push_back(eth::AssemblyItem(u256(-1))); // value (assume all bits set)
+			pushItems.push_back(eth::AssemblyItem(u256(4096 + i * 32))); // memory offset
+			pushItems.push_back(eth::AssemblyItem(Instruction::MSTORE));
+		}
+		auto pushCost = eth::PathGasMeter::estimateMax(pushItems, m_context.evmVersion(), 0, make_shared<eth::KnownState>());
+
+		auto copyCost = eth::PathGasMeter::estimateMax(eth::AssemblyItems{
+			u256(_data.size()), // length
+			u256(4096), // memory offset, assume memory is this big
+			u256(4096), // code offset, assume code is this big
+			Instruction::CODECOPY
+		}, m_context.evmVersion(), 0, make_shared<eth::KnownState>());
 
 		std::cout << "storeStringData: dataSize=" << _data.size() << " pushCost=" << pushCost << " copyCost=" << copyCost << std::endl;
 
