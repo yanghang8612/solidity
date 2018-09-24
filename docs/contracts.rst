@@ -117,7 +117,7 @@ This means that cyclic creation dependencies are impossible.
             pure
             returns (bool ok)
         {
-            // Check an arbitrary condition
+            // Check an arbitrary condition to see if transfer should proceed
             return keccak256(abi.encodePacked(currentOwner, newOwner))[0] == 0x7f;
         }
     }
