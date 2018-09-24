@@ -110,8 +110,8 @@ This means that cyclic creation dependencies are impossible.
             tokenAddress.changeName(name);
         }
 
-        // Perform checks to determine if transfering a token to the `OwnedToken`
-        // contract should proceed
+        // Perform checks to determine if transfering a token to the
+        // `OwnedToken` contract should proceed
         function isTokenTransferOK(address currentOwner, address newOwner)
             public
             pure
