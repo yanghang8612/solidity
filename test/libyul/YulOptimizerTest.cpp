@@ -110,6 +110,20 @@ bool YulOptimizerTest::run(ostream& _stream, string const& _linePrefix, bool con
 		NameDispenser nameDispenser(*m_ast);
 		ExpressionSplitter{nameDispenser}(*m_ast);
 	}
+	else if (m_optimizerStep == "expressionJoiner")
+	{
+		disambiguate();
+		ExpressionJoiner::run(*m_ast);
+	}
+	else if (m_optimizerStep == "splitJoin")
+	{
+		disambiguate();
+		NameDispenser nameDispenser;
+		nameDispenser.m_usedNames = NameCollector(*m_ast).names();
+		ExpressionSplitter{nameDispenser}(*m_ast);
+		ExpressionJoiner::run(*m_ast);
+		ExpressionJoiner::run(*m_ast);
+	}
 	else if (m_optimizerStep == "functionGrouper")
 	{
 		disambiguate();
@@ -166,11 +180,6 @@ bool YulOptimizerTest::run(ostream& _stream, string const& _linePrefix, bool con
 	{
 		disambiguate();
 		UnusedPruner::runUntilStabilised(*m_ast);
-	}
-	else if (m_optimizerStep == "expressionJoiner")
-	{
-		disambiguate();
-		ExpressionJoiner::run(*m_ast);\
 	}
 	else if (m_optimizerStep == "ssaTransform")
 	{
