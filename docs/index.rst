@@ -41,7 +41,7 @@ so before deploying your contract, make sure you read the
 If you have any questions, you can try searching for answers or asking on the
 `Ethereum Stackexchange <https://ethereum.stackexchange.com/>`_, or our `gitter channel <https://gitter.im/ethereum/solidity/>`_.
 
-Ideas for improving Solidity or this documentation are always welcome!
+Ideas for improving Solidity or this documentation are always welcome, read our :doc:`contributors guide <contributing>` for more details.
 
 .. warning::
     Humans write software, and it can have bugs. You should follow established
