@@ -83,7 +83,7 @@ This means that cyclic creation dependencies are impossible.
             if (msg.sender != owner) return;
 
             // We ask the creator contract if the transfer
-            // should proceed using a function of the `TokenCreator`
+            // should proceed by using a function of the `TokenCreator`
             // contract defined below. If the call fails (e.g.
             // due to out-of-gas), the execution stops
             // immediately.
