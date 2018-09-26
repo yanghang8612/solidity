@@ -192,6 +192,14 @@ do
   for vm in $EVM_VERSIONS
   do
     printTask "--> Running tests using "$optimize" --evm-version "$vm"..."
+
+    # Run constantinople tests with ABIEncoderV2 turned on
+    other_flags=""
+    if [[ "$vm" == "constantinople" ]]
+    then
+      other_flags="--abiencoderv2"
+    fi
+
     log=""
     if [ -n "$log_directory" ]
     then
@@ -202,7 +210,8 @@ do
         log=--logger=JUNIT,test_suite,$log_directory/noopt_$vm.xml $testargs_no_opt
       fi
     fi
-    "$REPO_ROOT"/build/test/soltest $progress $log -- --testpath "$REPO_ROOT"/test "$optimize" --evm-version "$vm" $SMT_FLAGS $IPC_FLAGS  --ipcpath "${WORKDIR}/geth.ipc"
+
+    "$REPO_ROOT"/build/test/soltest $progress $log -- --testpath "$REPO_ROOT"/test "$optimize" --evm-version "$vm" $SMT_FLAGS $IPC_FLAGS $other_flags --ipcpath "${WORKDIR}/geth.ipc"
   done
 done
 
