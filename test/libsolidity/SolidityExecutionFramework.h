@@ -64,7 +64,10 @@ public:
 	)
 	{
 		// Silence compiler version warning
-		std::string sourceCode = "pragma solidity >=0.0;\n" + _sourceCode;
+		std::string sourceCode = "pragma solidity >=0.0;\n";
+		if (dev::test::Options::get().useABIEncoderV2)
+			sourceCode += "pragma experimental ABIEncoderV2;\n";
+		sourceCode += _sourceCode;
 		m_compiler.reset(false);
 		m_compiler.addSource("", sourceCode);
 		m_compiler.setLibraries(_libraryAddresses);

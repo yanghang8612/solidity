@@ -40,6 +40,7 @@ struct Options: boost::noncopyable
 	bool optimize = false;
 	bool disableIPC = false;
 	bool disableSMT = false;
+	bool useABIEncoderV2 = false;
 
 	void validate() const;
 	solidity::EVMVersion evmVersion() const;
