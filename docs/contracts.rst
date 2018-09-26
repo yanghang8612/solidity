@@ -55,11 +55,10 @@ This means that cyclic creation dependencies are impossible.
         // This is the constructor which registers the
         // creator and the assigned name.
         constructor(bytes32 _name) public {
-            // State variables are accessed via their name
-            // and not via e.g., `this.owner`. This also applies
-            // to functions and especially in the constructors,
-            // you can only call them "internally",
-            // because the contract itself does not exist yet.
+            // You should not access state variables, or call functions via
+            // e.g. this.owner (especially in the constructor) as the contract
+            // itself doesn't exist yet. For details on how to access them,
+            // see the next section
             owner = msg.sender;
 
             // We do an explicit type conversion from `address`
