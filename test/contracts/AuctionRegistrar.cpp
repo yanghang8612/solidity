@@ -48,8 +48,8 @@ contract NameRegister {
 }
 
 contract Registrar is NameRegister {
-	event Changed(string indexed name);
-	event PrimaryChanged(string indexed name, address indexed addr);
+	event Changed(string name);
+	event PrimaryChanged(string name, address indexed addr);
 
 	function owner(string memory _name) public view returns (address o_owner);
 	function addr(string memory _name) public view returns (address o_address);
@@ -60,8 +60,8 @@ contract Registrar is NameRegister {
 }
 
 contract AuctionSystem {
-	event AuctionEnded(string indexed _name, address _winner);
-	event NewBid(string indexed _name, address _bidder, uint _value);
+	event AuctionEnded(string _name, address _winner);
+	event NewBid(string _name, address _bidder, uint _value);
 
 	/// Function that is called once an auction ends.
 	function onAuctionEnd(string memory _name) internal;
