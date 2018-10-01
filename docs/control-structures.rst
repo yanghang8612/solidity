@@ -14,11 +14,9 @@ parameters as output.
 Input Parameters
 ----------------
 
-The input parameters are declared the same way as variables are.
-The name of unused parameters can be omitted.
-For example, suppose we want our contract to
-accept one kind of external calls with two integers, we would write
-something like::
+You declare input parameters the same way as variables, omitting the name of unused parameters.
+For example, suppose we want our contract to accept one kind of external calls
+with two integers, we would write something like::
 
     pragma solidity >=0.4.16 <0.6.0;
 
@@ -29,8 +27,13 @@ something like::
         }
     }
 
-Input parameters can be used just as any other local variable
-can be used, they can also be assigned to.
+You can use input parameters like any other local variable, you can also assign to them.
+
+.. note::
+    A function cannot accept a multi-dimensional array as an input parameter.
+    This functionality is possible if you enable the new experimental ``ABIEncoderV2``
+    feature by adding ``pragma experimental ABIEncoderV2;`` to your source file.
+    This feature introduces other experimental changes that you can read more about in the :ref:`ABI` guide.
 
 Output Parameters
 -----------------

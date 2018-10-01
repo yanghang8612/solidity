@@ -300,12 +300,6 @@ In this example::
         }
     }
 
-Can a contract function accept a two-dimensional array?
-=======================================================
-
-If you want to pass two-dimensional arrays across non-internal functions,
-you most likely need to use ``pragma experimental "ABIEncoderV2";``.
-
 What is the relationship between ``bytes32`` and ``string``? Why is it that ``bytes32 somevar = "stringliteral";`` works and what does the saved 32-byte hex value mean?
 ========================================================================================================================================================================
 
