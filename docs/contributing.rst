@@ -70,15 +70,15 @@ Thank you for your help!
 Running the compiler tests
 ==========================
 
-The ``scripts/tests.sh`` scripts executes most Solidity tests and
+The ``scripts/tests.sh`` script executes most Solidity tests and
 runs ``aleth`` automatically if it is in the path, but does not download it,
 so you need to install it first. Please read on for the details.
 
 Solidity includes different types of tests, most of them bundled into the ``soltest``
 application. Some of them require the ``aleth`` client in testing mode, others require ``libz3``.
 
-To run a basic set of tests that require ``aleth`` nor ``libz3``, run
-``./scripts/soltest.sh --no-ipc --no-smt``. This script runss ``build/test/soltest``
+To run a basic set of tests that require neither ``aleth`` nor ``libz3``, run
+``./scripts/soltest.sh --no-ipc --no-smt``. This script runs ``build/test/soltest``
 internally.
 
 The option ``--no-smt`` disables the tests that require ``libz3``, and
