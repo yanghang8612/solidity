@@ -70,7 +70,7 @@ Thank you for your help!
 Running the compiler tests
 ==========================
 
-The ``scripts/tests.sh`` script executes most Solidity tests and
+The ``./scripts/tests.sh`` script executes most Solidity tests and
 runs ``aleth`` automatically if it is in the path, but does not download it,
 so you need to install it first. Please read on for the details.
 
@@ -78,7 +78,7 @@ Solidity includes different types of tests, most of them bundled into the ``solt
 application. Some of them require the ``aleth`` client in testing mode, others require ``libz3``.
 
 To run a basic set of tests that require neither ``aleth`` nor ``libz3``, run
-``./scripts/soltest.sh --no-ipc --no-smt``. This script runs ``build/test/soltest``
+``./scripts/soltest.sh --no-ipc --no-smt``. This script runs ``./build/test/soltest``
 internally.
 
 The option ``--no-smt`` disables the tests that require ``libz3``, and
@@ -93,14 +93,14 @@ To run a subset of tests, you can use filters:
 ``./scripts/soltest.sh -t TestSuite/TestName --ipcpath /tmp/testeth/geth.ipc``,
 where ``TestName`` can be a wildcard ``*``.
 
-The script ``scripts/tests.sh`` also runs commandline tests and compilation tests
+The script ``./scripts/tests.sh`` also runs commandline tests and compilation tests
 in addition to those found in ``soltest``.
 
-Travis CI runs some additional tests (including ``solc-js`` and testing third party Solidity frameworks) that require compiling the Emscripten target.
+The CI runs additional tests (including ``solc-js`` and testing third party Solidity frameworks) that require compiling the Emscripten target.
 
 .. note ::
 
-    You can not use some versions of ``aleth`` cannot for testing. We suggest using
+    You can not use some versions of ``aleth`` for testing. We suggest using
     the same version that the Solidity continuous integration tests use.
     Currently the CI uses ``d661ac4fec0aeffbedcdc195f67f5ded0c798278`` of ``aleth``.
 
@@ -124,15 +124,14 @@ For example: ``./test/libsolidity/syntaxTests/double_stateVariable_declaration.s
     // ----
     // DeclarationError: (36-52): Identifier already declared.
 
-A syntax test must contain at least the contract under test itself, followed by the separator ``// ----``.
-You use the comments to describe the expected compiler errors or warnings. The number range denotes the
-location in the source where the error occurred.
-If you want the contract to compile without any errors or warning, leave the section after the separator empty
-and you can leave out the separator completely.
+A syntax test must contain at least the contract under test itself, followed by the separator ``// ----``. The comments that follow the separator are used to describe the
+expected compiler errors or warnings. The number range denotes the location in the source where the error occurred.
+If you want the contract to compile without any errors or warning you can leave
+out the separator and the comments that follow it.
 
 In the above example, the state variable ``variable`` was declared twice, which is not allowed. This results in a ``DeclarationError`` stating that the identifier was already declared.
 
-The ``isoltest`` tool is used for these tests and you can find it under ``./test/tools/``. It is an interactive tool which allows
+The ``isoltest`` tool is used for these tests and you can find it under ``./build/test/tools/``. It is an interactive tool which allows
 editing of failing contracts using your preferred text editor. Let's try to break this test by removing the second declaration of ``variable``:
 
 ::
@@ -143,7 +142,7 @@ editing of failing contracts using your preferred text editor. Let's try to brea
     // ----
     // DeclarationError: (36-52): Identifier already declared.
 
-Running ``./test/isoltest`` again results in a test failure:
+Running ``./build/test/isoltest`` again results in a test failure:
 
 ::
 
@@ -160,7 +159,7 @@ Running ``./test/isoltest`` again results in a test failure:
 
 
 ``isoltest`` prints the expected result next to the obtained result, and also
-provides a way to change edit, update, skip, or quite the current contract.
+provides a way to change edit, update, skip, or quit the current contract.
 
 It offers several options for failing tests:
 
@@ -169,7 +168,9 @@ It offers several options for failing tests:
 - ``skip``: Skips the execution of this particular test.
 - ``quit``: Quits ``isoltest``.
 
-Automatically update the test above, and change it to:
+All of these options apply to the current contract, expect ``quit`` which stops the entire testing process.
+
+Automatically updating the test above changes it to
 
 ::
 
