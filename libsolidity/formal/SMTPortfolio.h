@@ -51,6 +51,7 @@ public:
 
 	void declareFunction(std::string _name, Sort _domain, Sort _codomain) override;
 	void declareInteger(std::string _name) override;
+	void declareReal(std::string _name) override;
 	void declareBool(std::string _name) override;
 
 	void addAssertion(Expression const& _expr) override;

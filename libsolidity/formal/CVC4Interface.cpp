@@ -65,6 +65,12 @@ void CVC4Interface::declareInteger(string _name)
 		m_constants.insert({_name, m_context.mkVar(_name.c_str(), m_context.integerType())});
 }
 
+void CVC4Interface::declareReal(string _name)
+{
+	if (!m_constants.count(_name))
+		m_constants.insert({_name, m_context.mkVar(_name.c_str(), m_context.realType())});
+}
+
 void CVC4Interface::declareBool(string _name)
 {
 	if (!m_constants.count(_name))
@@ -194,10 +200,10 @@ CVC4::Type CVC4Interface::cvc4Sort(Sort _sort)
 		return m_context.booleanType();
 	case Sort::Int:
 		return m_context.integerType();
+	case Sort::Real:
+		return m_context.realType();
 	default:
 		break;
 	}
 	solAssert(false, "");
-	// Cannot be reached.
-	return m_context.integerType();
 }

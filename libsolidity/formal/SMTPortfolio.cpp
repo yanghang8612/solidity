@@ -76,6 +76,12 @@ void SMTPortfolio::declareInteger(string _name)
 		s->declareInteger(_name);
 }
 
+void SMTPortfolio::declareReal(string _name)
+{
+	for (auto s : m_solvers)
+		s->declareReal(_name);
+}
+
 void SMTPortfolio::declareBool(string _name)
 {
 	for (auto s : m_solvers)

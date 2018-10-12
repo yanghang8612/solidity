@@ -45,8 +45,10 @@ enum class CheckResult
 enum class Sort
 {
 	Int,
+	Real,
 	Bool,
 	IntIntFun, // Function of one Int returning a single Int
+	IntRealFun, // Function of one Int returning a single Real
 	IntBoolFun // Function of one Int returning a single Bool
 };
 
@@ -57,6 +59,7 @@ class Expression
 public:
 	explicit Expression(bool _v): name(_v ? "true" : "false"), sort(Sort::Bool) {}
 	Expression(size_t _number): name(std::to_string(_number)), sort(Sort::Int) {}
+	explicit Expression(double _number): name(std::to_string(_number)), sort(Sort::Real) {}
 	Expression(u256 const& _number): name(_number.str()), sort(Sort::Int) {}
 	Expression(bigint const& _number): name(_number.str()), sort(Sort::Int) {}
 
@@ -136,6 +139,8 @@ public:
 	}
 	friend Expression operator+(Expression _a, Expression _b)
 	{
+//		smt::Sort newSort = (_a.sort == Sort::Real || _b.sort == Sort::Real) ?
+//			Sort::Real : Sort::Int;
 		return Expression("+", std::move(_a), std::move(_b), Sort::Int);
 	}
 	friend Expression operator-(Expression _a, Expression _b)
@@ -160,6 +165,8 @@ public:
 		{
 		case Sort::IntIntFun:
 			return Expression(name, _a, Sort::Int);
+		case Sort::IntRealFun:
+			return Expression(name, _a, Sort::Real);
 		case Sort::IntBoolFun:
 			return Expression(name, _a, Sort::Bool);
 		default:
@@ -209,6 +216,8 @@ public:
 		{
 		case Sort::Int:
 			return Expression(std::move(_name), {}, Sort::IntIntFun);
+		case Sort::Real:
+			return Expression(std::move(_name), {}, Sort::IntRealFun);
 		case Sort::Bool:
 			return Expression(std::move(_name), {}, Sort::IntBoolFun);
 		default:
@@ -216,12 +225,20 @@ public:
 			break;
 		}
 	}
+
 	virtual void declareInteger(std::string _name) = 0;
 	Expression newInteger(std::string _name)
 	{
 		// Subclasses should do something here
 		declareInteger(_name);
 		return Expression(std::move(_name), {}, Sort::Int);
+	}
+	virtual void declareReal(std::string _name) = 0;
+	Expression newReal(std::string _name)
+	{
+		// Subclasses should do something here
+		declareReal(_name);
+		return Expression(std::move(_name), {}, Sort::Real);
 	}
 	virtual void declareBool(std::string _name) = 0;
 	Expression newBool(std::string _name)

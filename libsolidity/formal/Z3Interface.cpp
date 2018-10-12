@@ -63,6 +63,12 @@ void Z3Interface::declareInteger(string _name)
 		m_constants.insert({_name, m_context.int_const(_name.c_str())});
 }
 
+void Z3Interface::declareReal(string _name)
+{
+	if (!m_constants.count(_name))
+		m_constants.insert({_name, m_context.real_const(_name.c_str())});
+}
+
 void Z3Interface::declareBool(string _name)
 {
 	if (!m_constants.count(_name))
@@ -133,7 +139,7 @@ z3::expr Z3Interface::toZ3Expr(Expression const& _expr)
 			return m_context.bool_val(false);
 		else
 			// We assume it is an integer...
-			return m_context.int_val(n.c_str());
+			return m_context.real_val(n.c_str());
 	}
 
 	solAssert(_expr.hasCorrectArity(), "");
@@ -176,10 +182,10 @@ z3::sort Z3Interface::z3Sort(Sort _sort)
 		return m_context.bool_sort();
 	case Sort::Int:
 		return m_context.int_sort();
+	case Sort::Real:
+		return m_context.real_sort();
 	default:
 		break;
 	}
 	solAssert(false, "");
-	// Cannot be reached.
-	return m_context.int_sort();
 }

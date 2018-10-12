@@ -396,8 +396,8 @@ void SMTChecker::endVisit(Literal const& _literal)
 	Type const& type = *_literal.annotation().type;
 	if (type.category() == Type::Category::Integer || type.category() == Type::Category::Address || type.category() == Type::Category::RationalNumber)
 	{
-		if (RationalNumberType const* rational = dynamic_cast<RationalNumberType const*>(&type))
-			solAssert(!rational->isFractional(), "");
+		//if (RationalNumberType const* rational = dynamic_cast<RationalNumberType const*>(&type))
+		//	solAssert(!rational->isFractional(), "");
 
 		defineExpr(_literal, smt::Expression(type.literalValue(&_literal)));
 	}
@@ -422,7 +422,8 @@ void SMTChecker::arithmeticOperation(BinaryOperation const& _op)
 	case Token::Div:
 	{
 		solAssert(_op.annotation().commonType, "");
-		if (_op.annotation().commonType->category() != Type::Category::Integer)
+		if (_op.annotation().commonType->category() != Type::Category::Integer &&
+			_op.annotation().commonType->category() != Type::Category::RationalNumber)
 		{
 			m_errorReporter.warning(
 				_op.location(),
@@ -858,8 +859,13 @@ void SMTChecker::createExpr(Expression const& _e)
 		case Type::Category::RationalNumber:
 		{
 			if (RationalNumberType const* rational = dynamic_cast<RationalNumberType const*>(_e.annotation().type.get()))
-				solAssert(!rational->isFractional(), "");
-			m_expressions.emplace(&_e, m_interface->newInteger(uniqueSymbol(_e)));
+			{
+				//solAssert(!rational->isFractional(), "");
+				if (rational->isFractional())
+					m_expressions.emplace(&_e, m_interface->newReal(uniqueSymbol(_e)));
+				else
+					m_expressions.emplace(&_e, m_interface->newInteger(uniqueSymbol(_e)));
+			}
 			break;
 		}
 		case Type::Category::Address:
