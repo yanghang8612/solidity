@@ -45,9 +45,7 @@ enum class CheckResult
 enum class Sort
 {
 	Int,
-	Bool,
-	IntFun, // Function returning a single Int
-	BoolFun // Function returning a single Bool
+	Bool
 };
 
 /// C++ representation of an SMTLIB2 expression.
@@ -156,19 +154,7 @@ public:
 			arguments.empty(),
 			"Attempted function application to non-function."
 		);
-		switch (sort)
-		{
-		case Sort::IntFun:
-			return Expression(name, _arguments, Sort::Int);
-		case Sort::BoolFun:
-			return Expression(name, _arguments, Sort::Bool);
-		default:
-			solAssert(
-				false,
-				"Attempted function application to invalid type."
-			);
-			break;
-		}
+		return Expression(name, _arguments, sort);
 	}
 
 	std::string const name;
@@ -210,18 +196,9 @@ public:
 	}
 	Expression newFunction(std::string _name, std::vector<Sort> const& _domain, Sort _codomain)
 	{
-		declareFunction(_name, _domain, _codomain);
 		// Subclasses should do something here
-		switch (_codomain)
-		{
-		case Sort::Int:
-			return Expression(std::move(_name), {}, Sort::IntFun);
-		case Sort::Bool:
-			return Expression(std::move(_name), {}, Sort::BoolFun);
-		default:
-			solAssert(false, "Function sort not supported.");
-			break;
-		}
+		declareFunction(_name, _domain, _codomain);
+		return Expression(std::move(_name), {}, _codomain);
 	}
 	virtual void declareInteger(std::string _name) = 0;
 	Expression newInteger(std::string _name)
