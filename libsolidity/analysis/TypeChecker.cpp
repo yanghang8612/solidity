@@ -1622,7 +1622,7 @@ bool TypeChecker::visit(UnaryOperation const& _operation)
 	else
 		_operation.subExpression().accept(*this);
 	TypePointer const& subExprType = type(_operation.subExpression());
-	TypePointer t = type(_operation.subExpression())->unaryOperatorResult(op);
+	TypeResult t = type(_operation.subExpression())->unaryOperatorResult(op);
 	if (!t)
 	{
 		m_errorReporter.typeError(
@@ -1634,7 +1634,7 @@ bool TypeChecker::visit(UnaryOperation const& _operation)
 		);
 		t = subExprType;
 	}
-	_operation.annotation().type = t;
+	_operation.annotation().type = t.get();
 	_operation.annotation().isPure = !modifying && _operation.subExpression().annotation().isPure;
 	return false;
 }
@@ -1647,21 +1647,16 @@ void TypeChecker::endVisit(BinaryOperation const& _operation)
 	TypePointer commonType = result.get();
 	if (!result)
 	{
-		if (result.error().empty())
-			m_errorReporter.typeError(
-				_operation.location(),
-				"Operator " +
-				string(Token::toString(_operation.getOperator())) +
-				" not compatible with types " +
-				leftType->toString() +
-				" and " +
-				rightType->toString()
-			);
-		else
-			m_errorReporter.typeError(
-				_operation.location(),
-				result.error()
-			);
+		m_errorReporter.typeError(
+			_operation.location(),
+			"Operator " +
+			string(Token::toString(_operation.getOperator())) +
+			" not compatible with types " +
+			leftType->toString() +
+			" and " +
+			rightType->toString() +
+			(result.hasError() ? result.error() : "")
+		);
 		commonType = leftType;
 	}
 	_operation.annotation().commonType = commonType;

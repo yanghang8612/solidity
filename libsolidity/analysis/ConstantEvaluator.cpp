@@ -32,7 +32,7 @@ void ConstantEvaluator::endVisit(UnaryOperation const& _operation)
 {
 	auto sub = type(_operation.subExpression());
 	if (sub)
-		setType(_operation, sub->unaryOperatorResult(_operation.getOperator()));
+		setType(_operation, sub->unaryOperatorResult(_operation.getOperator()).get());
 }
 
 void ConstantEvaluator::endVisit(BinaryOperation const& _operation)
@@ -42,7 +42,7 @@ void ConstantEvaluator::endVisit(BinaryOperation const& _operation)
 	if (left && right)
 	{
 		TypeResult result = left->binaryOperatorResult(_operation.getOperator(), right);
-		if (!result)
+		if (!result.get())
 		{
 			if (result.error().empty())
 				m_errorReporter.fatalTypeError(

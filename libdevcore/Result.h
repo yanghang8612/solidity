@@ -40,6 +40,7 @@ public:
 
 	T const& get() const { return m_value; }
 	std::string const& error() const { return m_err; }
+	bool hasError() const { return !m_err.empty(); }
 
 private:
 	T m_value;
