@@ -14,9 +14,11 @@ parameters as output.
 Input Parameters
 ----------------
 
-You declare input parameters the same way as variables, omitting the name of unused parameters.
-For example, suppose we want our contract to accept one kind of external calls
-with two integers, we would write something like::
+Input parameters are declared the same way as variables, and the name of unused
+parameters can be omitted.
+For example, suppose you want a contract to
+accept one kind of external call with two integers, you write
+something like::
 
     pragma solidity >=0.4.16 <0.6.0;
 
@@ -27,7 +29,7 @@ with two integers, we would write something like::
         }
     }
 
-You can use input parameters like any other local variable, you can also assign to them.
+Input parameters can be used as any other local variable and they can also be assigned to.
 
 .. note::
     A function cannot accept a multi-dimensional array as an input parameter.
