@@ -33,10 +33,10 @@ so before deploying your contract, make sure you read the
 :ref:`security_considerations` section.
 
 .. hint::
-  Remember that you can always try out code examples in your browser with the
+  You can always try out code examples in your browser with the
   `Remix IDE <https://remix.ethereum.org>`_. Remix is a web browser based IDE
   that allows you to write Solidity smart contracts, then deploy and run the
-  smart contracts. Tt can take a while to load, so please be patient.
+  smart contracts. It can take a while to load, so please be patient.
 
 If you have any questions, you can try searching for answers or asking on the
 `Ethereum Stackexchange <https://ethereum.stackexchange.com/>`_, or our `gitter channel <https://gitter.im/ethereum/solidity/>`_.
