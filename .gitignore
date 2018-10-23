@@ -35,6 +35,7 @@ build/
 docs/_build
 docs/utils/__pycache__
 docs/utils/*.pyc
+/deps/downloads/
 
 # vim stuff
 *.swp
@@ -43,11 +44,11 @@ docs/utils/*.pyc
 .idea
 browse.VC.db
 CMakeLists.txt.user
-
+/CMakeSettings.json
 boost_1_57_0/
 cmake-build-debug/
 deps/
-
-soljson.js
+/.vs
+output/
 
 

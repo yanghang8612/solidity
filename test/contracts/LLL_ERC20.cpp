@@ -193,8 +193,8 @@ static char const* erc20Code = R"DELIMITER(
     (when (> value token-supply) (revert)))
 
   ;; --------------------------------------------------------------------------
-  ;; Will revert if sent any Ether. We use the macro immediately so as
-  ;;   to abort if sent any Ether during contract deployment.
+  ;; Will revert if sent any Trx. We use the macro immediately so as
+  ;;   to abort if sent any Trx during contract deployment.
 
   (def 'not-payable
     (when (callvalue) (revert)))

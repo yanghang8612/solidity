@@ -48,7 +48,7 @@ if ! type wget &>/dev/null; then
     apt-get -y install wget
 fi
 
-WORKSPACE=/root/project/solidity
+WORKSPACE=/Users/jarvis/Workspace/git_zy/solidity
 
 # Increase nodejs stack size
 if [ -e ~/.emscripten ]

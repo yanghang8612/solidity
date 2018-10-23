@@ -180,7 +180,7 @@ namespace solidity
 	K(View, "view", 0)                                                 \
 	K(While, "while", 0)                                               \
 	\
-	/* Ether subdenominations */                                       \
+	/* Trx subdenominations */                                       \
 	K(SubSun, "sun", 0)                                              \
 	K(SubTrx, "trx", 0)                                                \
 	K(SubSecond, "seconds", 0)                                         \

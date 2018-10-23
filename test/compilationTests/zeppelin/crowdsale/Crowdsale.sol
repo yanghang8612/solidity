@@ -8,7 +8,7 @@ import '../math/SafeMath.sol';
  * @dev Crowdsale is a base contract for managing a token crowdsale.
  * Crowdsales have a start and end block, where investors can make
  * token purchases and the crowdsale will assign them tokens based
- * on a token per ETH rate. Funds collected are forwarded to a wallet 
+ * on a token per trx rate. Funds collected are forwarded to a wallet
  * as they arrive.
  */
 contract Crowdsale {
@@ -24,10 +24,10 @@ contract Crowdsale {
   // address where funds are collected
   address public wallet;
 
-  // how many token units a buyer gets per wei
+  // how many token units a buyer gets per sun
   uint256 public rate;
 
-  // amount of raised money in wei
+  // amount of raised money in sun
   uint256 public weiRaised;
 
   /**
