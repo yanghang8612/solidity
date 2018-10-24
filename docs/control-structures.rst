@@ -2,23 +2,22 @@
 Expressions and Control Structures
 ##################################
 
-.. index:: ! parameter, parameter;input, parameter;output
+.. index:: ! parameter, parameter;input, parameter;output, function parameters, parameter;function, return types, types;return
 
-Input Parameters and Output Parameters
-======================================
+Function Parameters and Return Types
+====================================
 
-As in Javascript, functions may take parameters as input;
-unlike in Javascript and C, they may also return arbitrary number of
-parameters as output.
+As in JavaScript, functions may take parameters as input. Unlike in JavaScript
+and C, functions may also return an arbitrary number of types as output.
 
-Input Parameters
-----------------
+Function Parameters
+-------------------
 
-The input parameters are declared the same way as variables are.
-The name of unused parameters can be omitted.
-For example, suppose we want our contract to
-accept one kind of external calls with two integers, we would write
-something like::
+Input function parameters are declared the same way as variables, and the name of
+unused parameters can be omitted.
+
+For example, if you want your contract to accept one kind of external call
+with two integers, you would use something like::
 
     pragma solidity >=0.4.16 <0.6.0;
 
@@ -29,16 +28,16 @@ something like::
         }
     }
 
-Input parameters can be used just as any other local variable
-can be used, they can also be assigned to.
+Input parameters can be used as any other local variable and they can also be assigned to.
 
-Output Parameters
------------------
+Return Types
+------------
 
-The output parameters can be declared with the same syntax after the
-``returns`` keyword. For example, suppose we wished to return two results:
-the sum and the product of the two given integers, then we would
-write::
+Output function return types are declared with the same syntax after the
+``returns`` keyword.
+
+For example, suppose you want to return two results: the sum and the product of
+two integers passed as function parameters, then you use something like::
 
     pragma solidity >=0.4.16 <0.6.0;
 
@@ -53,12 +52,12 @@ write::
         }
     }
 
-The names of output parameters can be omitted.
-The output values can also be specified using ``return`` statements,
-which are also capable of :ref:`returning multiple values<multi-return>`.
+The names of return types can be omitted.
+The return values can also be specified using ``return`` statements,
+which are capable of :ref:`returning multiple values<multi-return>`.
 Return parameters can be used as any other local variable and they
-are zero-initialized; if they are not explicitly
-set, they stay zero.
+are zero-initialized. If they are not explicitly
+set, they stay zero value.
 
 .. index:: if, else, while, do/while, for, break, continue, return, switch, goto
 
@@ -79,12 +78,12 @@ Solidity.
 
 .. _multi-return:
 
-Returning Multiple Values
--------------------------
+Returning Multiple Types
+------------------------
 
-When a function has multiple output parameters, ``return (v0, v1, ...,
+When a function has multiple return types, ``return (v0, v1, ...,
 vn)`` can return multiple values.  The number of components must be
-the same as the number of output parameters.
+the same as the number of return types.
 
 .. index:: ! function;call, function;internal, function;external
 
