@@ -291,10 +291,10 @@ In the grammar, opcodes are represented as pre-defined identifiers.
 |                         |     |   | 8 byte value, ``this`` is the current contract's address        |
 |                         |     |   | as a 20 byte value and ``s`` is a big-endian 256-bit value      |
 +-------------------------+-----+---+-----------------------------------------------------------------+
-| call(g, a, v, in,       |     | F | call contract at address a with input mem[in...(in+insize))     |
-| insize, out, outsize)   |     |   | providing g gas and v wei and output area                       |
-|                         |     |   | mem[out...(out+outsize)) returning 0 on error (eg. out of gas)  |
-|                         |     |   | and 1 on success                                                |
+| call(g, a, v, in,       |     | F | call contract at address a with function parameter              |
+| insize, out, outsize)   |     |   | mem[in...(in+insize)) providing g gas and v wei and             |
+|                         |     |   | output area mem[out...(out+outsize)) returning 0 on error       |
+|                         |     |   | (eg. out of gas) and 1 on success                               |
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | callcode(g, a, v, in,   |     | F | identical to ``call`` but only use the code from a and stay     |
 | insize, out, outsize)   |     |   | in the context of the current contract otherwise                |
