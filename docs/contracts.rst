@@ -562,7 +562,16 @@ In addition to the list of state modifying statements explained above, the follo
         }
     }
 
-Pure functions are able to use the `revert()` and `require()` functions to revert potential state changes when an :ref:`error occurs <assert-and-require>`.
+Reverting State changes
+-----------------------
+
+Pure functions are able to use the `revert()` and `require()` functions to revert
+potential state changes when an :ref:`error occurs <assert-and-require>`.
+
+Reverting a state change does not perform a state change, as only changes to the
+state made previously in code that did not have the ``view`` or ``pure`` restriction
+are reverted and that code has the option to catch the ``revert`` and not pass it on.
+This behaviour is in line with the ``STATICCALL`` opcode.
 
 .. note::
   Prior to version 0.5.0, the compiler did not use the ``STATICCALL`` opcode
