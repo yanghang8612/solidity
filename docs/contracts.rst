@@ -562,7 +562,7 @@ In addition to the list of state modifying statements explained above, the follo
         }
     }
 
-Reverting State changes
+Reverting State Changes
 -----------------------
 
 Pure functions are able to use the `revert()` and `require()` functions to revert
