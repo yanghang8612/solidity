@@ -37,6 +37,8 @@ namespace solidity
 namespace assembly
 {
 
+// TODO this should probably also switch to YulString
+
 struct Scope
 {
 	using YulType = std::string;

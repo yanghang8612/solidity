@@ -79,17 +79,17 @@ bool AsmAnalyzer::operator()(assembly::Instruction const& _instruction)
 
 bool AsmAnalyzer::operator()(assembly::Literal const& _literal)
 {
-	expectValidType(_literal.type, _literal.location);
+	expectValidType(_literal.type.str(), _literal.location);
 	++m_stackHeight;
-	if (_literal.kind == assembly::LiteralKind::String && _literal.value.size() > 32)
+	if (_literal.kind == assembly::LiteralKind::String && _literal.value.str().size() > 32)
 	{
 		m_errorReporter.typeError(
 			_literal.location,
-			"String literal too long (" + to_string(_literal.value.size()) + " > 32)"
+			"String literal too long (" + to_string(_literal.value.str().size()) + " > 32)"
 		);
 		return false;
 	}
-	else if (_literal.kind == assembly::LiteralKind::Number && bigint(_literal.value) > u256(-1))
+	else if (_literal.kind == assembly::LiteralKind::Number && bigint(_literal.value.str()) > u256(-1))
 	{
 		m_errorReporter.typeError(
 			_literal.location,
@@ -100,7 +100,7 @@ bool AsmAnalyzer::operator()(assembly::Literal const& _literal)
 	else if (_literal.kind == assembly::LiteralKind::Boolean)
 	{
 		solAssert(m_flavour == AsmFlavour::Yul, "");
-		solAssert(_literal.value == "true" || _literal.value == "false", "");
+		solAssert(_literal.value == YulString{string("true")} || _literal.value == YulString{string("false")}, "");
 	}
 	m_info.stackHeightInfo[&_literal] = m_stackHeight;
 	return true;
@@ -111,14 +111,14 @@ bool AsmAnalyzer::operator()(assembly::Identifier const& _identifier)
 	solAssert(!_identifier.name.empty(), "");
 	size_t numErrorsBefore = m_errorReporter.errors().size();
 	bool success = true;
-	if (m_currentScope->lookup(_identifier.name, Scope::Visitor(
+	if (m_currentScope->lookup(_identifier.name.str(), Scope::Visitor(
 		[&](Scope::Variable const& _var)
 		{
 			if (!m_activeVariables.count(&_var))
 			{
 				m_errorReporter.declarationError(
 					_identifier.location,
-					"Variable " + _identifier.name + " used before it was declared."
+					"Variable " + _identifier.name.str() + " used before it was declared."
 				);
 				success = false;
 			}
@@ -132,7 +132,7 @@ bool AsmAnalyzer::operator()(assembly::Identifier const& _identifier)
 		{
 			m_errorReporter.typeError(
 				_identifier.location,
-				"Function " + _identifier.name + " used without being called."
+				"Function " + _identifier.name.str() + " used without being called."
 			);
 			success = false;
 		}
@@ -253,8 +253,8 @@ bool AsmAnalyzer::operator()(assembly::VariableDeclaration const& _varDecl)
 
 	for (auto const& variable: _varDecl.variables)
 	{
-		expectValidType(variable.type, variable.location);
-		m_activeVariables.insert(&boost::get<Scope::Variable>(m_currentScope->identifiers.at(variable.name)));
+		expectValidType(variable.type.str(), variable.location);
+		m_activeVariables.insert(&boost::get<Scope::Variable>(m_currentScope->identifiers.at(variable.name.str())));
 	}
 	m_info.stackHeightInfo[&_varDecl] = m_stackHeight;
 	return success;
@@ -268,8 +268,8 @@ bool AsmAnalyzer::operator()(assembly::FunctionDefinition const& _funDef)
 	Scope& varScope = scope(virtualBlock);
 	for (auto const& var: _funDef.parameters + _funDef.returnVariables)
 	{
-		expectValidType(var.type, var.location);
-		m_activeVariables.insert(&boost::get<Scope::Variable>(varScope.identifiers.at(var.name)));
+		expectValidType(var.type.str(), var.location);
+		m_activeVariables.insert(&boost::get<Scope::Variable>(varScope.identifiers.at(var.name.str())));
 	}
 
 	int const stackHeight = m_stackHeight;
@@ -288,7 +288,7 @@ bool AsmAnalyzer::operator()(assembly::FunctionCall const& _funCall)
 	bool success = true;
 	size_t arguments = 0;
 	size_t returns = 0;
-	if (!m_currentScope->lookup(_funCall.functionName.name, Scope::Visitor(
+	if (!m_currentScope->lookup(_funCall.functionName.name.str(), Scope::Visitor(
 		[&](Scope::Variable const&)
 		{
 			m_errorReporter.typeError(
@@ -361,7 +361,7 @@ bool AsmAnalyzer::operator()(Switch const& _switch)
 	if (!expectExpression(*_switch.expression))
 		success = false;
 
-	set<tuple<LiteralKind, string>> cases;
+	set<tuple<LiteralKind, YulString>> cases;
 	for (auto const& _case: _switch.cases)
 	{
 		if (_case.value)
@@ -491,7 +491,7 @@ bool AsmAnalyzer::checkAssignment(assembly::Identifier const& _variable, size_t 
 	bool success = true;
 	size_t numErrorsBefore = m_errorReporter.errors().size();
 	size_t variableSize(-1);
-	if (Scope::Identifier const* var = m_currentScope->lookup(_variable.name))
+	if (Scope::Identifier const* var = m_currentScope->lookup(_variable.name.str()))
 	{
 		// Check that it is a variable
 		if (var->type() != typeid(Scope::Variable))
@@ -503,7 +503,7 @@ bool AsmAnalyzer::checkAssignment(assembly::Identifier const& _variable, size_t 
 		{
 			m_errorReporter.declarationError(
 				_variable.location,
-				"Variable " + _variable.name + " used before it was declared."
+				"Variable " + _variable.name.str() + " used before it was declared."
 			);
 			success = false;
 		}

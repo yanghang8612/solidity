@@ -53,7 +53,7 @@ void CodeTransform::operator()(VariableDeclaration const& _varDecl)
 	}
 	for (auto const& variable: _varDecl.variables)
 	{
-		auto& var = boost::get<Scope::Variable>(m_scope->identifiers.at(variable.name));
+		auto& var = boost::get<Scope::Variable>(m_scope->identifiers.at(variable.name.str()));
 		m_context->variableStackHeights[&var] = height++;
 	}
 	checkStackHeight(&_varDecl);
@@ -88,8 +88,8 @@ void CodeTransform::operator()(Label const& _label)
 {
 	m_assembly.setSourceLocation(_label.location);
 	solAssert(m_scope, "");
-	solAssert(m_scope->identifiers.count(_label.name), "");
-	Scope::Label& label = boost::get<Scope::Label>(m_scope->identifiers.at(_label.name));
+	solAssert(m_scope->identifiers.count(_label.name.str()), "");
+	Scope::Label& label = boost::get<Scope::Label>(m_scope->identifiers.at(_label.name.str()));
 	m_assembly.appendLabel(labelID(label));
 	checkStackHeight(&_label);
 }
@@ -108,7 +108,7 @@ void CodeTransform::operator()(FunctionCall const& _call)
 	}
 
 	Scope::Function* function = nullptr;
-	solAssert(m_scope->lookup(_call.functionName.name, Scope::NonconstVisitor(
+	solAssert(m_scope->lookup(_call.functionName.name.str(), Scope::NonconstVisitor(
 		[=](Scope::Variable&) { solAssert(false, "Expected function name."); },
 		[=](Scope::Label&) { solAssert(false, "Expected function name."); },
 		[&](Scope::Function& _function) { function = &_function; }
@@ -119,10 +119,10 @@ void CodeTransform::operator()(FunctionCall const& _call)
 		visitExpression(arg);
 	m_assembly.setSourceLocation(_call.location);
 	if (m_evm15)
-		m_assembly.appendJumpsub(functionEntryID(_call.functionName.name, *function), function->arguments.size(), function->returns.size());
+		m_assembly.appendJumpsub(functionEntryID(_call.functionName.name.str(), *function), function->arguments.size(), function->returns.size());
 	else
 	{
-		m_assembly.appendJumpTo(functionEntryID(_call.functionName.name, *function), function->returns.size() - function->arguments.size() - 1);
+		m_assembly.appendJumpTo(functionEntryID(_call.functionName.name.str(), *function), function->returns.size() - function->arguments.size() - 1);
 		m_assembly.appendLabel(returnLabel);
 		m_stackAdjustment--;
 	}
@@ -168,7 +168,7 @@ void CodeTransform::operator()(assembly::Identifier const& _identifier)
 	m_assembly.setSourceLocation(_identifier.location);
 	// First search internals, then externals.
 	solAssert(m_scope, "");
-	if (m_scope->lookup(_identifier.name, Scope::NonconstVisitor(
+	if (m_scope->lookup(_identifier.name.str(), Scope::NonconstVisitor(
 		[=](Scope::Variable& _var)
 		{
 			if (int heightDiff = variableHeightDiff(_var, false))
@@ -201,18 +201,18 @@ void CodeTransform::operator()(assembly::Literal const& _literal)
 {
 	m_assembly.setSourceLocation(_literal.location);
 	if (_literal.kind == assembly::LiteralKind::Number)
-		m_assembly.appendConstant(u256(_literal.value));
+		m_assembly.appendConstant(u256(_literal.value.str()));
 	else if (_literal.kind == assembly::LiteralKind::Boolean)
 	{
-		if (_literal.value == "true")
+		if (_literal.value.str() == "true")
 			m_assembly.appendConstant(u256(1));
 		else
 			m_assembly.appendConstant(u256(0));
 	}
 	else
 	{
-		solAssert(_literal.value.size() <= 32, "");
-		m_assembly.appendConstant(u256(h256(_literal.value, h256::FromBinary, h256::AlignLeft)));
+		solAssert(_literal.value.str().size() <= 32, "");
+		m_assembly.appendConstant(u256(h256(_literal.value.str(), h256::FromBinary, h256::AlignLeft)));
 	}
 	checkStackHeight(&_literal);
 }
@@ -290,8 +290,8 @@ void CodeTransform::operator()(Switch const& _switch)
 void CodeTransform::operator()(FunctionDefinition const& _function)
 {
 	solAssert(m_scope, "");
-	solAssert(m_scope->identifiers.count(_function.name), "");
-	Scope::Function& function = boost::get<Scope::Function>(m_scope->identifiers.at(_function.name));
+	solAssert(m_scope->identifiers.count(_function.name.str()), "");
+	Scope::Function& function = boost::get<Scope::Function>(m_scope->identifiers.at(_function.name.str()));
 
 	int const localStackAdjustment = m_evm15 ? 0 : 1;
 	int height = localStackAdjustment;
@@ -300,7 +300,7 @@ void CodeTransform::operator()(FunctionDefinition const& _function)
 	solAssert(varScope, "");
 	for (auto const& v: _function.parameters | boost::adaptors::reversed)
 	{
-		auto& var = boost::get<Scope::Variable>(varScope->identifiers.at(v.name));
+		auto& var = boost::get<Scope::Variable>(varScope->identifiers.at(v.name.str()));
 		m_context->variableStackHeights[&var] = height++;
 	}
 
@@ -311,18 +311,18 @@ void CodeTransform::operator()(FunctionDefinition const& _function)
 	if (m_evm15)
 	{
 		m_assembly.appendJumpTo(afterFunction, -stackHeightBefore);
-		m_assembly.appendBeginsub(functionEntryID(_function.name, function), _function.parameters.size());
+		m_assembly.appendBeginsub(functionEntryID(_function.name.str(), function), _function.parameters.size());
 	}
 	else
 	{
 		m_assembly.appendJumpTo(afterFunction, -stackHeightBefore + height);
-		m_assembly.appendLabel(functionEntryID(_function.name, function));
+		m_assembly.appendLabel(functionEntryID(_function.name.str(), function));
 	}
 	m_stackAdjustment += localStackAdjustment;
 
 	for (auto const& v: _function.returnVariables)
 	{
-		auto& var = boost::get<Scope::Variable>(varScope->identifiers.at(v.name));
+		auto& var = boost::get<Scope::Variable>(varScope->identifiers.at(v.name.str()));
 		m_context->variableStackHeights[&var] = height++;
 		// Preset stack slots for return variables to zero.
 		m_assembly.appendConstant(u256(0));
@@ -433,7 +433,7 @@ void CodeTransform::operator()(Block const& _block)
 AbstractAssembly::LabelID CodeTransform::labelFromIdentifier(Identifier const& _identifier)
 {
 	AbstractAssembly::LabelID label = AbstractAssembly::LabelID(-1);
-	if (!m_scope->lookup(_identifier.name, Scope::NonconstVisitor(
+	if (!m_scope->lookup(_identifier.name.str(), Scope::NonconstVisitor(
 		[=](Scope::Variable&) { solAssert(false, "Expected label"); },
 		[&](Scope::Label& _label)
 		{
@@ -504,7 +504,7 @@ void CodeTransform::generateMultiAssignment(vector<Identifier> const& _variableN
 void CodeTransform::generateAssignment(Identifier const& _variableName)
 {
 	solAssert(m_scope, "");
-	auto var = m_scope->lookup(_variableName.name);
+	auto var = m_scope->lookup(_variableName.name.str());
 	if (var)
 	{
 		Scope::Variable const& _var = boost::get<Scope::Variable>(*var);

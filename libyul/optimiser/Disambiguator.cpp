@@ -32,13 +32,13 @@ using namespace dev::solidity;
 
 using Scope = dev::solidity::assembly::Scope;
 
-string Disambiguator::translateIdentifier(string const& _originalName)
+YulString Disambiguator::translateIdentifier(YulString _originalName)
 {
 	if ((m_externallyUsedIdentifiers.count(_originalName)))
 		return _originalName;
 
 	assertThrow(!m_scopes.empty() && m_scopes.back(), OptimizerException, "");
-	Scope::Identifier const* id = m_scopes.back()->lookup(_originalName);
+	Scope::Identifier const* id = m_scopes.back()->lookup(_originalName.str());
 	assertThrow(id, OptimizerException, "");
 	if (!m_translations.count(id))
 		m_translations[id] = m_nameDispenser.newName(_originalName);

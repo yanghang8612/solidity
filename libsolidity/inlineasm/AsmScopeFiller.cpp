@@ -52,12 +52,12 @@ bool ScopeFiller::operator()(ExpressionStatement const& _expr)
 
 bool ScopeFiller::operator()(Label const& _item)
 {
-	if (!m_currentScope->registerLabel(_item.name))
+	if (!m_currentScope->registerLabel(_item.name.str()))
 	{
 		//@TODO secondary location
 		m_errorReporter.declarationError(
 			_item.location,
-			"Label name " + _item.name + " already taken in this scope."
+			"Label name " + _item.name.str() + " already taken in this scope."
 		);
 		return false;
 	}
@@ -77,16 +77,16 @@ bool ScopeFiller::operator()(assembly::FunctionDefinition const& _funDef)
 	bool success = true;
 	vector<Scope::YulType> arguments;
 	for (auto const& _argument: _funDef.parameters)
-		arguments.push_back(_argument.type);
+		arguments.emplace_back(_argument.type.str());
 	vector<Scope::YulType> returns;
 	for (auto const& _return: _funDef.returnVariables)
-		returns.push_back(_return.type);
-	if (!m_currentScope->registerFunction(_funDef.name, arguments, returns))
+		returns.emplace_back(_return.type.str());
+	if (!m_currentScope->registerFunction(_funDef.name.str(), arguments, returns))
 	{
 		//@TODO secondary location
 		m_errorReporter.declarationError(
 			_funDef.location,
-			"Function name " + _funDef.name + " already taken in this scope."
+			"Function name " + _funDef.name.str() + " already taken in this scope."
 		);
 		success = false;
 	}
@@ -159,12 +159,12 @@ bool ScopeFiller::operator()(Block const& _block)
 
 bool ScopeFiller::registerVariable(TypedName const& _name, SourceLocation const& _location, Scope& _scope)
 {
-	if (!_scope.registerVariable(_name.name, _name.type))
+	if (!_scope.registerVariable(_name.name.str(), _name.type.str()))
 	{
 		//@TODO secondary location
 		m_errorReporter.declarationError(
 			_location,
-			"Variable name " + _name.name + " already taken in this scope."
+			"Variable name " + _name.name.str() + " already taken in this scope."
 		);
 		return false;
 	}
