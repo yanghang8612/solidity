@@ -28,7 +28,7 @@ with two integers, you would use something like::
         }
     }
 
-Input parameters can be used as any other local variable and they can also be assigned to.
+Function parameters can be used as any other local variable and they can also be assigned to.
 
 Return Types
 ------------
