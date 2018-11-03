@@ -1,3 +1,8 @@
+### 0.5.1 (unreleased)
+
+Features:
+ * Commandline interface: Experimental ``--optimize`` option for assembly mode.
+
 ### 0.5.0 (unreleased)
 
 How to update your code:
