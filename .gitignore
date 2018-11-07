@@ -48,3 +48,6 @@ boost_1_57_0/
 cmake-build-debug/
 deps/
 
+# input
+input/
+
