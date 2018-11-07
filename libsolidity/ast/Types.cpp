@@ -587,6 +587,7 @@ MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) cons
 	if (isAddress())
 		return {
 			{"balance", make_shared<IntegerType>(256)},
+			{"tokenBalance", make_shared<FunctionType>(strings{"bytes32"}, strings{"uint"}, FunctionType::Kind::TokenBalance, true, StateMutability::View)},
 			{"call", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCall, true, StateMutability::Payable)},
 			{"callcode", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCallCode, true, StateMutability::Payable)},
 			{"delegatecall", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareDelegateCall, true)},
@@ -866,7 +867,7 @@ bool RationalNumberType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	else if (_convertTo.category() == Category::FixedBytes)
 	{
 		FixedBytesType const& fixedBytes = dynamic_cast<FixedBytesType const&>(_convertTo);
-		if (!isFractional()) // && !fixedBytes.isTrcToken()
+		if (!isFractional())
 		{
 			if (integerType())
 				return fixedBytes.numBytes() * 8 >= integerType()->numBits();
@@ -1260,16 +1261,11 @@ bool StringLiteralType::isValidUTF8() const
 	return dev::validateUTF8(m_value);
 }
 
-FixedBytesType::FixedBytesType(unsigned _bytes, Modifier _modifier): m_bytes(_bytes), m_modifier(_modifier)
+FixedBytesType::FixedBytesType(unsigned _bytes): m_bytes(_bytes)
 {
 	solAssert(
 		m_bytes > 0 && m_bytes <= 32,
 		"Invalid byte number for fixed bytes type: " + dev::toString(m_bytes)
-	);
-
-	solAssert(
-			m_bytes == 32 || m_modifier != Modifier::TrcToken,
-			"Invalid byte number for trcToken type: " + dev::toString(m_bytes)
 	);
 }
 
@@ -1278,8 +1274,6 @@ bool FixedBytesType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	if (_convertTo.category() != category())
 		return false;
 	FixedBytesType const& convertTo = dynamic_cast<FixedBytesType const&>(_convertTo);
-	if (isTrcToken())
-		return convertTo.isTrcToken();
 	return convertTo.m_bytes >= m_bytes;
 }
 
@@ -1295,10 +1289,6 @@ TypePointer FixedBytesType::unaryOperatorResult(Token::Value _operator) const
 	// "delete" and "~" is okay for FixedBytesType
 	if (_operator == Token::Delete)
 		return make_shared<TupleType>();
-	// no further unary operators for addresses
-	else if (isTrcToken())
-		return TypePointer();
-	// for non-trc-token bytes, we allow ~
 	else if (_operator == Token::BitNot)
 		return shared_from_this();
 
@@ -1309,10 +1299,6 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 {
 	if (Token::isShiftOp(_operator))
 	{
-		// Shifts are not symmetric with respect to the type
-		if (isTrcToken())
-			return TypePointer();
-
 		if (isValidShiftAndAmountType(_operator, *_other))
 			return shared_from_this();
 		else
@@ -1321,10 +1307,6 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 
 	auto commonType = dynamic_pointer_cast<FixedBytesType const>(Type::commonType(shared_from_this(), _other));
 	if (!commonType)
-		return TypePointer();
-
-	// trc-token only allows == and !=
-	if (isTrcToken() && (Token::Equal != _operator && Token::NotEqual != _operator))
 		return TypePointer();
 
 	// FixedBytes can be compared and have bitwise operators applied to them
@@ -1336,19 +1318,11 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 
 MemberList::MemberMap FixedBytesType::nativeMembers(const ContractDefinition*) const
 {
-//	if (isTrcToken())
-//		return {
-//				{"length", make_shared<IntegerType>(8)},
-////				{"name", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)},
-//		};
-//	else
-		return MemberList::MemberMap{MemberList::Member{"length", make_shared<IntegerType>(8)}};
+	return MemberList::MemberMap{MemberList::Member{"length", make_shared<IntegerType>(8)}};
 }
 
 string FixedBytesType::richIdentifier() const
 {
-	if (isTrcToken ())
-		return "t_trcToken";
 	return "t_bytes" + std::to_string(m_bytes);
 }
 
@@ -1357,7 +1331,7 @@ bool FixedBytesType::operator==(Type const& _other) const
 	if (_other.category() != category())
 		return false;
 	FixedBytesType const& other = dynamic_cast<FixedBytesType const&>(_other);
-	return other.m_bytes == m_bytes && other.m_modifier == m_modifier;
+	return other.m_bytes == m_bytes;
 }
 
 u256 BoolType::literalValue(Literal const* _literal) const
@@ -2500,7 +2474,7 @@ string FunctionType::richIdentifier() const
 	case Kind::Creation: id += "creation"; break;
 	case Kind::Send: id += "send"; break;
 	case Kind::Transfer: id += "transfer"; break;
-	case Kind::TransferToken: id += "transferToken"; break;
+	case Kind::TransferToken: id += "transfer"; break;
 	case Kind::SHA3: id += "sha3"; break;
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
