@@ -134,6 +134,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				gas = GasConsumption::infinite();
 			break;
 		}
+		case Instruction::CALLTOKEN:
 		case Instruction::CALL:
 		case Instruction::CALLCODE:
 		case Instruction::DELEGATECALL:
@@ -149,7 +150,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 					gas += (*value);
 				else
 					gas = GasConsumption::infinite();
-				if (_item.instruction() == Instruction::CALL)
+				if (_item.instruction() == Instruction::CALL || _item.instruction() == Instruction::CALLTOKEN)
 					gas += GasCosts::callNewAccountGas; // We very rarely know whether the address exists.
 				int valueSize = 1;
 				if (_item.instruction() == Instruction::DELEGATECALL || _item.instruction() == Instruction::STATICCALL)
