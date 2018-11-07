@@ -59,6 +59,7 @@ const std::map<std::string, Instruction> dev::solidity::c_instructions =
 	{ "KECCAK256", Instruction::KECCAK256 },
 	{ "ADDRESS", Instruction::ADDRESS },
 	{ "BALANCE", Instruction::BALANCE },
+	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
 	{ "ORIGIN", Instruction::ORIGIN },
 	{ "CALLER", Instruction::CALLER },
 	{ "CALLVALUE", Instruction::CALLVALUE },

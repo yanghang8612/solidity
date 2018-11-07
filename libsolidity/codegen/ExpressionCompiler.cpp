@@ -720,6 +720,12 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             m_context << Instruction::ISZERO;
             m_context.appendConditionalRevert(true);
             break;
+		case FunctionType::Kind::TokenBalance:
+			// stack layout: address token_id
+			arguments[0]->accept(*this);
+			utils().convertType(*arguments[0]->annotation().type, *function.parameterTypes()[0], true);
+			m_context << Instruction::TOKENBALANCE;
+			break;
 		case FunctionType::Kind::Selfdestruct:
 			arguments.front()->accept(*this);
 			utils().convertType(*arguments.front()->annotation().type, *function.parameterTypes().front(), true);
@@ -1170,6 +1176,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::BareDelegateCall:
 				case FunctionType::Kind::Transfer:
 				case FunctionType::Kind::TransferToken:
+				case FunctionType::Kind::TokenBalance:
 					_memberAccess.expression().accept(*this);
 					m_context << funType->externalIdentifier();
 					break;
@@ -1280,7 +1287,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				);
 				m_context << Instruction::BALANCE;
 			}
-			else if ((set<string>{"send", "transfer", "transferToken", "call", "callcode", "delegatecall"}).count(member))
+			else if ((set<string>{"send", "transfer", "transferToken", "call", "callcode", "delegatecall", "tokenBalance"}).count(member))
 				utils().convertType(
 					*_memberAccess.expression().annotation().type,
 					IntegerType(160, IntegerType::Modifier::Address),
