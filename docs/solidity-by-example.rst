@@ -89,7 +89,7 @@ of votes.
         function giveRightToVote(address voter) public {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates and all
-            // changes to the state and to Ether balances
+            // changes to the state and to Trx balances
             // are reverted. 
             // This used to consume all gas in old EVM versions, but
             // not anymore.
@@ -273,7 +273,7 @@ activate themselves.
             // information is already part of
             // the transaction. The keyword payable
             // is required for the function to
-            // be able to receive Ether.
+            // be able to receive Trx.
 
             // Revert the call if the bidding
             // period is over.
@@ -324,7 +324,7 @@ activate themselves.
         /// to the beneficiary.
         function auctionEnd() public {
             // It is a good guideline to structure functions that interact
-            // with other contracts (i.e. they call functions or send Ether)
+            // with other contracts (i.e. they call functions or send Trx)
             // into three phases:
             // 1. checking conditions
             // 2. performing actions (potentially changing conditions)

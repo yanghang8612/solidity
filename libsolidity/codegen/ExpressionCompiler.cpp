@@ -656,7 +656,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			m_context << Instruction::SWAP1 << Instruction::DUP2;
 			m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
 			appendExternalFunctionCall(
-			        FunctionType(
+					FunctionType(
 							TypePointers{},
 							TypePointers{},
 							strings(),
@@ -669,7 +669,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 							true
 					),
 					{}
-            );
+			);
 			if (function.kind() == FunctionType::Kind::Transfer)
 			{
 				// Check if zero (out of stack or not enough balance).
@@ -1789,7 +1789,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	// Assumed stack content here:
 	// <stack top>
-	// tokenId [if _functionType.tokenSet()]
+	// trcToken [if _functionType.tokenSet()]
 	// value [if _functionType.valueSet()]
 	// gas [if _functionType.gasSet()]
 	// self object [if bound - moved to top right away]
@@ -1797,12 +1797,13 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// contract address
 
 	unsigned selfSize = _functionType.bound() ? _functionType.selfType()->sizeOnStack() : 0;
-	unsigned gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0);
-	unsigned contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize + (_functionType.isBareCall() ? 0 : 1)
-			+ (_functionType.tokenSet() ? 1 : 0));
-	unsigned gasStackPos = m_context.currentToBaseStackOffset(gasValueSize + (_functionType.tokenSet() ? 1 : 0));
-	unsigned valueStackPos = m_context.currentToBaseStackOffset(1 + (_functionType.tokenSet() ? 1 : 0));
-	unsigned tokenStackPos = m_context.currentToBaseStackOffset(_functionType.tokenSet() ? 1 : 0);
+	unsigned tokenSize = _functionType.tokenSet() ? 1: 0;
+	unsigned gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0) + tokenSize;
+
+	unsigned contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize + (_functionType.isBareCall() ? 0 : 1));
+	unsigned gasStackPos = m_context.currentToBaseStackOffset(gasValueSize);
+	unsigned valueStackPos = m_context.currentToBaseStackOffset(1 + tokenSize);
+	unsigned tokenStackPos = m_context.currentToBaseStackOffset(1);
 
 
 	// move self object to top
@@ -1810,6 +1811,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		utils().moveToStackTop(gasValueSize, _functionType.selfType()->sizeOnStack());
 
 	auto funKind = _functionType.kind();
+	bool isTokenCall = _functionType.tokenSet();
 	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall;
 	bool isCallCode = funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::CallCode;
 	bool isDelegateCall = funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::DelegateCall;
@@ -1930,7 +1932,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// Stack now:
 	// <stack top>
 	// input_memory_end
-    // tokenId [if _functionType.tokenSet()]
+	// trcToken [if _functionType.tokenSet()]
 	// value [if _functionType.valueSet()]
 	// gas [if _functionType.gasSet()]
 	// function identifier [unless bare]
@@ -1956,16 +1958,14 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	}
 
 	// CALL arguments: outSize, outOff, inSize, inOff (already present up to here)
-	// [value,] addr, gas (stack top)
+	// [value,] addr, gas, trcToken (stack top)
 	if (isDelegateCall)
 		solAssert(!_functionType.valueSet(), "Value set for delegatecall");
 	else if (useStaticCall)
 		solAssert(!_functionType.valueSet(), "Value set for staticcall");
-	else if (_functionType.valueSet() && !_functionType.tokenSet())
-		m_context << dupInstruction(m_context.baseToCurrentStackOffset(valueStackPos));
-	else if (_functionType.tokenSet()) {
-		//TODO: order??
-		m_context << dupInstruction(m_context.baseToCurrentStackOffset(tokenStackPos));
+	else if (_functionType.valueSet()){
+		if (_functionType.tokenSet())
+			m_context << dupInstruction(m_context.baseToCurrentStackOffset(tokenStackPos));
 		m_context << dupInstruction(m_context.baseToCurrentStackOffset(valueStackPos));
 	}
 	else
@@ -1999,14 +1999,14 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << gasNeededByCaller << Instruction::GAS << Instruction::SUB;
 	}
 	// Order is important here, STATICCALL might overlap with DELEGATECALL.
-	if (isDelegateCall)
+	if (isTokenCall)
+        m_context << Instruction::CALLTOKEN;
+    else if (isDelegateCall)
 		m_context << Instruction::DELEGATECALL;
 	else if (isCallCode)
 		m_context << Instruction::CALLCODE;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
-	else if (_functionType.tokenSet())
-	    m_context << Instruction :: CALLTOKEN;
 	else
 		m_context << Instruction::CALL;
 
@@ -2017,7 +2017,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		_functionType.gasSet() +
 		(!_functionType.isBareCall() || manualFunctionId);
 
-	if (returnSuccessCondition)
+	if (returnSuccessCondition) 
 		m_context << swapInstruction(remainsSize);
 	else
 	{
