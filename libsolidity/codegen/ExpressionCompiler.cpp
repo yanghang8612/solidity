@@ -678,44 +678,48 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context.appendConditionalRevert(true);
 			}
 			break;
-		case FunctionType::Kind::TransferToken:
-				_functionCall.expression().accept(*this);
-				// Provide the gas stipend manually at first because we may send zero trx.
-				// Will be zeroed if we send more than zero trx.
-				m_context << u256(eth::GasCosts::callStipend);
-				arguments.front()->accept(*this);
-				utils().convertType(
-						*arguments.front()->annotation().type,
-						*function.parameterTypes().front(), true
-				);
-				// gas <- gas * !value
-				m_context << Instruction::SWAP1 << Instruction::DUP2;
-				m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
-				arguments[1]->accept(*this);
-				// now on Stack:
-				//   trcToken
-				//   value
-				//   !value * gas
-				appendExternalFunctionCall(
-						FunctionType(
-								TypePointers{},
-								TypePointers{},
-								strings(),
-								strings(),
-								FunctionType::Kind::BareCall,
-								false,
-								StateMutability::NonPayable,
-								nullptr,
-								true,
-								true,
-								true
-						),
-						{}
-				);
+        case FunctionType::Kind::TransferToken :
+		    _functionCall.expression().accept(*this);
+		    // Provide the gas stipend manually at first because we may send zero trx.
+            // Will be zeroed if we send more than zero trx.
+            m_context << u256(eth::GasCosts::callStipend);
+            arguments.front()->accept(*this);
+            utils().convertType(
+                    *arguments.front()->annotation().type,
+                    *function.parameterTypes().front(), true
+            );
+            // gas <- gas * !value
+            m_context << Instruction::SWAP1 << Instruction::DUP2;
+            m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
+            arguments[1]->accept(*this);
+//            utils().convertType(
+//                    *arguments[1]->annotation().type,
+//                    *function.parameterTypes()[1], true
+//            );
+            // now on Stack:
+            //   tokenId
+            //   value
+            //   !value * gas
+            appendExternalFunctionCall(
+                    FunctionType(
+                            TypePointers{},
+                            TypePointers{},
+                            strings(),
+                            strings(),
+                            FunctionType::Kind::BareCall,
+                            false,
+                            StateMutability::NonPayable,
+                            nullptr,
+                            true,
+                            true,
+                            true
+                    ),
+                    {}
+            );
 
-                m_context << Instruction::ISZERO;
-                m_context.appendConditionalRevert(true);
-				break;
+            m_context << Instruction::ISZERO;
+            m_context.appendConditionalRevert(true);
+            break;
 		case FunctionType::Kind::Selfdestruct:
 			arguments.front()->accept(*this);
 			utils().convertType(*arguments.front()->annotation().type, *function.parameterTypes().front(), true);
@@ -2003,6 +2007,8 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << Instruction::CALLCODE;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
+	else if (_functionType.tokenSet())
+	    m_context << Instruction :: CALLTOKEN;
 	else
 		m_context << Instruction::CALL;
 
