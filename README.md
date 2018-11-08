@@ -14,24 +14,41 @@ Solidity is still under development. So please do not hesitate and open an [issu
 See the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source) for build instructions.
 ```
 Build for javascript
+
 cd solidity
+
+# 1. Prepare to Build solcjson, assume your project dir is "/root/project/solidity"
+# a. build from Ubuntu [Optional]
 docker run -it -v $(pwd):/root/project -w /root/project trzeci/emscripten:sdk-tag-1.35.4-64bit
 apt-get update
 apt-get install wget gcc boost
+# b. build from macOS [Optional]
+
+# 2.a install essetial
 apt-get install -y build-essential
+# 2.b if "2.a install build-essential" failed, please install Emscripten from this url:
+https://github.com/juj/emsdk/tree/llvm_root
+
+# 3. check if boost is installed 
 ./scripts/travis-emscripten/install_deps.sh
+
+# 4. begin to compile
 ./scripts/travis-emscripten/build_emscripten.sh
 
+# 5. release soljson.js
 bash tran.sh
+
 ```
 
 ## Windows
+```
 https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source
-安装vs2017
-安装cmake
+# install vs2017
+# install cmake
 scripts\install_deps.bat
 部分文件在中文windows下警告被看作错误，改一下文件编码，删除不用的测试就行了
 mkdir build
 cd build
 cmake -G "Visual Studio 15 2017 Win64" ..
 cmake --build . --config RelWithDebInfo
+```

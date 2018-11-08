@@ -1,3 +1,14 @@
+### 0.4.25 (2018-09-12)
+
+Important Bugfixes:
+ * Code Generator: Properly perform cleanup for exponentiation and non-256 bit types.
+ * Type Checker: Report error when using indexed structs in events with experimental ABIEncoderV2. This used to log wrong values.
+ * Type Checker: Report error when using structs in events without experimental ABIEncoderV2. This used to crash or log the wrong values.
+ * Parser: Consider all unicode line terminators (LF, VF, FF, CR, NEL, LS, PS) for single-line comments
+   and string literals. They are invalid in strings and will end comments.
+ * Parser: Disallow unterminated multi-line comments at the end of input.
+ * Parser: Treat ``/** /`` as unterminated multi-line comment.
+
 ### 0.4.24 (2018-05-16)
 
 Language Features:
@@ -361,7 +372,7 @@ Features:
  * Add ``assert(condition)``, which throws if condition is false (meant for internal errors).
  * Add ``require(condition)``, which throws if condition is false (meant for invalid input).
  * Commandline interface: Do not overwrite files unless forced.
- * Introduce ``.transfer(value)`` for sending Ether.
+ * Introduce ``.transfer(value)`` for sending Trx.
  * Code generator: Support ``revert()`` to abort with rolling back, but not consuming all gas.
  * Inline assembly: Support ``revert`` (EIP140) as an opcode.
  * Parser: Support scientific notation in numbers (e.g. ``2e8`` and ``200e-2``).
@@ -512,7 +523,7 @@ to explicitly specify if functions can receive trx via the ``payable``
 modifier. Furthermore, more situations cause exceptions to be thrown.
 
 Minimal changes to be made for upgrade:
- - Add ``payable`` to all functions that want to receive Ether
+ - Add ``payable`` to all functions that want to receive Trx
    (including the constructor and the fallback function).
  - Change ``_`` to ``_;`` in modifiers.
  - Add version pragma to each file: ``pragma solidity ^0.4.0;``
@@ -522,9 +533,9 @@ Breaking Changes:
  * Source files have to specify the compiler version they are
    compatible with using e.g. ``pragma solidity ^0.4.0;`` or
    ``pragma solidity >=0.4.0 <0.4.8;``
- * Functions that want to receive Ether have to specify the
+ * Functions that want to receive Trx have to specify the
    new ``payable`` modifier (otherwise they throw).
- * Contracts that want to receive Ether with a plain "send"
+ * Contracts that want to receive Trx with a plain "send"
    have to implement a fallback function with the ``payable``
    modifier. Contracts now throw if no payable fallback
    function is defined and no function matches the signature.

@@ -11025,10 +11025,10 @@ BOOST_AUTO_TEST_CASE(scientific_notation)
 	char const* sourceCode = R"(
 		contract C {
 			function f() returns (uint) {
-				return 2e10 wei;
+				return 2e10 sun;
 			}
 			function g() returns (uint) {
-				return 200e-2 wei;
+				return 200e-2 sun;
 			}
 			function h() returns (uint) {
 				return 2.5e1;

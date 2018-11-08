@@ -332,7 +332,7 @@ Global Variables
 - ``msg.data`` (``bytes``): complete calldata
 - ``msg.gas`` (``uint``): remaining gas - deprecated in version 0.4.21 and to be replaced by ``gasleft()``
 - ``msg.sender`` (``address``): sender of the message (current call)
-- ``msg.value`` (``uint``): number of wei sent with the message
+- ``msg.value`` (``uint``): number of sun sent with the message
 - ``now`` (``uint``): current block timestamp (alias for ``block.timestamp``)
 - ``tx.gasprice`` (``uint``): gas price of the transaction
 - ``tx.origin`` (``address``): sender of the transaction (full call chain)
@@ -353,9 +353,9 @@ Global Variables
 - ``super``: the contract one level higher in the inheritance hierarchy
 - ``selfdestruct(address recipient)``: destroy the current contract, sending its funds to the given address
 - ``suicide(address recipient)``: a deprecated alias to ``selfdestruct``
-- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Wei
-- ``<address>.send(uint256 amount) returns (bool)``: send given amount of Wei to :ref:`address`, returns ``false`` on failure
-- ``<address>.transfer(uint256 amount)``: send given amount of Wei to :ref:`address`, throws on failure
+- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in sun
+- ``<address>.send(uint256 amount) returns (bool)``: send given amount of sun to :ref:`address`, returns ``false`` on failure
+- ``<address>.transfer(uint256 amount)``: send given amount of sun to :ref:`address`, throws on failure
 
 .. note::
     Do not rely on ``block.timestamp``, ``now`` and ``blockhash`` as a source of randomness,
@@ -398,7 +398,7 @@ Modifiers
 
 - ``pure`` for functions: Disallows modification or access of state - this is not enforced yet.
 - ``view`` for functions: Disallows modification of state - this is not enforced yet.
-- ``payable`` for functions: Allows them to receive Ether together with a call.
+- ``payable`` for functions: Allows them to receive Trx together with a call.
 - ``constant`` for state variables: Disallows assignment (except initialisation), does not occupy storage slot.
 - ``constant`` for functions: Same as ``view``.
 - ``anonymous`` for events: Does not store event signature as topic.
