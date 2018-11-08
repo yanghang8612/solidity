@@ -2013,7 +2013,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		_functionType.gasSet() +
 		(!_functionType.isBareCall() || manualFunctionId);
 
-	if (returnSuccessCondition)
+	if (returnSuccessCondition) 
 		m_context << swapInstruction(remainsSize);
 	else
 	{
