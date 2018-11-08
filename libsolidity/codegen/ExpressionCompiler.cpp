@@ -2007,8 +2007,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << Instruction::CALLCODE;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
-	else if (_functionType.tokenSet())
-	    m_context << Instruction :: CALLTOKEN;
 	else
 		m_context << Instruction::CALL;
 
