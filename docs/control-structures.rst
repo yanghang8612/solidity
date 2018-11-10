@@ -123,7 +123,7 @@ actual contract has not been created yet.
 Functions of other contracts have to be called externally. For an external call,
 all function arguments have to be copied to memory.
 
-When calling functions of other contracts, the amount of Wei sent with the call and
+When calling functions of other contracts, the amount of sun sent with the call and
 the gas can be specified with special options ``.value()`` and ``.gas()``, respectively::
 
     pragma solidity ^0.4.0;
@@ -247,7 +247,7 @@ creation-dependencies are not possible.
         }
     }
 
-As seen in the example, it is possible to forward Ether while creating
+As seen in the example, it is possible to forward Trx while creating
 an instance of ``D`` using the ``.value()`` option, but it is not possible
 to limit the amount of gas.
 If the creation fails (due to out-of-stack, not enough balance or other problems),
@@ -510,8 +510,8 @@ A ``require``-style exception is generated in the following situations:
 #. If you call a function via a message call but it does not finish properly (i.e. it runs out of gas, has no matching function, or throws an exception itself), except when a low level operation ``call``, ``send``, ``delegatecall`` or ``callcode`` is used.  The low level operations never throw exceptions but indicate failures by returning ``false``.
 #. If you create a contract using the ``new`` keyword but the contract creation does not finish properly (see above for the definition of "not finish properly").
 #. If you perform an external function call targeting a contract that contains no code.
-#. If your contract receives Ether via a public function without ``payable`` modifier (including the constructor and the fallback function).
-#. If your contract receives Ether via a public getter function.
+#. If your contract receives Trx via a public function without ``payable`` modifier (including the constructor and the fallback function).
+#. If your contract receives Trx via a public getter function.
 #. If a ``.transfer()`` fails.
 
 Internally, Solidity performs a revert operation (instruction ``0xfd``) for a ``require``-style exception and executes an invalid operation
@@ -530,18 +530,18 @@ The following example shows how an error string can be used together with revert
     contract VendingMachine {
         function buy(uint amount) payable {
             if (amount > msg.value / 2 trx)
-                revert("Not enough Ether provided.");
+                revert("Not enough Trx provided.");
             // Alternative way to do it:
             require(
                 amount <= msg.value / 2 trx,
-                "Not enough Ether provided."
+                "Not enough Trx provided."
             );
             // Perform the purchase.
         }
     }
 
 The provided string will be :ref:`abi-encoded <ABI>` as if it were a call to a function ``Error(string)``.
-In the above example, ``revert("Not enough Ether provided.");`` will cause the following hexadecimal data be
+In the above example, ``revert("Not enough Trx provided.");`` will cause the following hexadecimal data be
 set as error return data:
 
 .. code::

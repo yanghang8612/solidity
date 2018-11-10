@@ -180,7 +180,7 @@ namespace solidity
 	K(View, "view", 0)                                                 \
 	K(While, "while", 0)                                               \
 	\
-	/* Ether subdenominations */                                       \
+	/* Trx subdenominations */                                       \
 	K(SubSun, "sun", 0)                                              \
 	K(SubTrx, "trx", 0)                                                \
 	K(SubSecond, "seconds", 0)                                         \
@@ -204,6 +204,7 @@ namespace solidity
 	T(BytesM, "bytesM", 0)                                             \
 	T(FixedMxN, "fixedMxN", 0)                                         \
 	T(UFixedMxN, "ufixedMxN", 0)                                       \
+	K(TrcToken, "trcToken", 0)  /* trc10 token type */                 \
 	T(TypesEnd, NULL, 0) /* used as type enum end marker */            \
 	\
 	/* Literals */                                                     \

@@ -295,6 +295,8 @@ TypePointer Type::fromElementaryTypeName(ElementaryTypeNameToken const& _type)
 		return make_shared<FixedBytesType>(1);
 	case Token::Address:
 		return make_shared<IntegerType>(160, IntegerType::Modifier::Address);
+	case Token::TrcToken:
+		return make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken);
 	case Token::Bool:
 		return make_shared<BoolType>();
 	case Token::Bytes:
@@ -585,13 +587,13 @@ MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) cons
 	if (isAddress())
 		return {
 			{"balance", make_shared<IntegerType>(256)},
-			{"tokenBalance", make_shared<FunctionType>(strings{"bytes32"}, strings{"uint"}, FunctionType::Kind::TokenBalance)},
+			{"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, true, StateMutability::View)},
 			{"call", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCall, true, StateMutability::Payable)},
 			{"callcode", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCallCode, true, StateMutability::Payable)},
 			{"delegatecall", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareDelegateCall, true)},
 			{"send", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)},
 			{"transfer", make_shared<FunctionType>(strings{"uint"}, strings(), FunctionType::Kind::Transfer)},
-			{"transferToken", make_shared<FunctionType>(strings{"uint","bytes32"}, strings(), FunctionType::Kind::TransferToken)}
+			{"transferToken", make_shared<FunctionType>(strings{"uint","trcToken"}, strings(), FunctionType::Kind::TransferToken)}
 		};
 	else
 		return MemberList::MemberMap();
@@ -2473,8 +2475,6 @@ string FunctionType::richIdentifier() const
 	case Kind::Send: id += "send"; break;
 	case Kind::Transfer: id += "transfer"; break;
 	case Kind::TransferToken: id += "transfer"; break;
-	// TODO check
-	case Kind::TokenBalance: id += "tokenbalance"; break;
 	case Kind::SHA3: id += "sha3"; break;
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
