@@ -901,6 +901,7 @@ public:
 		Send, ///< CALL, but without data and gas
 		Transfer, ///< CALL, but without data and throws on error
 		TransferToken, ///< CALL, but without data and throws an error
+		TokenBalance, ///< TOKENBALANCE
 		SHA3, ///< SHA3
 		Selfdestruct, ///< SELFDESTRUCT
 		Revert, ///< REVERT
