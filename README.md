@@ -51,8 +51,15 @@ We have a helper script which installs all required external dependencies on mac
 ```
 ./scripts/install_deps.sh
 ```
-Or, on Windows:
+Or, on Windows (not verified yet):
 ```
+scripts\install_deps.bat
+```
+Or, on Centos:
+```
+# install  z3
+https://github.com/Z3Prover/z3
+# install deps
 scripts\install_deps.bat
 ```
 
@@ -63,32 +70,35 @@ cd build
 cmake .. && make
 ```
 
-## build solc-js
+## build solc-js (Build for javascript)
 See the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source) for build instructions.
 ```
-Build for javascript
-
 cd solidity
 
-# 1. Prepare to Build solcjson, assume your project dir is "/root/project/solidity"
-# a. build from Ubuntu [Optional]
+#Prepare to Build solcjson, assume your project dir is "/root/project/solidity"
+
+# External Dependencies
+
+on Ubuntu
+```
 docker run -it -v $(pwd):/root/project -w /root/project trzeci/emscripten:sdk-tag-1.35.4-64bit
 apt-get update
 apt-get install wget gcc boost
-# b. build from macOS [Optional]
+```
 
-# 2.a install essetial
+# install essetial
 apt-get install -y build-essential
-# 2.b if "2.a install build-essential" failed, please install Emscripten from this url:
+
+# if "install build-essential" failed, please install Emscripten from this url:
 https://github.com/juj/emsdk/tree/llvm_root
 
-# 3. check if boost is installed 
+# check if boost is installed
 ./scripts/travis-emscripten/install_deps.sh
 
-# 4. begin to compile
+# begin to compile
 ./scripts/travis-emscripten/build_emscripten.sh
 
-# 5. release soljson.js
+# release soljson.js
 bash tran.sh
 
 ```
