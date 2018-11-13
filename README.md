@@ -51,11 +51,11 @@ We have a helper script which installs all required external dependencies on mac
 ```
 ./scripts/install_deps.sh
 ```
-Or, on Windows (not verified yet):
+Or, on Windows (not official verified yet):
 ```
 scripts\install_deps.bat
 ```
-Or, on Centos:
+Or, on Centos (not official verified yet):
 ```
 # install  z3
 https://github.com/Z3Prover/z3
