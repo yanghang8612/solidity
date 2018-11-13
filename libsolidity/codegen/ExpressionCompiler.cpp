@@ -722,6 +722,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             break;
 		case FunctionType::Kind::TokenBalance:
 			// stack layout: address token_id
+			_functionCall.expression().accept(*this);
 			arguments[0]->accept(*this);
 			utils().convertType(*arguments[0]->annotation().type, *function.parameterTypes()[0], true);
 			m_context << Instruction::TOKENBALANCE;
