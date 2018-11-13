@@ -109,8 +109,6 @@ case $(uname -s) in
             brew tap ethereum/ethereum
             brew install cpp-ethereum
             brew linkapps cpp-ethereum
-        else
-            brew upgrade
         fi
 
         ;;
