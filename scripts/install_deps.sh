@@ -100,7 +100,9 @@ case $(uname -s) in
         # Check for Homebrew install and abort if it is not installed.
         brew -v > /dev/null 2>&1 || { echo >&2 "ERROR - solidity requires a Homebrew install.  See http://brew.sh."; exit 1; }
         brew update
-        brew install boost
+        # brew install boost, We currently not support the latest boost_1.68
+        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/c33598d1a8957e48e6163f224e436aebbdfb3943/Formula/boost.rb
+
         brew install cmake
         if [ "$CI" = true ]; then
             brew upgrade cmake
