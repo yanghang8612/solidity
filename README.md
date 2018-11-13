@@ -10,7 +10,60 @@ The changelog for this project can be found [here](https://github.com/ethereum/s
 
 Solidity is still under development. So please do not hesitate and open an [issue in GitHub](https://github.com/ethereum/solidity/issues) if you encounter anything strange.
 
-## Building
+# Build and Install
+Here is instructions about how to build and install the Solidity compiler.
+
+## Prerequisites - macOS
+For macOS, ensure that you have the latest version of Xcode installed. This contains the Clang C++ compiler, the Xcode IDE and other Apple development tools which are required for building C++ applications on OS X. If you are installing Xcode for the first time, or have just installed a new version then you will need to agree to the license before you can do command-line builds:
+```
+sudo xcodebuild -license accept
+```
+
+Our OS X builds require you to install the Homebrew package manager for installing external dependencies.
+
+## Prerequisites - Windows
+
+Here is the list of components that should be installed in Windows:
+```
+git
+CMake
+Visual Studio 2017 Build Tools or Visual Studio 2017
+
+# visual studio 2017 Build Tools should include:
+Visual Studio C++ core features
+VC++ 2017 v141 toolset (x86,x64)
+Windows Universal CRT SDK
+Windows 8.1 SDK
+C++/CLI support
+```
+
+## Clone the Repository
+To clone the source code, execute the following command:
+```
+git clone --recursive https://github.com/tronprotocol/solidity.git
+cd solidity
+```
+## build solc
+
+### External Dependencies
+
+We have a helper script which installs all required external dependencies on macOS, Windows and on numerous Linux distros.
+```
+./scripts/install_deps.sh
+```
+Or, on Windows:
+```
+scripts\install_deps.bat
+```
+
+Solidity project uses CMake to configure the build. You might want to install ccache to speed up repeated builds. CMake will pick it up automatically. Building Solidity is quite similar on Linux, macOS and other Unices:
+```
+mkdir build
+cd build
+cmake .. && make
+```
+
+## build solc-js
 See the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source) for build instructions.
 ```
 Build for javascript
@@ -40,7 +93,7 @@ bash tran.sh
 
 ```
 
-## Windows
+### Windows
 ```
 https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source
 # install vs2017
