@@ -208,9 +208,8 @@ static const std::map<Instruction, InstructionInfo> c_instructionInfo =
 	{ Instruction::ORIGIN,		{ "ORIGIN",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLER,		{ "CALLER",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLVALUE,	{ "CALLVALUE",		0, 0, 1, false, Tier::Base } },
-	{ Instruction::TOKENVALUE,	{ "TOKENVALUE",		0, 0, 1, false, Tier::Base } },
-	{ Instruction::TOKENID,		{ "TOKENID",		0, 0, 1, false, Tier::Base } },
-
+	{ Instruction::CALLTOKENVALUE,	{ "CALLTOKENVALUE",		0, 0, 1, false, Tier::Base } },
+	{ Instruction::CALLTOKENID,		{ "CALLTOKENID",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLDATALOAD,{ "CALLDATALOAD",	0, 1, 1, false, Tier::VeryLow } },
 	{ Instruction::CALLDATASIZE,{ "CALLDATASIZE",	0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLDATACOPY,{ "CALLDATACOPY",	0, 3, 0, true, Tier::VeryLow } },
