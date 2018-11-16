@@ -130,6 +130,14 @@ void ContractCompiler::appendCallValueCheck()
 	m_context << Instruction::CALLVALUE;
 	// TODO: error message?
 	m_context.appendConditionalRevert();
+
+	m_context << Instruction::CALLTOKENID;
+	// TODO: error message?
+	m_context.appendConditionalRevert();
+
+	m_context << Instruction::CALLTOKENVALUE;
+	// TODO: error message?
+	m_context.appendConditionalRevert();
 }
 
 void ContractCompiler::appendInitAndConstructorCode(ContractDefinition const& _contract)
