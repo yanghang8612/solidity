@@ -3196,6 +3196,8 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"sender", make_shared<IntegerType>(160, IntegerType::Modifier::Address)},
 			{"gas", make_shared<IntegerType>(256)},
 			{"value", make_shared<IntegerType>(256)},
+			{"tokenvalue", make_shared<IntegerType>(256)},
+			{"tokenid", make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken)},
 			{"data", make_shared<ArrayType>(DataLocation::CallData)},
 			{"sig", make_shared<FixedBytesType>(4)}
 		});

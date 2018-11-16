@@ -281,19 +281,19 @@ bool ExpressionCompiler::visit(TupleExpression const& _tuple)
 	if (_tuple.isInlineArray())
 	{
 		ArrayType const& arrayType = dynamic_cast<ArrayType const&>(*_tuple.annotation().type);
-		
+
 		solAssert(!arrayType.isDynamicallySized(), "Cannot create dynamically sized inline array.");
 		m_context << max(u256(32u), arrayType.memorySize());
 		utils().allocateMemory();
 		m_context << Instruction::DUP1;
-	
+
 		for (auto const& component: _tuple.components())
 		{
 			component->accept(*this);
 			utils().convertType(*component->annotation().type, *arrayType.baseType(), true);
-			utils().storeInMemoryDynamic(*arrayType.baseType(), true);				
+			utils().storeInMemoryDynamic(*arrayType.baseType(), true);
 		}
-		
+
 		m_context << Instruction::POP;
 	}
 	else
@@ -1326,6 +1326,10 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			m_context << Instruction::CALLER;
 		else if (member == "value")
 			m_context << Instruction::CALLVALUE;
+        else if (member == "tokenvalue")
+            m_context << Instruction::CALLTOKENVALUE;
+        else if (member == "tokenid")
+            m_context << Instruction::CALLTOKENID;
 		else if (member == "origin")
 			m_context << Instruction::ORIGIN;
 		else if (member == "gas")
@@ -1583,7 +1587,7 @@ void ExpressionCompiler::endVisit(Literal const& _literal)
 {
 	CompilerContext::LocationSetter locationSetter(m_context, _literal);
 	TypePointer type = _literal.annotation().type;
-	
+
 	switch (type->category())
 	{
 	case Type::Category::RationalNumber:
@@ -2025,7 +2029,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		_functionType.gasSet() +
 		(!_functionType.isBareCall() || manualFunctionId);
 
-	if (returnSuccessCondition) 
+	if (returnSuccessCondition)
 		m_context << swapInstruction(remainsSize);
 	else
 	{
