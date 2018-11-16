@@ -440,7 +440,9 @@ IntegerType::IntegerType(unsigned _bits, IntegerType::Modifier _modifier):
 
 string IntegerType::richIdentifier() const
 {
-	if (isAddress())
+	if (isTrcToken())
+		return "t_trcToken";
+	else if (isAddress())
 		return "t_address";
 	else
 		return "t_" + string(isSigned() ? "" : "u") + "int" + std::to_string(numBits());
@@ -574,7 +576,7 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 	if (auto intType = dynamic_pointer_cast<IntegerType const>(commonType))
 	{
 		// Nothing else can be done with addresses
-		if (intType->isAddress())
+		if (intType->isAddress() || intType->isTrcToken())
 			return TypePointer();
 		// Signed EXP is not allowed
 		if (Token::Exp == _operator && intType->isSigned())
