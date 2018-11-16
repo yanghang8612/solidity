@@ -1326,6 +1326,10 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			m_context << Instruction::CALLER;
 		else if (member == "value")
 			m_context << Instruction::CALLVALUE;
+        else if (member == "tokenvalue")
+            m_context << Instruction::TOKENVALUE;
+        else if (member == "tokenid")
+            m_context << Instruction::TOKENID;
 		else if (member == "origin")
 			m_context << Instruction::ORIGIN;
 		else if (member == "gas")
