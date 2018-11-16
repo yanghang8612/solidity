@@ -490,7 +490,7 @@ TypePointer IntegerType::unaryOperatorResult(Token::Value _operator) const
 	if (_operator == Token::Delete)
 		return make_shared<TupleType>();
 	// no further unary operators for addresses
-	else if (isAddress())
+	else if (isAddress() || isTrcToken())
 		return TypePointer();
 	// for non-address integers, we allow +, -, ++ and --
 	else if (_operator == Token::Add || _operator == Token::Sub ||
@@ -513,6 +513,8 @@ string IntegerType::toString(bool) const
 {
 	if (isAddress())
 		return "address";
+	if (isTrcToken())
+		return "trcToken";
 	string prefix = isSigned() ? "int" : "uint";
 	return prefix + dev::toString(m_bits);
 }
