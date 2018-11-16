@@ -554,7 +554,7 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 	if (Token::isShiftOp(_operator))
 	{
 		// Shifts are not symmetric with respect to the type
-		if (isAddress())
+		if (isAddress() || isTrcToken())
 			return TypePointer();
 		if (isValidShiftAndAmountType(_operator, *_other))
 			return shared_from_this();
