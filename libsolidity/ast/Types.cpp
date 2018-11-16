@@ -296,7 +296,7 @@ TypePointer Type::fromElementaryTypeName(ElementaryTypeNameToken const& _type)
 	case Token::Address:
 		return make_shared<IntegerType>(160, IntegerType::Modifier::Address);
 	case Token::TrcToken:
-		return make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken);
+		return make_shared<IntegerType>(256, IntegerType::Modifier::TrcToken);
 	case Token::Bool:
 		return make_shared<BoolType>();
 	case Token::Bytes:
@@ -584,7 +584,8 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 
 MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) const
 {
-	if (isAddress())
+	// TODO can add isTrcToken function
+ 	if (isAddress())
 		return {
 			{"balance", make_shared<IntegerType>(256)},
 			{"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
@@ -1268,10 +1269,10 @@ FixedBytesType::FixedBytesType(unsigned _bytes, Modifier _modifier): m_bytes(_by
 		"Invalid byte number for fixed bytes type: " + dev::toString(m_bytes)
 	);
 
-	solAssert(
-			m_bytes == 32 || m_modifier != Modifier::TrcToken,
-			"Invalid byte number for trcToken type: " + dev::toString(m_bytes)
-	);
+//	solAssert(
+//			m_bytes == 32 || m_modifier != Modifier::TrcToken,
+//			"Invalid byte number for trcToken type: " + dev::toString(m_bytes)
+//	);
 }
 
 bool FixedBytesType::isImplicitlyConvertibleTo(Type const& _convertTo) const
