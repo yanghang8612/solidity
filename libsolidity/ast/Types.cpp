@@ -453,6 +453,8 @@ bool IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 		IntegerType const& convertTo = dynamic_cast<IntegerType const&>(_convertTo);
 		if (convertTo.m_bits < m_bits)
 			return false;
+		if (isTrcToken())
+			return !convertTo.isSigned() && convertTo.m_bits == 256;
 		if (isAddress())
 			return convertTo.isAddress();
 		else if (isSigned())
@@ -464,7 +466,7 @@ bool IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	{
 		FixedPointType const& convertTo = dynamic_cast<FixedPointType const&>(_convertTo);
 
-		if (isAddress())
+		if (isAddress() || isTrcToken())
 			return false;
 		else
 			return maxValue() <= convertTo.maxIntegerValue() && minValue() >= convertTo.minIntegerValue();
@@ -3198,7 +3200,7 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"gas", make_shared<IntegerType>(256)},
 			{"value", make_shared<IntegerType>(256)},
 			{"tokenvalue", make_shared<IntegerType>(256)},
-			{"tokenid", make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken)},
+			{"tokenid", make_shared<IntegerType>(256, IntegerType::Modifier::TrcToken)},
 			{"data", make_shared<ArrayType>(DataLocation::CallData)},
 			{"sig", make_shared<FixedBytesType>(4)}
 		});
