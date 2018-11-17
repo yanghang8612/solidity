@@ -315,7 +315,7 @@ class IntegerType: public Type
 public:
 	enum class Modifier
 	{
-		Unsigned, Signed, Address
+		Unsigned, Signed, Address, TrcToken
 	};
 	virtual Category category() const override { return Category::Integer; }
 
@@ -345,6 +345,7 @@ public:
 	unsigned numBits() const { return m_bits; }
 	bool isAddress() const { return m_modifier == Modifier::Address; }
 	bool isSigned() const { return m_modifier == Modifier::Signed; }
+	bool isTrcToken() const { return m_modifier == Modifier::TrcToken; }
 
 	bigint minValue() const;
 	bigint maxValue() const;
@@ -504,13 +505,9 @@ private:
 class FixedBytesType: public Type
 {
 public:
-	enum class Modifier
-	{
-		Normal, TrcToken
-	};
 	virtual Category category() const override { return Category::FixedBytes; }
 
-	explicit FixedBytesType(unsigned _bytes, Modifier _modifier = Modifier::Normal);
+	explicit FixedBytesType(unsigned _bytes);
 
 	virtual bool isImplicitlyConvertibleTo(Type const& _convertTo) const override;
 	virtual bool isExplicitlyConvertibleTo(Type const& _convertTo) const override;
@@ -523,16 +520,15 @@ public:
 	virtual unsigned storageBytes() const override { return m_bytes; }
 	virtual bool isValueType() const override { return true; }
 
-	virtual std::string toString(bool) const override { if (m_modifier == Modifier::TrcToken) return "trcToken"; return "bytes" + dev::toString(m_bytes); }
+	virtual std::string toString(bool) const override { return "bytes" + dev::toString(m_bytes); }
 	virtual MemberList::MemberMap nativeMembers(ContractDefinition const*) const override;
 	virtual TypePointer encodingType() const override { return shared_from_this(); }
 	virtual TypePointer interfaceType(bool) const override { return shared_from_this(); }
 
 	unsigned numBytes() const { return m_bytes; }
-	bool isTrcToken() const { return m_modifier == Modifier::TrcToken; }
+
 private:
 	unsigned m_bytes;
-	Modifier m_modifier;
 };
 
 /**

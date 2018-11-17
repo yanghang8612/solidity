@@ -296,7 +296,7 @@ TypePointer Type::fromElementaryTypeName(ElementaryTypeNameToken const& _type)
 	case Token::Address:
 		return make_shared<IntegerType>(160, IntegerType::Modifier::Address);
 	case Token::TrcToken:
-		return make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken);
+		return make_shared<IntegerType>(256, IntegerType::Modifier::TrcToken);
 	case Token::Bool:
 		return make_shared<BoolType>();
 	case Token::Bytes:
@@ -440,7 +440,9 @@ IntegerType::IntegerType(unsigned _bits, IntegerType::Modifier _modifier):
 
 string IntegerType::richIdentifier() const
 {
-	if (isAddress())
+	if (isTrcToken())
+		return "t_trcToken";
+	else if (isAddress())
 		return "t_address";
 	else
 		return "t_" + string(isSigned() ? "" : "u") + "int" + std::to_string(numBits());
@@ -453,6 +455,8 @@ bool IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 		IntegerType const& convertTo = dynamic_cast<IntegerType const&>(_convertTo);
 		if (convertTo.m_bits < m_bits)
 			return false;
+		if (isTrcToken())
+			return !convertTo.isSigned() && convertTo.m_bits == 256;
 		if (isAddress())
 			return convertTo.isAddress();
 		else if (isSigned())
@@ -464,7 +468,7 @@ bool IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	{
 		FixedPointType const& convertTo = dynamic_cast<FixedPointType const&>(_convertTo);
 
-		if (isAddress())
+		if (isAddress() || isTrcToken())
 			return false;
 		else
 			return maxValue() <= convertTo.maxIntegerValue() && minValue() >= convertTo.minIntegerValue();
@@ -488,7 +492,7 @@ TypePointer IntegerType::unaryOperatorResult(Token::Value _operator) const
 	if (_operator == Token::Delete)
 		return make_shared<TupleType>();
 	// no further unary operators for addresses
-	else if (isAddress())
+	else if (isAddress() || isTrcToken())
 		return TypePointer();
 	// for non-address integers, we allow +, -, ++ and --
 	else if (_operator == Token::Add || _operator == Token::Sub ||
@@ -511,6 +515,8 @@ string IntegerType::toString(bool) const
 {
 	if (isAddress())
 		return "address";
+	if (isTrcToken())
+		return "trcToken";
 	string prefix = isSigned() ? "int" : "uint";
 	return prefix + dev::toString(m_bits);
 }
@@ -550,7 +556,7 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 	if (Token::isShiftOp(_operator))
 	{
 		// Shifts are not symmetric with respect to the type
-		if (isAddress())
+		if (isAddress() || isTrcToken())
 			return TypePointer();
 		if (isValidShiftAndAmountType(_operator, *_other))
 			return shared_from_this();
@@ -570,7 +576,7 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 	if (auto intType = dynamic_pointer_cast<IntegerType const>(commonType))
 	{
 		// Nothing else can be done with addresses
-		if (intType->isAddress())
+		if (intType->isAddress() || intType->isTrcToken())
 			return TypePointer();
 		// Signed EXP is not allowed
 		if (Token::Exp == _operator && intType->isSigned())
@@ -584,7 +590,8 @@ TypePointer IntegerType::binaryOperatorResult(Token::Value _operator, TypePointe
 
 MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) const
 {
-	if (isAddress())
+	// TODO can add isTrcToken function
+ 	if (isAddress())
 		return {
 			{"balance", make_shared<IntegerType>(256)},
 			{"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
@@ -867,7 +874,7 @@ bool RationalNumberType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	else if (_convertTo.category() == Category::FixedBytes)
 	{
 		FixedBytesType const& fixedBytes = dynamic_cast<FixedBytesType const&>(_convertTo);
-		if (!isFractional()) // && !fixedBytes.isTrcToken()
+		if (!isFractional())
 		{
 			if (integerType())
 				return fixedBytes.numBytes() * 8 >= integerType()->numBits();
@@ -1261,16 +1268,11 @@ bool StringLiteralType::isValidUTF8() const
 	return dev::validateUTF8(m_value);
 }
 
-FixedBytesType::FixedBytesType(unsigned _bytes, Modifier _modifier): m_bytes(_bytes), m_modifier(_modifier)
+FixedBytesType::FixedBytesType(unsigned _bytes): m_bytes(_bytes)
 {
 	solAssert(
 		m_bytes > 0 && m_bytes <= 32,
 		"Invalid byte number for fixed bytes type: " + dev::toString(m_bytes)
-	);
-
-	solAssert(
-			m_bytes == 32 || m_modifier != Modifier::TrcToken,
-			"Invalid byte number for trcToken type: " + dev::toString(m_bytes)
 	);
 }
 
@@ -1279,8 +1281,6 @@ bool FixedBytesType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	if (_convertTo.category() != category())
 		return false;
 	FixedBytesType const& convertTo = dynamic_cast<FixedBytesType const&>(_convertTo);
-	if (isTrcToken())
-		return convertTo.isTrcToken();
 	return convertTo.m_bytes >= m_bytes;
 }
 
@@ -1296,10 +1296,6 @@ TypePointer FixedBytesType::unaryOperatorResult(Token::Value _operator) const
 	// "delete" and "~" is okay for FixedBytesType
 	if (_operator == Token::Delete)
 		return make_shared<TupleType>();
-	// no further unary operators for addresses
-	else if (isTrcToken())
-		return TypePointer();
-	// for non-trc-token bytes, we allow ~
 	else if (_operator == Token::BitNot)
 		return shared_from_this();
 
@@ -1310,10 +1306,6 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 {
 	if (Token::isShiftOp(_operator))
 	{
-		// Shifts are not symmetric with respect to the type
-		if (isTrcToken())
-			return TypePointer();
-
 		if (isValidShiftAndAmountType(_operator, *_other))
 			return shared_from_this();
 		else
@@ -1322,10 +1314,6 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 
 	auto commonType = dynamic_pointer_cast<FixedBytesType const>(Type::commonType(shared_from_this(), _other));
 	if (!commonType)
-		return TypePointer();
-
-	// trc-token only allows == and !=
-	if (isTrcToken() && (Token::Equal != _operator && Token::NotEqual != _operator))
 		return TypePointer();
 
 	// FixedBytes can be compared and have bitwise operators applied to them
@@ -1337,19 +1325,11 @@ TypePointer FixedBytesType::binaryOperatorResult(Token::Value _operator, TypePoi
 
 MemberList::MemberMap FixedBytesType::nativeMembers(const ContractDefinition*) const
 {
-//	if (isTrcToken())
-//		return {
-//				{"length", make_shared<IntegerType>(8)},
-////				{"name", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)},
-//		};
-//	else
-		return MemberList::MemberMap{MemberList::Member{"length", make_shared<IntegerType>(8)}};
+	return MemberList::MemberMap{MemberList::Member{"length", make_shared<IntegerType>(8)}};
 }
 
 string FixedBytesType::richIdentifier() const
 {
-	if (isTrcToken ())
-		return "t_trcToken";
 	return "t_bytes" + std::to_string(m_bytes);
 }
 
@@ -1358,7 +1338,7 @@ bool FixedBytesType::operator==(Type const& _other) const
 	if (_other.category() != category())
 		return false;
 	FixedBytesType const& other = dynamic_cast<FixedBytesType const&>(_other);
-	return other.m_bytes == m_bytes && other.m_modifier == m_modifier;
+	return other.m_bytes == m_bytes;
 }
 
 u256 BoolType::literalValue(Literal const* _literal) const
@@ -3197,7 +3177,7 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"gas", make_shared<IntegerType>(256)},
 			{"value", make_shared<IntegerType>(256)},
 			{"tokenvalue", make_shared<IntegerType>(256)},
-			{"tokenid", make_shared<FixedBytesType>(32, FixedBytesType::Modifier::TrcToken)},
+			{"tokenid", make_shared<IntegerType>(256, IntegerType::Modifier::TrcToken)},
 			{"data", make_shared<ArrayType>(DataLocation::CallData)},
 			{"sig", make_shared<FixedBytesType>(4)}
 		});
