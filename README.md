@@ -82,9 +82,10 @@ cd solidity
 on Ubuntu
 ```
 docker run -it -v $(pwd):/root/project -w /root/project trzeci/emscripten:sdk-tag-1.35.4-64bit
-apt-get update
-apt-get install wget gcc boost
+
 ```
+apt-get update
+apt-get install wget gcc libboost-all-dev
 
 # install essetial
 apt-get install -y build-essential
