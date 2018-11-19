@@ -191,7 +191,7 @@ bool StaticAnalyzer::visit(MemberAccess const& _memberAccess)
 
 				m_errorReporter.warning(
 					_memberAccess.location(),
-					"\"msg.value\" used in non-payable function. Do you want to add the \"payable\" modifier to this function?"
+					"\"msg.value\", \"msg.tokenvalue\" and \"msg.tokenid\" used in non-payable function. Do you want to add the \"payable\" modifier to this function?"
 				);
 
 	if (_memberAccess.memberName() == "callcode")
