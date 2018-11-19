@@ -5331,7 +5331,7 @@ BOOST_AUTO_TEST_CASE(warns_msg_value_in_non_payable_public_function)
 			}
 		}
 	)";
-	CHECK_WARNING(text, "\"msg.value\" used in non-payable function. Do you want to add the \"payable\" modifier to this function?");
+	CHECK_WARNING(text, "\"msg.value\", \"msg.tokenvalue\" and \"msg.tokenid\" used in non-payable function. Do you want to add the \"payable\" modifier to this function?");
 }
 
 BOOST_AUTO_TEST_CASE(does_not_warn_msg_value_in_payable_function)
