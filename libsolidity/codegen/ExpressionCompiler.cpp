@@ -696,6 +696,17 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //                    *arguments[1]->annotation().type,
 //                    *function.parameterTypes()[1], true
 //            );
+
+            // will be removed in next release
+            m_context << Instruction::DUP1 << Instruction::ISZERO;
+            m_context.appendConditionalRevert(false);
+            m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
+            m_context << Instruction::GT << Instruction::ISZERO;
+            m_context.appendConditionalRevert(false);
+            m_context << Instruction::DUP1 << (u256(0xF4240));
+            m_context << Instruction::LT << Instruction::ISZERO;
+            m_context.appendConditionalRevert(false);
+
             // now on Stack:
             //   tokenId
             //   value
@@ -725,6 +736,16 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			_functionCall.expression().accept(*this);
 			arguments[0]->accept(*this);
 			utils().convertType(*arguments[0]->annotation().type, *function.parameterTypes()[0], true);
+			// will be removed in next release
+			m_context << Instruction::DUP1 << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
+			m_context << Instruction::GT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << (u256(0xF4240));
+			m_context << Instruction::LT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+
 			m_context << Instruction::TOKENBALANCE;
 			break;
 		case FunctionType::Kind::Selfdestruct:
