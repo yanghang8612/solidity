@@ -93,7 +93,9 @@ BOOST_AUTO_TEST_CASE(invalid)
 
 BOOST_AUTO_TEST_CASE(corpus)
 {
-	string source = R"()";
+	string source = R"(
+
+	)";
 	size_t pos;
 	BOOST_CHECK(validateUTF8(source, pos));
 }
