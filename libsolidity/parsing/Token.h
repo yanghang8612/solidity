@@ -306,7 +306,7 @@ namespace TokenTraits
 			|| op == Token::Pure || op == Token::View || op == Token::Payable;
 	}
 
-	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubWei || op == Token::SubSzabo || op == Token::SubFinney || op == Token::SubEther; }
+	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubSun || op == Token::SubTrx; }
 	constexpr bool isTimeSubdenomination(Token op) { return op == Token::SubSecond || op == Token::SubMinute || op == Token::SubHour || op == Token::SubDay || op == Token::SubWeek || op == Token::SubYear; }
 	constexpr bool isReservedKeyword(Token op) { return (Token::Abstract <= op && op <= Token::Unchecked); }
 

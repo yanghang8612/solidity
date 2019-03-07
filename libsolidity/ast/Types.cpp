@@ -531,6 +531,7 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", make_shared<IntegerType>(256)},
+		{"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
 		{"call", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false)},
@@ -540,6 +541,7 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 	{
 		members.emplace_back(MemberList::Member{"send", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)});
 		members.emplace_back(MemberList::Member{"transfer", make_shared<FunctionType>(strings{"uint"}, strings(), FunctionType::Kind::Transfer)});
+        members.emplace_back(MemberList::Member{"transferToken", make_shared<FunctionType>(strings{"uint","trcToken"}, strings(), FunctionType::Kind::TransferToken)});
 	}
 	return members;
 }
@@ -709,23 +711,6 @@ TypePointer IntegerType::binaryOperatorResult(Token _operator, TypePointer const
 	return commonType;
 }
 
-MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) const
-{
-	// TODO can add isTrcToken function
- 	if (isAddress())
-		return {
-			{"balance", make_shared<IntegerType>(256)},
-			{"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
-			{"call", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCall, true, StateMutability::Payable)},
-			{"callcode", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCallCode, true, StateMutability::Payable)},
-			{"delegatecall", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareDelegateCall, true)},
-			{"send", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)},
-			{"transfer", make_shared<FunctionType>(strings{"uint"}, strings(), FunctionType::Kind::Transfer)},
-			{"transferToken", make_shared<FunctionType>(strings{"uint","trcToken"}, strings(), FunctionType::Kind::TransferToken)}
-		};
-	else
-		return MemberList::MemberMap();
-}
 
 FixedPointType::FixedPointType(unsigned _totalBits, unsigned _fractionalDigits, FixedPointType::Modifier _modifier):
 	m_totalBits(_totalBits), m_fractionalDigits(_fractionalDigits), m_modifier(_modifier)

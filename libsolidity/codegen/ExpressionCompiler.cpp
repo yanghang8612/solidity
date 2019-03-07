@@ -1932,8 +1932,8 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	bool returnSuccessConditionAndReturndata = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::BareStaticCall;
 	bool isTokenCall = _functionType.tokenSet();
-	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall;
-	bool isCallCode = funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::CallCode;
+//	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall;
+//	bool isCallCode = funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::CallCode;
 	bool isDelegateCall = funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::DelegateCall;
 	bool useStaticCall = funKind == FunctionType::Kind::BareStaticCall || (_functionType.stateMutability() <= StateMutability::View && m_context.evmVersion().hasStaticCall());
 
@@ -2100,15 +2100,16 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	else
 		m_context << Instruction::CALL;
 
+	// TODO check this
 	unsigned remainsSize =
 		2 + // contract address, input_memory_end
         _functionType.tokenSet() +
 		_functionType.valueSet() +
 		_functionType.gasSet() +
-		(!_functionType.isBareCall() || manualFunctionId);
-		(_functionType.valueSet() ? 1 : 0) +
-		(_functionType.gasSet() ? 1 : 0) +
-		(!_functionType.isBareCall() ? 1 : 0);
+		(!_functionType.isBareCall());
+//		(_functionType.valueSet() ? 1 : 0) +
+//		(_functionType.gasSet() ? 1 : 0) +
+//		(!_functionType.isBareCall() ? 1 : 0);
 
 	if (returnSuccessConditionAndReturndata)
 		m_context << swapInstruction(remainsSize);
