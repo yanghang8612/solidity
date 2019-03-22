@@ -35,6 +35,7 @@
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
+using namespace langutil;
 
 void Assembly::append(Assembly const& _a)
 {
@@ -82,7 +83,7 @@ AssemblyItem const& Assembly::append(AssemblyItem const& _i)
 {
 	assertThrow(m_deposit >= 0, AssemblyException, "Stack underflow.");
 	m_deposit += _i.deposit();
-	m_items.push_back(_i);
+	m_items.emplace_back(_i);
 	if (m_items.back().location().isEmpty() && !m_currentSourceLocation.isEmpty())
 		m_items.back().setLocation(m_currentSourceLocation);
 	return back();
@@ -113,10 +114,10 @@ namespace
 
 string locationFromSources(StringMap const& _sourceCodes, SourceLocation const& _location)
 {
-	if (_location.isEmpty() || _sourceCodes.empty() || _location.start >= _location.end || _location.start < 0)
+	if (_location.isEmpty() || !_location.source.get() || _sourceCodes.empty() || _location.start >= _location.end || _location.start < 0)
 		return "";
 
-	auto it = _sourceCodes.find(*_location.sourceName);
+	auto it = _sourceCodes.find(_location.source->name());
 	if (it == _sourceCodes.end())
 		return "";
 
@@ -185,11 +186,11 @@ public:
 
 	void printLocation()
 	{
-		if (!m_location.sourceName && m_location.isEmpty())
+		if (!m_location.source && m_location.isEmpty())
 			return;
 		m_out << m_prefix << "    /*";
-		if (m_location.sourceName)
-			m_out << " \"" + *m_location.sourceName + "\"";
+		if (m_location.source)
+			m_out << " \"" + m_location.source->name() + "\"";
 		if (!m_location.isEmpty())
 			m_out << ":" << to_string(m_location.start) + ":" + to_string(m_location.end);
 		m_out << "  " << locationFromSources(m_sourceCodes, m_location);
@@ -352,14 +353,14 @@ AssemblyItem Assembly::namedTag(string const& _name)
 	assertThrow(!_name.empty(), AssemblyException, "Empty named tag.");
 	if (!m_namedTags.count(_name))
 		m_namedTags[_name] = size_t(newTag().data());
-	return AssemblyItem(Tag, m_namedTags.at(_name));
+	return AssemblyItem{Tag, m_namedTags.at(_name)};
 }
 
 AssemblyItem Assembly::newPushLibraryAddress(string const& _identifier)
 {
 	h256 h(dev::keccak256(_identifier));
 	m_libraries[h] = _identifier;
-	return AssemblyItem(PushLibraryAddress, h);
+	return AssemblyItem{PushLibraryAddress, h};
 }
 
 Assembly& Assembly::optimise(bool _enable, EVMVersion _evmVersion, bool _isCreation, size_t _runs)
@@ -414,14 +415,14 @@ map<u256, u256> Assembly::optimiseInternal(
 
 		if (_settings.runJumpdestRemover)
 		{
-			JumpdestRemover jumpdestOpt(m_items);
+			JumpdestRemover jumpdestOpt{m_items};
 			if (jumpdestOpt.optimise(_tagsReferencedFromOutside))
 				count++;
 		}
 
 		if (_settings.runPeephole)
 		{
-			PeepholeOptimiser peepOpt(m_items);
+			PeepholeOptimiser peepOpt{m_items};
 			while (peepOpt.optimise())
 			{
 				count++;
@@ -432,7 +433,7 @@ map<u256, u256> Assembly::optimiseInternal(
 		// This only modifies PushTags, we have to run again to actually remove code.
 		if (_settings.runDeduplicate)
 		{
-			BlockDeduplicator dedup(m_items);
+			BlockDeduplicator dedup{m_items};
 			if (dedup.deduplicate())
 			{
 				tagReplacements.insert(dedup.replacedTags().begin(), dedup.replacedTags().end());
@@ -447,13 +448,13 @@ map<u256, u256> Assembly::optimiseInternal(
 			// function types that can be stored in storage.
 			AssemblyItems optimisedItems;
 
-			bool usesMSize = (find(m_items.begin(), m_items.end(), AssemblyItem(Instruction::MSIZE)) != m_items.end());
+			bool usesMSize = (find(m_items.begin(), m_items.end(), AssemblyItem{Instruction::MSIZE}) != m_items.end());
 
 			auto iter = m_items.begin();
 			while (iter != m_items.end())
 			{
 				KnownState emptyState;
-				CommonSubexpressionEliminator eliminator(emptyState);
+				CommonSubexpressionEliminator eliminator{emptyState};
 				auto orig = iter;
 				iter = eliminator.feedItems(iter, m_items.end(), usesMSize);
 				bool shouldReplace = false;
@@ -495,8 +496,7 @@ map<u256, u256> Assembly::optimiseInternal(
 			_settings.isCreation,
 			_settings.isCreation ? 1 : _settings.expectedExecutionsPerDeployment,
 			_settings.evmVersion,
-			*this,
-			m_items
+			*this
 		);
 
 	return tagReplacements;

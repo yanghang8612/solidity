@@ -22,23 +22,28 @@
 
 #include <libyul/optimiser/NameCollector.h>
 #include <libyul/optimiser/Semantics.h>
-#include <libyul/optimiser/Utilities.h>
+#include <libyul/optimiser/OptimizerUtilities.h>
 #include <libyul/Exceptions.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 #include <boost/algorithm/cxx11/none_of.hpp>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
-UnusedPruner::UnusedPruner(Block& _ast, set<YulString> const& _externallyUsedFunctions)
+UnusedPruner::UnusedPruner(Dialect const& _dialect, Block& _ast, set<YulString> const& _externallyUsedFunctions):
+	m_dialect(_dialect)
 {
-	ReferencesCounter counter;
-	counter(_ast);
+	m_references = ReferencesCounter::countReferences(_ast);
+	for (auto const& f: _externallyUsedFunctions)
+		++m_references[f];
+}
 
-	m_references = counter.references();
+UnusedPruner::UnusedPruner(Dialect const& _dialect, FunctionDefinition& _function, set<YulString> const& _externallyUsedFunctions):
+	m_dialect(_dialect)
+{
+	m_references = ReferencesCounter::countReferences(_function);
 	for (auto const& f: _externallyUsedFunctions)
 		++m_references[f];
 }
@@ -70,7 +75,7 @@ void UnusedPruner::operator()(Block& _block)
 			{
 				if (!varDecl.value)
 					statement = Block{std::move(varDecl.location), {}};
-				else if (MovableChecker(*varDecl.value).movable())
+				else if (MovableChecker(m_dialect, *varDecl.value).movable())
 				{
 					subtractReferences(ReferencesCounter::countReferences(*varDecl.value));
 					statement = Block{std::move(varDecl.location), {}};
@@ -88,7 +93,7 @@ void UnusedPruner::operator()(Block& _block)
 		else if (statement.type() == typeid(ExpressionStatement))
 		{
 			ExpressionStatement& exprStmt = boost::get<ExpressionStatement>(statement);
-			if (MovableChecker(exprStmt.expression).movable())
+			if (MovableChecker(m_dialect, exprStmt.expression).movable())
 			{
 				// pop(x) should be movable!
 				subtractReferences(ReferencesCounter::countReferences(exprStmt.expression));
@@ -101,12 +106,31 @@ void UnusedPruner::operator()(Block& _block)
 	ASTModifier::operator()(_block);
 }
 
-void UnusedPruner::runUntilStabilised(Block& _ast, set<YulString> const& _externallyUsedFunctions)
+void UnusedPruner::runUntilStabilised(
+	Dialect const& _dialect,
+	Block& _ast,
+	set<YulString> const& _externallyUsedFunctions
+)
 {
 	while (true)
 	{
-		UnusedPruner pruner(_ast, _externallyUsedFunctions);
+		UnusedPruner pruner(_dialect, _ast, _externallyUsedFunctions);
 		pruner(_ast);
+		if (!pruner.shouldRunAgain())
+			return;
+	}
+}
+
+void UnusedPruner::runUntilStabilised(
+	Dialect const& _dialect,
+	FunctionDefinition& _function,
+	set<YulString> const& _externallyUsedFunctions
+)
+{
+	while (true)
+	{
+		UnusedPruner pruner(_dialect, _function, _externallyUsedFunctions);
+		pruner(_function);
 		if (!pruner.shouldRunAgain())
 			return;
 	}

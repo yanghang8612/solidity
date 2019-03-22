@@ -22,8 +22,7 @@
 #include <libyul/optimiser/RedundantAssignEliminator.h>
 
 #include <libyul/optimiser/Semantics.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 #include <libdevcore/CommonData.h>
 
@@ -31,7 +30,7 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 using namespace dev::solidity;
 
 void RedundantAssignEliminator::operator()(Identifier const& _identifier)
@@ -151,9 +150,9 @@ void RedundantAssignEliminator::operator()(Block const& _block)
 	ASTWalker::operator()(_block);
 }
 
-void RedundantAssignEliminator::run(Block& _ast)
+void RedundantAssignEliminator::run(Dialect const& _dialect, Block& _ast)
 {
-	RedundantAssignEliminator rae;
+	RedundantAssignEliminator rae{_dialect};
 	rae(_ast);
 
 	AssignmentRemover remover{rae.m_assignmentsToRemove};
@@ -212,7 +211,7 @@ void RedundantAssignEliminator::finalize(YulString _variable)
 	for (auto& assignment: m_assignments[_variable])
 	{
 		assertThrow(assignment.second != State::Undecided, OptimizerException, "");
-		if (assignment.second == State{State::Unused} && MovableChecker{*assignment.first->value}.movable())
+		if (assignment.second == State{State::Unused} && MovableChecker{*m_dialect, *assignment.first->value}.movable())
 			// TODO the only point where we actually need this
 			// to be a set is for the for loop
 			m_assignmentsToRemove.insert(assignment.first);

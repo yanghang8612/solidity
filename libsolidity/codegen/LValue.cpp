@@ -21,13 +21,15 @@
  */
 
 #include <libsolidity/codegen/LValue.h>
-#include <libevmasm/Instruction.h>
-#include <libsolidity/ast/Types.h>
+
 #include <libsolidity/ast/AST.h>
+#include <libsolidity/ast/Types.h>
 #include <libsolidity/codegen/CompilerUtils.h>
+#include <libevmasm/Instruction.h>
 
 using namespace std;
 using namespace dev;
+using namespace langutil;
 using namespace solidity;
 
 

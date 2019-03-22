@@ -18,12 +18,12 @@
 #pragma once
 
 #include <libevmasm/Instruction.h>
-#include <libevmasm/SourceLocation.h>
+#include <liblangutil/SourceLocation.h>
 #include <libevmasm/AssemblyItem.h>
 #include <libevmasm/LinkerObject.h>
 #include <libevmasm/Exceptions.h>
 
-#include <libsolidity/interface/EVMVersion.h>
+#include <liblangutil/EVMVersion.h>
 
 #include <libdevcore/Common.h>
 #include <libdevcore/Assertions.h>
@@ -45,8 +45,6 @@ using AssemblyPointer = std::shared_ptr<Assembly>;
 class Assembly
 {
 public:
-	Assembly() {}
-
 	AssemblyItem newTag() { assertThrow(m_usedTags < 0xffffffff, AssemblyException, ""); return AssemblyItem(Tag, m_usedTags++); }
 	AssemblyItem newPushTag() { assertThrow(m_usedTags < 0xffffffff, AssemblyException, ""); return AssemblyItem(PushTag, m_usedTags++); }
 	/// Returns a tag identified by the given name. Creates it if it does not yet exist.
@@ -88,12 +86,15 @@ public:
 	/// Returns the assembly items.
 	AssemblyItems const& items() const { return m_items; }
 
+	/// Returns the mutable assembly items. Use with care!
+	AssemblyItems& items() { return m_items; }
+
 	int deposit() const { return m_deposit; }
 	void adjustDeposit(int _adjustment) { m_deposit += _adjustment; assertThrow(m_deposit >= 0, InvalidDeposit, ""); }
 	void setDeposit(int _deposit) { m_deposit = _deposit; assertThrow(m_deposit >= 0, InvalidDeposit, ""); }
 
 	/// Changes the source location used for each appended item.
-	void setSourceLocation(SourceLocation const& _location) { m_currentSourceLocation = _location; }
+	void setSourceLocation(langutil::SourceLocation const& _location) { m_currentSourceLocation = _location; }
 
 	/// Assembles the assembly into bytecode. The assembly should not be modified after this call, since the assembled version is cached.
 	LinkerObject const& assemble() const;
@@ -178,7 +179,7 @@ protected:
 
 	int m_deposit = 0;
 
-	SourceLocation m_currentSourceLocation;
+	langutil::SourceLocation m_currentSourceLocation;
 };
 
 inline std::ostream& operator<<(std::ostream& _out, Assembly const& _a)

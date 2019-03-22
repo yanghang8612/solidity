@@ -21,13 +21,12 @@
  */
 
 #include <libsolidity/ast/AST.h>
+
 #include <libsolidity/ast/ASTVisitor.h>
 #include <libsolidity/ast/AST_accept.h>
-
 #include <libdevcore/Keccak256.h>
 
 #include <boost/algorithm/string.hpp>
-
 #include <algorithm>
 #include <functional>
 
@@ -139,6 +138,11 @@ bool ContractDefinition::constructorIsPublic() const
 	return !f || f->isPublic();
 }
 
+bool ContractDefinition::canBeDeployed() const
+{
+	return constructorIsPublic() && annotation().unimplementedFunctions.empty();
+}
+
 FunctionDefinition const* ContractDefinition::fallbackFunction() const
 {
 	for (ContractDefinition const* contract: annotation().linearizedBaseContracts)
@@ -198,7 +202,7 @@ vector<pair<FixedHash<4>, FunctionTypePointer>> const& ContractDefinition::inter
 				{
 					signaturesSeen.insert(functionSignature);
 					FixedHash<4> hash(dev::keccak256(functionSignature));
-					m_interfaceFunctionList->push_back(make_pair(hash, fun));
+					m_interfaceFunctionList->emplace_back(hash, fun);
 				}
 			}
 		}

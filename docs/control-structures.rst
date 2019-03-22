@@ -2,74 +2,8 @@
 Expressions and Control Structures
 ##################################
 
-.. index:: ! parameter, parameter;input, parameter;output, parameter;multiple
+.. index:: ! parameter, parameter;input, parameter;output, function parameter, parameter;function, return variable, variable;return, return
 
-Input Parameters and Output Parameters
-======================================
-
-As in Javascript, functions may take parameters as input;
-unlike in Javascript and C, they may also return arbitrary number of
-parameters as output.
-
-Input Parameters
-----------------
-
-The input parameters are declared the same way as variables are.
-The name of unused parameters can be omitted.
-For example, suppose we want our contract to
-accept one kind of external calls with two integers, we would write
-something like::
-
-    pragma solidity >=0.4.16 <0.6.0;
-
-    contract Simple {
-        uint sum;
-        function taker(uint _a, uint _b) public {
-            sum = _a + _b;
-        }
-    }
-
-Input parameters can be used just as any other local variable
-can be used, they can also be assigned to.
-
-.. index:: return array, return string, array, string, array of strings, dynamic array, variably sized array, return struct, struct
-
-Output Parameters
------------------
-
-The output parameters can be declared with the same syntax after the
-``returns`` keyword. For example, suppose we wished to return two results:
-the sum and the product of the two given integers, then we would
-write::
-
-    pragma solidity >=0.4.16 <0.6.0;
-
-    contract Simple {
-        function arithmetic(uint _a, uint _b)
-            public
-            pure
-            returns (uint o_sum, uint o_product)
-        {
-            o_sum = _a + _b;
-            o_product = _a * _b;
-        }
-    }
-
-The names of output parameters can be omitted.
-The return values can be specified using ``return`` statements,
-which are also capable of :ref:`returning multiple values<multi-return>`.
-Return parameters can be used as any other local variable and they
-are zero-initialized; if they are not explicitly
-set, they stay zero.
-
-
-.. note::
-    You cannot return some types from non-internal functions, notably
-    multi-dimensional dynamic arrays and structs. If you enable the
-    new experimental ``ABIEncoderV2`` feature by adding ``pragma experimental
-    ABIEncoderV2;`` to your source file then more types are available, but
-    ``mapping`` types are still limited to inside a single contract and you
-    cannot transfer them.
 
 .. index:: if, else, while, do/while, for, break, continue, return, switch, goto
 
@@ -88,21 +22,14 @@ Note that there is no type conversion from non-boolean to boolean types as
 there is in C and JavaScript, so ``if (1) { ... }`` is *not* valid
 Solidity.
 
-.. _multi-return:
-
-Returning Multiple Values
--------------------------
-
-When a function has multiple output parameters, ``return (v0, v1, ...,
-vn)`` can return multiple values.  The number of components must be
-the same as the number of output parameters.
-
 .. index:: ! function;call, function;internal, function;external
 
 .. _function-calls:
 
 Function Calls
 ==============
+
+.. _internal-function-calls:
 
 Internal Function Calls
 -----------------------
@@ -124,6 +51,8 @@ contract can be called internally.
 
 You should still avoid excessive recursion, as every internal function call
 uses up at least one stack slot and there are at most 1024 slots available.
+
+.. _external-function-calls:
 
 External Function Calls
 -----------------------
@@ -239,7 +168,7 @@ is compiled so recursive creation-dependencies are not possible.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract D {
         uint public x;
@@ -335,6 +264,31 @@ Complications for Arrays and Structs
 The semantics of assignments are a bit more complicated for non-value types like arrays and structs.
 Assigning *to* a state variable always creates an independent copy. On the other hand, assigning to a local variable creates an independent copy only for elementary types, i.e. static types that fit into 32 bytes. If structs or arrays (including ``bytes`` and ``string``) are assigned from a state variable to a local variable, the local variable holds a reference to the original state variable. A second assignment to the local variable does not modify the state but only changes the reference. Assignments to members (or elements) of the local variable *do* change the state.
 
+In the example below the call to ``g(x)`` has no effect on ``x`` because it creates
+an independent copy of the storage value in memory. However, ``h(x)`` successfully modifies ``x``
+because only a reference and not a copy is passed.
+
+::
+
+    pragma solidity >=0.4.16 <0.6.0;
+
+     contract C {
+        uint[20] x;
+
+         function f() public {
+            g(x);
+            h(x);
+        }
+
+         function g(uint[20] memory y) internal pure {
+            y[2] = 3;
+        }
+
+         function h(uint[20] storage y) internal {
+            y[3] = 4;
+        }
+    }
+
 .. index:: ! scoping, declarations, default value
 
 .. _default-value:
@@ -362,7 +316,7 @@ the two variables have the same name but disjoint scopes.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
     contract C {
         function minimalScoping() pure public {
             {
@@ -383,7 +337,7 @@ In any case, you will get a warning about the outer variable being shadowed.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
     // This will report a warning
     contract C {
         function f() pure public returns (uint) {
@@ -403,7 +357,7 @@ In any case, you will get a warning about the outer variable being shadowed.
 
  ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
     // This will not compile
     contract C {
         function f() pure public returns (uint) {
@@ -450,7 +404,7 @@ a message string for ``require``, but not for ``assert``.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract Sharer {
         function sendHalf(address payable addr) public payable returns (uint balance) {
@@ -496,7 +450,7 @@ The following example shows how an error string can be used together with revert
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract VendingMachine {
         function buy(uint amount) public payable {

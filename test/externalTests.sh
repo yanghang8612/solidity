@@ -55,14 +55,17 @@ function test_truffle
       cd "$DIR"
       echo "Current commit hash: `git rev-parse HEAD`"
       npm install
-      # Replace solc package by master
+      # Replace solc package by v0.5.0
       for d in node_modules node_modules/truffle/node_modules
       do
       (
-        cd $d
-        rm -rf solc
-        git clone --depth 1 https://github.com/ethereum/solc-js.git solc
-        cp "$SOLJSON" solc/
+        if [ -d "$d" ]
+        then
+          cd $d
+          rm -rf solc
+          git clone --depth 1 -b v0.5.0 https://github.com/ethereum/solc-js.git solc
+          cp "$SOLJSON" solc/
+        fi
       )
       done
       if [ "$name" == "Zeppelin" -o "$name" == "Gnosis" ]; then
@@ -79,13 +82,16 @@ function test_truffle
       fi
       # Change "compileStandard" to "compile"
       sed -i s/solc.compileStandard/solc.compile/ "node_modules/truffle/build/cli.bundled.js"
+      npx truffle compile
       npm run test
     )
     rm -rf "$DIR"
 }
 
-# Using our temporary fork here. Hopefully to be merged into upstream after the 0.5.0 release.
-test_truffle Zeppelin https://github.com/axic/openzeppelin-solidity.git solidity-050
+# Since Zeppelin 2.1.1 it supports Solidity 0.5.0.
+test_truffle Zeppelin https://github.com/OpenZeppelin/openzeppelin-solidity.git master
 
 # Disabled temporarily as it needs to be updated to latest Truffle first.
 #test_truffle Gnosis https://github.com/axic/pm-contracts.git solidity-050
+
+test_truffle GnosisSafe https://github.com/gnosis/safe-contracts.git development

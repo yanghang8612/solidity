@@ -21,16 +21,14 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
-
+#include <libyul/AsmDataForward.h>
 #include <libyul/optimiser/ASTWalker.h>
 
 #include <map>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
  * Optimiser component that removes assignments to variables that are not used
@@ -101,6 +99,7 @@ namespace yul
 class RedundantAssignEliminator: public ASTWalker
 {
 public:
+	explicit RedundantAssignEliminator(Dialect const& _dialect): m_dialect(&_dialect) {}
 	RedundantAssignEliminator(RedundantAssignEliminator const&) = default;
 	RedundantAssignEliminator& operator=(RedundantAssignEliminator const&) = default;
 	RedundantAssignEliminator(RedundantAssignEliminator&&) = default;
@@ -115,10 +114,10 @@ public:
 	void operator()(ForLoop const&) override;
 	void operator()(Block const& _block) override;
 
-	static void run(Block& _ast);
+	static void run(Dialect const& _dialect, Block& _ast);
 
 private:
-	RedundantAssignEliminator() {}
+	RedundantAssignEliminator() = default;
 
 	class State
 	{
@@ -170,6 +169,7 @@ private:
 	void changeUndecidedTo(YulString _variable, State _newState);
 	void finalize(YulString _variable);
 
+	Dialect const* m_dialect;
 	std::set<YulString> m_declaredVariables;
 	// TODO check that this does not cause nondeterminism!
 	// This could also be a pseudo-map from state to assignment.
@@ -189,5 +189,4 @@ private:
 	std::set<Assignment const*> const& m_toRemove;
 };
 
-}
 }

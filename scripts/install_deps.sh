@@ -55,7 +55,7 @@ detect_linux_distro() {
         DISTRO=$(lsb_release -is)
     elif [ -f /etc/os-release ]; then
         # extract 'foo' from NAME=foo, only on the line with NAME=foo
-        DISTRO=$(sed -n -e 's/^NAME="\(.*\)\"/\1/p' /etc/os-release)
+        DISTRO=$(sed -n -e 's/^NAME="\?\([^"]*\)"\?$/\1/p' /etc/os-release)
     elif [ -f /etc/centos-release ]; then
         DISTRO=CentOS
     else
@@ -163,7 +163,7 @@ case $(uname -s) in
                 # See https://pkgs.alpinelinux.org/
 
                 apk update
-                apk add boost-dev build-base cmake git
+                apk add boost-dev boost-static build-base cmake git
 
                 ;;
 
@@ -353,7 +353,7 @@ case $(uname -s) in
 # CentOS needs some more testing. This is the general idea of packages
 # needed, but some tweaking/improvements can definitely happen
 #------------------------------------------------------------------------------
-            CentOS)
+            CentOS*)
                 read -p "This script will heavily modify your system in order to allow for compilation of Solidity. Are you sure? [Y/N]" -n 1 -r
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                     # Make Sure we have the EPEL repos

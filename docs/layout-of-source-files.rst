@@ -37,12 +37,12 @@ breaking changes, those releases will always have versions of the form
 
 The version pragma is used as follows::
 
-  pragma solidity ^0.4.0;
+  pragma solidity ^0.5.2;
 
-Such a source file will not compile with a compiler earlier than version 0.4.0
-and it will also not work on a compiler starting from version 0.5.0 (this
+Such a source file will not compile with a compiler earlier than version 0.5.2
+and it will also not work on a compiler starting from version 0.6.0 (this
 second condition is added by using ``^``). The idea behind this is that
-there will be no breaking changes until version ``0.5.0``, so we can always
+there will be no breaking changes until version ``0.6.0``, so we can always
 be sure that our code will compile the way we intended it to. We do not fix
 the exact version of the compiler, so that bugfix releases are still possible.
 
@@ -267,7 +267,7 @@ Single-line comments (``//``) and multi-line comments (``/*...*/``) are possible
   (these are NEL, LS and PS), it will lead to a parser error.
 
 Additionally, there is another type of comment called a natspec comment,
-for which the documentation is not yet written. They are written with a
+which is detailed in the :ref:`style guide<natspec>`. They are written with a
 triple slash (``///``) or a double asterisk block(``/** ... */``) and
 they should be used directly above function declarations or statements.
 You can use `Doxygen <https://en.wikipedia.org/wiki/Doxygen>`_-style tags inside these comments to document
@@ -276,7 +276,7 @@ functions, annotate conditions for formal verification, and provide a
 function.
 
 In the following example we document the title of the contract, the explanation
-for the two input parameters and two returned values.
+for the two function parameters and two return variables.
 
 ::
 

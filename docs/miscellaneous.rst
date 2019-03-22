@@ -8,12 +8,16 @@ Miscellaneous
 Layout of State Variables in Storage
 ************************************
 
-Statically-sized variables (everything except mapping and dynamically-sized array types) are laid out contiguously in storage starting from position ``0``. Multiple items that need less than 32 bytes are packed into a single storage slot if possible, according to the following rules:
+Statically-sized variables (everything except mapping and dynamically-sized array types) are laid out contiguously in storage starting from position ``0``. Multiple, contiguous items that need less than 32 bytes are packed into a single storage slot if possible, according to the following rules:
 
 - The first item in a storage slot is stored lower-order aligned.
 - Elementary types use only that many bytes that are necessary to store them.
 - If an elementary type does not fit the remaining part of a storage slot, it is moved to the next storage slot.
 - Structs and array data always start a new slot and occupy whole slots (but items inside a struct or array are packed tightly according to these rules).
+
+For contracts that use inheritance, the ordering of state variables is determined by the
+C3-linearized order of contracts starting with the most base-ward contract. If allowed
+by the above rules, state variables from different contracts do share the same storage slot.
 
 .. warning::
     When using elements that are smaller than 32 bytes, your contract's gas usage may be higher.
@@ -220,9 +224,9 @@ for displaying the current position in the source code inside a debugger
 or for breakpoint handling.
 
 Both kinds of source mappings use integer identifiers to refer to source files.
-These are regular array indices into a list of source files usually called
-``"sourceList"``, which is part of the combined-json and the output of
-the json / npm compiler.
+The identifier of a source file is stored in
+``output['sources'][sourceName]['id']`` where ``output`` is the output of the
+standard-json compiler interface parsed as JSON.
 
 .. note ::
     In the case of instructions that are not associated with any particular source file,
@@ -347,7 +351,7 @@ Global Variables
 
 - ``abi.decode(bytes memory encodedData, (...)) returns (...)``: :ref:`ABI <ABI>`-decodes the provided data. The types are given in parentheses as second argument. Example: ``(uint a, uint[2] memory b, bytes memory c) = abi.decode(data, (uint, uint[2], bytes))``
 - ``abi.encode(...) returns (bytes memory)``: :ref:`ABI <ABI>`-encodes the given arguments
-- ``abi.encodePacked(...) returns (bytes memory)``: Performs :ref:`packed encoding <abi_packed_mode>` of the given arguments
+- ``abi.encodePacked(...) returns (bytes memory)``: Performs :ref:`packed encoding <abi_packed_mode>` of the given arguments. Note that this encoding can be ambiguous!
 - ``abi.encodeWithSelector(bytes4 selector, ...) returns (bytes memory)``: :ref:`ABI <ABI>`-encodes the given arguments
    starting from the second and prepends the given four-byte selector
 - ``abi.encodeWithSignature(string memory signature, ...) returns (bytes memory)``: Equivalent to ``abi.encodeWithSelector(bytes4(keccak256(bytes(signature)), ...)```
@@ -378,9 +382,11 @@ Global Variables
 - ``this`` (current contract's type): the current contract, explicitly convertible to ``address`` or ``address payable``
 - ``super``: the contract one level higher in the inheritance hierarchy
 - ``selfdestruct(address payable recipient)``: destroy the current contract, sending its funds to the given address
-- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in sun
-- ``<address payable>.send(uint256 amount) returns (bool)``: send given amount of sun to :ref:`address`, returns ``false`` on failure
-- ``<address payable>.transfer(uint256 amount)``: send given amount of sun to :ref:`address`, throws on failure
+- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Wei
+- ``<address payable>.send(uint256 amount) returns (bool)``: send given amount of Wei to :ref:`address`, returns ``false`` on failure
+- ``<address payable>.transfer(uint256 amount)``: send given amount of Wei to :ref:`address`, throws on failure
+- ``type(C).creationCode`` (``bytes memory``): creation bytecode of the given contract, see :ref:`Type Information<meta-type>`.
+- ``type(C).runtimeCode`` (``bytes memory``): runtime bytecode of the given contract, see :ref:`Type Information<meta-type>`.
 
 .. note::
     Do not rely on ``block.timestamp``, ``now`` and ``blockhash`` as a source of randomness,
@@ -441,7 +447,7 @@ These keywords are reserved in Solidity. They might become part of the syntax in
 ``abstract``, ``after``, ``alias``, ``apply``, ``auto``, ``case``, ``catch``, ``copyof``, ``default``,
 ``define``, ``final``, ``immutable``, ``implements``, ``in``, ``inline``, ``let``, ``macro``, ``match``,
 ``mutable``, ``null``, ``of``, ``override``, ``partial``, ``promise``, ``reference``, ``relocatable``,
-``sealed``, ``sizeof``, ``static``, ``supports``, ``switch``, ``try``, ``type``, ``typedef``, ``typeof``,
+``sealed``, ``sizeof``, ``static``, ``supports``, ``switch``, ``try``, ``typedef``, ``typeof``,
 ``unchecked``.
 
 Language Grammar

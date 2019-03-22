@@ -26,10 +26,9 @@
 #include <map>
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
  * Optimisation stage that removes unused variables and functions and also
@@ -42,24 +41,45 @@ namespace yul
 class UnusedPruner: public ASTModifier
 {
 public:
-	explicit UnusedPruner(Block& _ast, std::set<YulString> const& _externallyUsedFunctions = {});
+	UnusedPruner(
+		Dialect const& _dialect,
+		Block& _ast,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+	UnusedPruner(
+		Dialect const& _dialect,
+		FunctionDefinition& _function,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
 
 	using ASTModifier::operator();
-	virtual void operator()(Block& _block) override;
+	void operator()(Block& _block) override;
 
 	// @returns true iff the code changed in the previous run.
 	bool shouldRunAgain() const { return m_shouldRunAgain; }
 
 	// Run the pruner until the code does not change anymore.
-	static void runUntilStabilised(Block& _ast, std::set<YulString> const& _externallyUsedFunctions = {});
+	static void runUntilStabilised(
+		Dialect const& _dialect,
+		Block& _ast,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+
+	// Run the pruner until the code does not change anymore.
+	// Only run on the given function.
+	static void runUntilStabilised(
+		Dialect const& _dialect,
+		FunctionDefinition& _functionDefinition,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
 
 private:
 	bool used(YulString _name) const;
 	void subtractReferences(std::map<YulString, size_t> const& _subtrahend);
 
+	Dialect const& m_dialect;
 	bool m_shouldRunAgain = false;
 	std::map<YulString, size_t> m_references;
 };
 
-}
 }

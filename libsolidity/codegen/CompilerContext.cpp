@@ -21,18 +21,22 @@
  */
 
 #include <libsolidity/codegen/CompilerContext.h>
-#include <libsolidity/codegen/CompilerUtils.h>
+
 #include <libsolidity/ast/AST.h>
+#include <libsolidity/codegen/AsmCodeGen.h>
 #include <libsolidity/codegen/Compiler.h>
+#include <libsolidity/codegen/CompilerUtils.h>
 #include <libsolidity/interface/Version.h>
-#include <libsolidity/interface/ErrorReporter.h>
-#include <libsolidity/interface/SourceReferenceFormatter.h>
-#include <libsolidity/parsing/Scanner.h>
-#include <libsolidity/inlineasm/AsmParser.h>
-#include <libsolidity/inlineasm/AsmCodeGen.h>
-#include <libsolidity/inlineasm/AsmAnalysis.h>
-#include <libsolidity/inlineasm/AsmAnalysisInfo.h>
+
+#include <libyul/AsmParser.h>
+#include <libyul/AsmAnalysis.h>
+#include <libyul/AsmAnalysisInfo.h>
+#include <libyul/backends/evm/EVMDialect.h>
 #include <libyul/YulString.h>
+
+#include <liblangutil/ErrorReporter.h>
+#include <liblangutil/Scanner.h>
+#include <liblangutil/SourceReferenceFormatter.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -42,11 +46,12 @@
 // Change to "define" to output all intermediate code
 #undef SOL_OUTPUT_ASM
 #ifdef SOL_OUTPUT_ASM
-#include <libsolidity/inlineasm/AsmPrinter.h>
+#include <libyul/AsmPrinter.h>
 #endif
 
 
 using namespace std;
+using namespace langutil;
 
 namespace dev
 {
@@ -162,11 +167,18 @@ unsigned CompilerContext::numberOfLocalVariables() const
 	return m_localVariables.size();
 }
 
-eth::Assembly const& CompilerContext::compiledContract(const ContractDefinition& _contract) const
+shared_ptr<eth::Assembly> CompilerContext::compiledContract(ContractDefinition const& _contract) const
 {
-	auto ret = m_compiledContracts.find(&_contract);
-	solAssert(ret != m_compiledContracts.end(), "Compiled contract not found.");
-	return *ret->second;
+	auto ret = m_otherCompilers.find(&_contract);
+	solAssert(ret != m_otherCompilers.end(), "Compiled contract not found.");
+	return ret->second->assemblyPtr();
+}
+
+shared_ptr<eth::Assembly> CompilerContext::compiledContractRuntime(ContractDefinition const& _contract) const
+{
+	auto ret = m_otherCompilers.find(&_contract);
+	solAssert(ret != m_otherCompilers.end(), "Compiled contract not found.");
+	return ret->second->runtimeAssemblyPtr();
 }
 
 bool CompilerContext::isLocalVariable(Declaration const* _declaration) const
@@ -322,16 +334,18 @@ void CompilerContext::appendInlineAssembly(
 
 	yul::ExternalIdentifierAccess identifierAccess;
 	identifierAccess.resolve = [&](
-		assembly::Identifier const& _identifier,
+		yul::Identifier const& _identifier,
 		yul::IdentifierContext,
-		bool
-	)
+		bool _insideFunction
+	) -> size_t
 	{
+		if (_insideFunction)
+			return size_t(-1);
 		auto it = std::find(_localVariables.begin(), _localVariables.end(), _identifier.name.str());
 		return it == _localVariables.end() ? size_t(-1) : 1;
 	};
 	identifierAccess.generateCode = [&](
-		assembly::Identifier const& _identifier,
+		yul::Identifier const& _identifier,
 		yul::IdentifierContext _context,
 		yul::AbstractAssembly& _assembly
 	)
@@ -359,20 +373,20 @@ void CompilerContext::appendInlineAssembly(
 
 	ErrorList errors;
 	ErrorReporter errorReporter(errors);
-	auto scanner = make_shared<Scanner>(CharStream(_assembly), "--CODEGEN--");
-	auto parserResult = assembly::Parser(errorReporter, assembly::AsmFlavour::Strict).parse(scanner, false);
+	auto scanner = make_shared<langutil::Scanner>(langutil::CharStream(_assembly, "--CODEGEN--"));
+	auto parserResult = yul::Parser(errorReporter, yul::EVMDialect::strictAssemblyForEVM()).parse(scanner, false);
 #ifdef SOL_OUTPUT_ASM
-	cout << assembly::AsmPrinter()(*parserResult) << endl;
+	cout << yul::AsmPrinter()(*parserResult) << endl;
 #endif
-	assembly::AsmAnalysisInfo analysisInfo;
+	yul::AsmAnalysisInfo analysisInfo;
 	bool analyzerResult = false;
 	if (parserResult)
-		analyzerResult = assembly::AsmAnalyzer(
+		analyzerResult = yul::AsmAnalyzer(
 			analysisInfo,
 			errorReporter,
 			m_evmVersion,
 			boost::none,
-			assembly::AsmFlavour::Strict,
+			yul::EVMDialect::strictAssemblyForEVM(),
 			identifierAccess.resolve
 		).analyze(*parserResult);
 	if (!parserResult || !errorReporter.errors().empty() || !analyzerResult)
@@ -385,8 +399,7 @@ void CompilerContext::appendInlineAssembly(
 		for (auto const& error: errorReporter.errors())
 			message += SourceReferenceFormatter::formatExceptionInformation(
 				*error,
-				(error->type() == Error::Type::Warning) ? "Warning" : "Error",
-				[&](string const&) -> Scanner const& { return *scanner; }
+				(error->type() == Error::Type::Warning) ? "Warning" : "Error"
 			);
 		message += "-------------------------------------------\n";
 
@@ -394,7 +407,7 @@ void CompilerContext::appendInlineAssembly(
 	}
 
 	solAssert(errorReporter.errors().empty(), "Failed to analyze inline assembly block.");
-	assembly::CodeGenerator::assemble(*parserResult, analysisInfo, *m_asm, identifierAccess, _system);
+	CodeGenerator::assemble(*parserResult, analysisInfo, *m_asm, identifierAccess, _system);
 
 	// Reset the source location to the one of the node (instead of the CODEGEN source location)
 	updateSourceLocation();
@@ -413,7 +426,7 @@ FunctionDefinition const& CompilerContext::resolveVirtualFunction(
 			if (
 				function->name() == name &&
 				!function->isConstructor() &&
-				FunctionType(*function).hasEqualParameterTypes(functionType)
+				FunctionType(*function).asCallableFunction(false)->hasEqualParameterTypes(functionType)
 			)
 				return *function;
 	solAssert(false, "Super function " + name + " not found.");

@@ -22,11 +22,12 @@
 
 #include <libevmasm/Instruction.h>
 
-#include <libsolidity/interface/Exceptions.h>
+#include <liblangutil/Exceptions.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace langutil;
+using namespace yul;
 
 namespace
 {
@@ -191,6 +192,27 @@ void EVMAssembly::appendAssemblySize()
 	appendInstruction(solidity::pushInstruction(assemblySizeReferenceSize));
 	m_assemblySizePositions.push_back(m_bytecode.size());
 	m_bytecode += bytes(assemblySizeReferenceSize);
+}
+
+pair<shared_ptr<AbstractAssembly>, AbstractAssembly::SubID> EVMAssembly::createSubAssembly()
+{
+	solAssert(false, "Sub assemblies not implemented.");
+	return {};
+}
+
+void EVMAssembly::appendDataOffset(AbstractAssembly::SubID)
+{
+	solAssert(false, "Data not implemented.");
+}
+
+void EVMAssembly::appendDataSize(AbstractAssembly::SubID)
+{
+	solAssert(false, "Data not implemented.");
+}
+
+AbstractAssembly::SubID EVMAssembly::appendData(bytes const&)
+{
+	solAssert(false, "Data not implemented.");
 }
 
 void EVMAssembly::updateReference(size_t pos, size_t size, u256 value)

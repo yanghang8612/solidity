@@ -22,17 +22,18 @@
 
 #include <string>
 
-#include <libsolidity/parsing/Scanner.h>
+#include <liblangutil/Scanner.h>
 #include <libsolidity/parsing/Parser.h>
 #include <libsolidity/analysis/NameAndTypeResolver.h>
 #include <libsolidity/codegen/CompilerContext.h>
 #include <libsolidity/codegen/ExpressionCompiler.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/analysis/TypeChecker.h>
-#include <libsolidity/interface/ErrorReporter.h>
+#include <liblangutil/ErrorReporter.h>
 #include <test/Options.h>
 
 using namespace std;
+using namespace langutil;
 
 namespace dev
 {
@@ -100,7 +101,7 @@ bytes compileFirstExpression(
 	{
 		ErrorList errors;
 		ErrorReporter errorReporter(errors);
-		sourceUnit = Parser(errorReporter).parse(make_shared<Scanner>(CharStream(_sourceCode)));
+		sourceUnit = Parser(errorReporter).parse(make_shared<Scanner>(CharStream(_sourceCode, "")));
 		if (!sourceUnit)
 			return bytes();
 	}
@@ -365,7 +366,7 @@ BOOST_AUTO_TEST_CASE(unary_operators)
 {
 	char const* sourceCode = R"(
 		contract test {
-			function f(int y) { !(~+- y == 2); }
+			function f(int y) { !(~- y == 2); }
 		}
 	)";
 	bytes code = compileFirstExpression(sourceCode, {}, {{"test", "f", "y"}});

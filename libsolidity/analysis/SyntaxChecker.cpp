@@ -16,19 +16,23 @@
 */
 
 #include <libsolidity/analysis/SyntaxChecker.h>
-#include <memory>
+
+#include <libsolidity/analysis/SemVerHandler.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/ast/ExperimentalFeatures.h>
-#include <libsolidity/analysis/SemVerHandler.h>
-#include <libsolidity/interface/ErrorReporter.h>
 #include <libsolidity/interface/Version.h>
-#include <boost/algorithm/cxx11/all_of.hpp>
 
+#include <liblangutil/ErrorReporter.h>
+
+#include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include <memory>
 #include <string>
 
 using namespace std;
 using namespace dev;
+using namespace langutil;
 using namespace dev::solidity;
 
 
@@ -110,7 +114,7 @@ bool SyntaxChecker::visit(PragmaDirective const& _pragma)
 		vector<string> literals(_pragma.literals().begin() + 1, _pragma.literals().end());
 		SemVerMatchExpressionParser parser(tokens, literals);
 		auto matchExpression = parser.parse();
-		SemVerVersion currentVersion{string(VersionString)};
+		static SemVerVersion const currentVersion{string(VersionString)};
 		if (!matchExpression.matches(currentVersion))
 			m_errorReporter.syntaxError(
 				_pragma.location(),
@@ -258,7 +262,7 @@ bool SyntaxChecker::visit(PlaceholderStatement const&)
 
 bool SyntaxChecker::visit(ContractDefinition const& _contract)
 {
-	m_isInterface = _contract.contractKind() == ContractDefinition::ContractKind::Interface;
+	m_isInterface = _contract.isInterface();
 
 	ASTString const& contractName = _contract.name();
 	for (FunctionDefinition const* function: _contract.definedFunctions())

@@ -21,10 +21,8 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
+#include <libyul/AsmDataForward.h>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -40,7 +38,9 @@ class FunctionGrouper
 {
 public:
 	void operator()(Block& _block);
+
+private:
+	bool alreadyGrouped(Block const& _block);
 };
 
-}
 }

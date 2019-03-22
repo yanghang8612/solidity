@@ -41,7 +41,7 @@ source code (e.g. `pragma once <https://en.wikipedia.org/wiki/Pragma_once>`_).
 A contract in the sense of Solidity is a collection of code (its *functions*) and
 data (its *state*) that resides at a specific address on the Ethereum
 blockchain. The line ``uint storedData;`` declares a state variable called ``storedData`` of
-type ``uint`` (*u*nsigned *int*eger of *256* bits). You can think of it as a single slot
+type ``uint`` (*u*\nsigned *int*\eger of *256* bits). You can think of it as a single slot
 in a database that can be queried and altered by calling functions of the
 code that manages the database. In the case of Ethereum, this is always the owning
 contract. And in this case, the functions ``set`` and ``get`` can be used to modify
@@ -81,7 +81,7 @@ registering with username and password — all you need is an Ethereum keypair.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract Coin {
         // The keyword "public" makes those variables
@@ -400,7 +400,7 @@ within a word). At the time of expansion, the cost in gas must be paid. Memory i
 costly the larger it grows (it scales quadratically).
 
 The EVM is not a register machine but a stack machine, so all
-computations are performed on an data area called the **stack**. It has a maximum size of
+computations are performed on a data area called the **stack**. It has a maximum size of
 1024 elements and contains words of 256 bits. Access to the stack is
 limited to the top end in the following way:
 It is possible to copy one of

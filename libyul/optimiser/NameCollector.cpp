@@ -20,11 +20,11 @@
 
 #include <libyul/optimiser/NameCollector.h>
 
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
 void NameCollector::operator()(VariableDeclaration const& _varDecl)
 {
@@ -57,6 +57,13 @@ map<YulString, size_t> ReferencesCounter::countReferences(Block const& _block)
 {
 	ReferencesCounter counter;
 	counter(_block);
+	return counter.references();
+}
+
+map<YulString, size_t> ReferencesCounter::countReferences(FunctionDefinition const& _function)
+{
+	ReferencesCounter counter;
+	counter(_function);
 	return counter.references();
 }
 
