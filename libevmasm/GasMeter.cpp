@@ -186,7 +186,6 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			else
 				gas += GasCosts::expByteGas(m_evmVersion) * 32;
 			break;
-		// TODO use same gas as Balance ?
 		case Instruction::BALANCE:
 		case Instruction::TOKENBALANCE:
 			gas = GasCosts::balanceGas(m_evmVersion);

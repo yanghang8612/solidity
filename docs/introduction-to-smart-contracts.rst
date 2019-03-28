@@ -323,7 +323,7 @@ Every account has a persistent key-value store mapping 256-bit words to 256-bit
 words called **storage**.
 
 Furthermore, every account has a **balance** in
-Trx (in "sun" to be exact, `1 ether` is `10**18 wei`) which can be modified by sending transactions that
+Trx (in "Sun" to be exact, `1 Trx` is `10**6 Sun`) which can be modified by sending transactions that
 include Trx.
 
 .. index:: ! transaction

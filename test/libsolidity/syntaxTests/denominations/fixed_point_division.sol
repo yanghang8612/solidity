@@ -1,5 +1,5 @@
 contract C {
-	uint constant a = 4 trx / 3 hours;
+	uint constant a = 4 ether / 3 hours;
 	ufixed constant b = ufixed(4 trx / 3 hours);
 }
 // ----

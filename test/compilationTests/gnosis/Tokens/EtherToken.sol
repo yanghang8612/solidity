@@ -18,7 +18,7 @@ contract EtherToken is StandardToken {
      */
     string public constant name = "Trx Token";
     string public constant symbol = "Trx";
-    uint8 public constant decimals = 18;
+    uint8 public constant decimals = 6;
 
     /*
      *  Public functions
