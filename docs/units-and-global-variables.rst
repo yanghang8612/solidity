@@ -12,7 +12,7 @@ A literal number can take a suffix of ``sun`` or ``trx`` to convert between the 
 ::
 
     assert(1 sun == 1);
-    assert(1 ether == 1e6);
+    assert(1 trx == 1e6);
 
 The only effect of the subdenomination suffix is a multiplication by a power of ten.
 
