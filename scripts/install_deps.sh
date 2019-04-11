@@ -357,9 +357,10 @@ case $(uname -s) in
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                     # Make Sure we have the EPEL repos
                     sudo yum -y install epel-release
+                    sudo yum -y install centos-release-scl
 #                    # Get g++ 4.8
                     sudo rpm --import http://linuxsoft.cern.ch/cern/slc6X/i386/RPM-GPG-KEY-cern
-#                    wget -O /etc/yum.repos.d/slc6-devtoolset.repo http://linuxsoft.cern.ch/cern/devtoolset/slc6-devtoolset.repo
+                    wget -O /etc/yum.repos.d/slc6-devtoolset.repo http://linuxsoft.cern.ch/cern/devtoolset/slc6-devtoolset.repo
                     sudo yum -y install devtoolset-8-gcc-c++
                     scl enable devtoolset-8 bash
 

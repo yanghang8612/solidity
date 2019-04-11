@@ -1,4 +1,4 @@
-FROM centos AS build
+FROM centos:7 AS build
 MAINTAINER ashu <ashu@tronnetwork.org>
 #Official solidity docker image
 
@@ -7,7 +7,7 @@ WORKDIR /solidity
 
 # Build dependencies
 ADD /scripts/install_deps.sh /solidity/scripts/install_deps.sh
-# RUN ./scripts/install_deps.sh
+RUN yum -y update
 RUN yum install -y sudo
 RUN yum install -y wget
 RUN yum install -y git
