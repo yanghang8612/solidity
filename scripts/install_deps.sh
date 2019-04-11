@@ -357,27 +357,44 @@ case $(uname -s) in
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                     # Make Sure we have the EPEL repos
                     sudo yum -y install epel-release
-                    # Get g++ 4.8
+#                    # Get g++ 4.8
                     sudo rpm --import http://linuxsoft.cern.ch/cern/slc6X/i386/RPM-GPG-KEY-cern
-                    wget -O /etc/yum.repos.d/slc6-devtoolset.repo http://linuxsoft.cern.ch/cern/devtoolset/slc6-devtoolset.repo
-                    sudo yum -y install devtoolset-2-gcc devtoolset-2-gcc-c++ devtoolset-2-binutils
+#                    wget -O /etc/yum.repos.d/slc6-devtoolset.repo http://linuxsoft.cern.ch/cern/devtoolset/slc6-devtoolset.repo
+                    sudo yum -y install devtoolset-8-gcc-c++
+                    scl enable devtoolset-8 bash
 
-                    # Enable the devtoolset2 usage so global gcc/g++ become the 4.8 one.
-                    # As per https://gist.github.com/stephenturner/e3bc5cfacc2dc67eca8b, what you should do afterwards is
-                    # to add this line:
-                    # source /opt/rh/devtoolset-2/enable
-                    # to your bashrc so that this happens automatically at login
-                    scl enable devtoolset-2 bash
+#                    # Enable the devtoolset2 usage so global gcc/g++ become the 4.8 one.
+#                    # As per https://gist.github.com/stephenturner/e3bc5cfacc2dc67eca8b, what you should do afterwards is
+#                    # to add this line:
+#                    # to your bashrc so that this happens automatically at login
+#
 
-                    # Get cmake
+#                    # Get cmake
                     sudo yum -y remove cmake
                     sudo yum -y install cmake3
                     sudo ln -s /usr/bin/cmake3 /usr/bin/cmake
 
                     # Get latest boost thanks to this guy: http://vicendominguez.blogspot.de/2014/04/boost-c-library-rpm-packages-for-centos.html
-                    sudo yum -y remove boost-devel
-                    sudo wget http://repo.enetres.net/enetres.repo -O /etc/yum.repos.d/enetres.repo
-                    sudo yum install boost-devel
+
+                    wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.gz
+                    tar xzvf boost_1_69_0.tar.gz
+                    cd boost_1_69_0
+                    ./bootstrap.sh --prefix=/usr/local/
+                    export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python3.6m"
+                    ./b2 -j$(nproc) -d0 install --with=all
+
+                    # Get z3
+                    git clone https://github.com/Z3Prover/z3.git
+                    cd z3
+                    python scripts/mk_make.py
+                    cd build
+                    make
+                    sudo make install
+                    cd ../..
+
+#                   sudo yum -y remove boost-devel
+#                   sudo wget http://repo.enetres.net/enetres.repo -O /etc/yum.repos.d/enetres.repo
+#                   sudo yum install boost-devel
                 else
                     echo "Aborted CentOS Solidity Dependency Installation";
                     exit 1

@@ -1,5 +1,5 @@
-FROM alpine AS build
-MAINTAINER chriseth <chris@ethereum.org>
+FROM centos AS build
+MAINTAINER ashu <ashu@tronnetwork.org>
 #Official solidity docker image
 
 #Establish working directory as solidity
@@ -7,7 +7,11 @@ WORKDIR /solidity
 
 # Build dependencies
 ADD /scripts/install_deps.sh /solidity/scripts/install_deps.sh
-RUN ./scripts/install_deps.sh
+# RUN ./scripts/install_deps.sh
+RUN yum install -y sudo
+RUN yum install -y wget
+RUN yum install -y git
+RUN sh -c '/bin/echo -e  "y" | ./scripts/install_deps.sh'
 
 #Copy working directory on travis to the image
 COPY / $WORKDIR

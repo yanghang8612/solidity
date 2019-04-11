@@ -9,4 +9,4 @@ mkdir -p upload
 docker cp ${tmp_container}:/usr/bin/solc upload/solc-static-linux
 
 # Alpine image
-docker build -t ethereum/solc:build-alpine -f scripts/Dockerfile_alpine .
+docker build -t ethereum/solc:build-centos7 -f scripts/Dockerfile_centos7 .
