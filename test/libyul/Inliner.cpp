@@ -26,8 +26,7 @@
 #include <libyul/optimiser/FullInliner.h>
 #include <libyul/optimiser/FunctionHoister.h>
 #include <libyul/optimiser/FunctionGrouper.h>
-
-#include <libsolidity/inlineasm/AsmPrinter.h>
+#include <libyul/AsmPrinter.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -36,8 +35,8 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
-using namespace dev::yul::test;
+using namespace yul;
+using namespace yul::test;
 using namespace dev::solidity;
 
 namespace
@@ -49,10 +48,10 @@ string inlinableFunctions(string const& _source)
 	InlinableExpressionFunctionFinder funFinder;
 	funFinder(ast);
 
-	return boost::algorithm::join(
-		funFinder.inlinableFunctions() | boost::adaptors::map_keys,
-		","
-	);
+	vector<string> functionNames;
+	for (auto const& f: funFinder.inlinableFunctions())
+		functionNames.emplace_back(f.first.str());
+	return boost::algorithm::join(functionNames, ",");
 }
 
 }
@@ -71,7 +70,7 @@ BOOST_AUTO_TEST_CASE(simple)
 	BOOST_CHECK_EQUAL(inlinableFunctions("{"
 		"function g(a:u256) -> b:u256 { b := a }"
 		"function f() -> x:u256 { x := g(2:u256) }"
-	"}"), "f,g");
+	"}"), "g,f");
 }
 
 BOOST_AUTO_TEST_CASE(simple_inside_structures)
@@ -82,7 +81,7 @@ BOOST_AUTO_TEST_CASE(simple_inside_structures)
 			"function g(a:u256) -> b:u256 { b := a }"
 			"function f() -> x:u256 { x := g(2:u256) }"
 		"}"
-	"}"), "f,g");
+	"}"), "g,f");
 	BOOST_CHECK_EQUAL(inlinableFunctions("{"
 		"for {"
 			"function g(a:u256) -> b:u256 { b := a }"
@@ -92,7 +91,7 @@ BOOST_AUTO_TEST_CASE(simple_inside_structures)
 		"{"
 			"function h() -> y:u256 { y := 2:u256 }"
 		"}"
-	"}"), "f,g,h");
+	"}"), "h,g,f");
 }
 
 BOOST_AUTO_TEST_CASE(negative)

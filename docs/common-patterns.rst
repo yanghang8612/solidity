@@ -12,7 +12,7 @@ Withdrawal from Contracts
 
 The recommended method of sending funds after an effect
 is using the withdrawal pattern. Although the most intuitive
-method of sending Ether, as a result of an effect, is a
+method of sending Trx, as a result of an effect, is a
 direct ``transfer`` call, this is not recommended as it
 introduces a potential security risk. You may read
 more about this on the :ref:`security_considerations` page.
@@ -20,7 +20,7 @@ more about this on the :ref:`security_considerations` page.
 The following is an example of the withdrawal pattern in practice in
 a contract where the goal is to send the most money to the
 contract in order to become the "richest", inspired by
-`King of the Ether <https://www.kingoftheether.com/>`_.
+`King of the Trx <https://www.kingoftheether.com/>`_.
 
 In the following contract, if you are usurped as the richest,
 you will receive the funds of the person who has gone on to
@@ -28,7 +28,7 @@ become the new richest.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract WithdrawalContract {
         address public richest;
@@ -65,7 +65,7 @@ This is as opposed to the more intuitive sending pattern:
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract SendContract {
         address payable public richest;
@@ -117,7 +117,7 @@ to read the data, so will everyone else.
 
 You can restrict read access to your contract's state
 by **other contracts**. That is actually the default
-unless you declare make your state variables ``public``.
+unless you declare your state variables ``public``.
 
 Furthermore, you can restrict who can make modifications
 to your contract's state or call your contract's
@@ -194,7 +194,7 @@ restrictions highly readable.
         modifier costs(uint _amount) {
             require(
                 msg.value >= _amount,
-                "Not enough Ether provided."
+                "Not enough Trx provided."
             );
             _;
             if (msg.value > _amount)
@@ -204,7 +204,7 @@ restrictions highly readable.
         function forceOwnerChange(address _newOwner)
             public
             payable
-            costs(200 ether)
+            costs(200 trx)
         {
             owner = _newOwner;
             // just some example condition

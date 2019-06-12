@@ -21,16 +21,14 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
-
+#include <libyul/AsmDataForward.h>
 #include <libyul/optimiser/ASTWalker.h>
 
 #include <map>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
  * Optimiser component that removes assignments to variables that are not used
@@ -101,6 +99,7 @@ namespace yul
 class RedundantAssignEliminator: public ASTWalker
 {
 public:
+	explicit RedundantAssignEliminator(Dialect const& _dialect): m_dialect(&_dialect) {}
 	RedundantAssignEliminator(RedundantAssignEliminator const&) = default;
 	RedundantAssignEliminator& operator=(RedundantAssignEliminator const&) = default;
 	RedundantAssignEliminator(RedundantAssignEliminator&&) = default;
@@ -115,22 +114,22 @@ public:
 	void operator()(ForLoop const&) override;
 	void operator()(Block const& _block) override;
 
-	static void run(Block& _ast);
+	static void run(Dialect const& _dialect, Block& _ast);
 
 private:
-	RedundantAssignEliminator() {}
+	RedundantAssignEliminator() = default;
 
 	class State
 	{
 	public:
 		enum Value { Unused, Undecided, Used };
 		State(Value _value = Undecided): m_value(_value) {}
-		bool operator==(State _other) const { return m_value == _other.m_value; }
-		bool operator!=(State _other) const { return !operator==(_other); }
-		void join(State _other)
+		inline bool operator==(State _other) const { return m_value == _other.m_value; }
+		inline bool operator!=(State _other) const { return !operator==(_other); }
+		static inline void join(State& _a, State const& _b)
 		{
 			// Using "max" works here because of the order of the values in the enum.
-			m_value = Value(std::max(int(_other.m_value), int(m_value)));
+			_a.m_value =  Value(std::max(int(_a.m_value), int(_b.m_value)));
 		}
 	private:
 		Value m_value = Undecided;
@@ -149,24 +148,33 @@ private:
 		}
 		~BlockScope()
 		{
+			// This should actually store all declared variables
+			// into a different mapping
 			for (auto const& var: m_rae.m_declaredVariables)
 				m_rae.changeUndecidedTo(var, State::Unused);
+			for (auto const& var: m_rae.m_declaredVariables)
+				m_rae.finalize(var);
 			swap(m_rae.m_declaredVariables, m_outerDeclaredVariables);
 		}
 
 	private:
 		RedundantAssignEliminator& m_rae;
-		std::set<std::string> m_outerDeclaredVariables;
+		std::set<YulString> m_outerDeclaredVariables;
 	};
 
 	/// Joins the assignment mapping with @a _other according to the rules laid out
 	/// above.
 	/// Will destroy @a _other.
 	void join(RedundantAssignEliminator& _other);
-	void changeUndecidedTo(std::string const& _variable, State _newState);
+	void changeUndecidedTo(YulString _variable, State _newState);
+	void finalize(YulString _variable);
 
-	std::set<std::string> m_declaredVariables;
-	std::map<std::string, std::map<Assignment const*, State>> m_assignments;
+	Dialect const* m_dialect;
+	std::set<YulString> m_declaredVariables;
+	// TODO check that this does not cause nondeterminism!
+	// This could also be a pseudo-map from state to assignment.
+	std::map<YulString, std::map<Assignment const*, State>> m_assignments;
+	std::set<Assignment const*> m_assignmentsToRemove;
 };
 
 class AssignmentRemover: public ASTModifier
@@ -181,5 +189,4 @@ private:
 	std::set<Assignment const*> const& m_toRemove;
 };
 
-}
 }

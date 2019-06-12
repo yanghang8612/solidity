@@ -57,7 +57,10 @@ class IPCSocket: public boost::noncopyable
 public:
 	explicit IPCSocket(std::string const& _path);
 	std::string sendRequest(std::string const& _req);
-	~IPCSocket() { close(m_socket); }
+	~IPCSocket() {
+		shutdown(m_socket, SHUT_RDWR);
+		close(m_socket);
+	}
 
 	std::string const& path() const { return m_path; }
 
@@ -136,9 +139,6 @@ private:
 
 	IPCSocket m_ipcSocket;
 	size_t m_rpcSequence = 1;
-	unsigned m_maxMiningTime = 6000000; // 600 seconds
-	unsigned m_sleepTime = 10; // 10 milliseconds
-	unsigned m_successfulMineRuns = 0;
 	bool m_receiptHasStatusField = false;
 
 	std::vector<std::string> m_accounts;

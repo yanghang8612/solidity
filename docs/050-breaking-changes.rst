@@ -12,7 +12,8 @@ For the full list check
    Contracts compiled with Solidity v0.5.0 can still interface with contracts
    and even libraries compiled with older versions without recompiling or
    redeploying them.  Changing the interfaces to include data locations and
-   visibility and mutability specifiers suffices.
+   visibility and mutability specifiers suffices. See the
+   :ref:`Interoperability With Older Contracts <interoperability>` section below.
 
 Semantic Only Changes
 =====================
@@ -101,6 +102,14 @@ For most of the topics the compiler will provide suggestions.
   ``c.transfer(...)`` to ``address(c).transfer(...)``,
   and ``c.balance`` to ``address(c).balance``.
 
+* Explicit conversions between unrelated contract types are now disallowed. You can only
+  convert from a contract type to one of its base or ancestor types. If you are sure that
+  a contract is compatible with the contract type you want to convert to, although it does not
+  inherit from it, you can work around this by converting to ``address`` first.
+  Example: if ``A`` and ``B`` are contract types, ``B`` does not inherit from ``A`` and
+  ``b`` is a contract of type ``B``, you can still convert ``b`` to type ``A`` using ``A(address(b))``.
+  Note that you still need to watch out for matching payable fallback functions, as explained below.
+
 * The ``address`` type  was split into ``address`` and ``address payable``,
   where only ``address payable`` provides the ``transfer`` function.  An
   ``address payable`` can be directly converted to an ``address``, but the
@@ -162,7 +171,7 @@ Command Line and JSON Interfaces
   the first 36 hex characters of the keccak256 hash of the fully qualified
   library name, surrounded by ``$...$``. Previously,
   just the fully qualified library name was used.
-  This recudes the chances of collisions, especially when long paths are used.
+  This reduces the chances of collisions, especially when long paths are used.
   Binary files now also contain a list of mappings from these placeholders
   to the fully qualified names.
 
@@ -272,6 +281,83 @@ Syntax
   ``override``, ``partial``, ``promise``, ``reference``, ``sealed``,
   ``sizeof``, ``supports``, ``typedef`` and ``unchecked``.
 
+.. _interoperability:
+
+Interoperability With Older Contracts
+=====================================
+
+It is still possible to interface with contracts written for Solidity versions prior to
+v0.5.0 (or the other way around) by defining interfaces for them.
+Consider you have the following pre-0.5.0 contract already deployed:
+
+::
+
+   // This will not compile with the current version of the compiler
+   pragma solidity ^0.4.25;
+   contract OldContract {
+      function someOldFunction(uint8 a) {
+         //...
+      }
+      function anotherOldFunction() constant returns (bool) {
+         //...
+      }
+      // ...
+   }
+
+This will no longer compile with Solidity v0.5.0. However, you can define a compatible interface for it:
+
+::
+
+   pragma solidity ^0.5.0;
+   interface OldContract {
+      function someOldFunction(uint8 a) external;
+      function anotherOldFunction() external returns (bool);
+   }
+
+Note that we did not declare ``anotherOldFunction`` to be ``view``, despite it being declared ``constant`` in the original
+contract. This is due to the fact that starting with Solidity v0.5.0 ``staticcall`` is used to call ``view`` functions.
+Prior to v0.5.0 the ``constant`` keyword was not enforced, so calling a function declared ``constant`` with ``staticcall``
+may still revert, since the ``constant`` function may still attempt to modify storage. Consequently, when defining an
+interface for older contracts, you should only use ``view`` in place of ``constant`` in case you are absolutely sure that
+the function will work with ``staticcall``.
+
+Given the interface defined above, you can now easily use the already deployed pre-0.5.0 contract:
+
+::
+
+   pragma solidity ^0.5.0;
+
+   interface OldContract {
+      function someOldFunction(uint8 a) external;
+      function anotherOldFunction() external returns (bool);
+   }
+
+   contract NewContract {
+      function doSomething(OldContract a) public returns (bool) {
+         a.someOldFunction(0x42);
+         return a.anotherOldFunction();
+      }
+   }
+
+Similarly, pre-0.5.0 libraries can be used by defining the functions of the library without implementation and
+supplying the address of the pre-0.5.0 library during linking (see :ref:`commandline-compiler` for how to use the
+commandline compiler for linking):
+
+::
+
+   pragma solidity ^0.5.0;
+
+   library OldLibrary {
+      function someFunction(uint8 a) public returns(bool);
+   }
+
+   contract NewContract {
+      function f(uint8 a) public returns (bool) {
+         return OldLibrary.someFunction(a);
+      }
+   }
+
+
 Example
 =======
 
@@ -344,7 +430,7 @@ New version:
 
 ::
 
-   pragma solidity >0.4.99 <0.6.0;
+   pragma solidity ^0.5.0;
 
    contract OtherContract {
       uint x;

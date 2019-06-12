@@ -41,7 +41,7 @@ source code (e.g. `pragma once <https://en.wikipedia.org/wiki/Pragma_once>`_).
 A contract in the sense of Solidity is a collection of code (its *functions*) and
 data (its *state*) that resides at a specific address on the Ethereum
 blockchain. The line ``uint storedData;`` declares a state variable called ``storedData`` of
-type ``uint`` (*u*nsigned *int*eger of *256* bits). You can think of it as a single slot
+type ``uint`` (*u*\nsigned *int*\eger of *256* bits). You can think of it as a single slot
 in a database that can be queried and altered by calling functions of the
 code that manages the database. In the case of Ethereum, this is always the owning
 contract. And in this case, the functions ``set`` and ``get`` can be used to modify
@@ -81,7 +81,7 @@ registering with username and password — all you need is an Ethereum keypair.
 
 ::
 
-    pragma solidity >0.4.99 <0.6.0;
+    pragma solidity ^0.5.0;
 
     contract Coin {
         // The keyword "public" makes those variables
@@ -323,8 +323,8 @@ Every account has a persistent key-value store mapping 256-bit words to 256-bit
 words called **storage**.
 
 Furthermore, every account has a **balance** in
-Ether (in "Wei" to be exact, `1 ether` is `10**18 wei`) which can be modified by sending transactions that
-include Ether.
+Trx (in "Sun" to be exact, `1 Trx` is `10**6 Sun`) which can be modified by sending transactions that
+include Trx.
 
 .. index:: ! transaction
 
@@ -333,7 +333,7 @@ Transactions
 
 A transaction is a message that is sent from one account to another
 account (which might be the same or empty, see below).
-It can include binary data (which is called "payload") and Ether.
+It can include binary data (which is called "payload") and Trx.
 
 If the target account contains code, that code is executed and
 the payload is provided as input data.
@@ -400,7 +400,7 @@ within a word). At the time of expansion, the cost in gas must be paid. Memory i
 costly the larger it grows (it scales quadratically).
 
 The EVM is not a register machine but a stack machine, so all
-computations are performed on an data area called the **stack**. It has a maximum size of
+computations are performed on a data area called the **stack**. It has a maximum size of
 1024 elements and contains words of 256 bits. Access to the stack is
 limited to the top end in the following way:
 It is possible to copy one of
@@ -435,10 +435,10 @@ assembly documentation.
 Message Calls
 =============
 
-Contracts can call other contracts or send Ether to non-contract
+Contracts can call other contracts or send Trx to non-contract
 accounts by the means of message calls. Message calls are similar
 to transactions, in that they have a source, a target, data payload,
-Ether, gas and return data. In fact, every transaction consists of
+Trx, gas and return data. In fact, every transaction consists of
 a top-level message call which in turn can create further message calls.
 
 A contract can decide how much of its remaining **gas** should be sent
@@ -510,7 +510,7 @@ receives the address of the new contract on the stack.
 Deactivate and Self-destruct
 ============================
 
-The only way to remove code from the blockchain is when a contract at that address performs the ``selfdestruct`` operation. The remaining Ether stored at that address is sent to a designated target and then the storage and code is removed from the state. Removing the contract in theory sounds like a good idea, but it is potentially dangerous, as if someone sends Ether to removed contracts, the Ether is forever lost.
+The only way to remove code from the blockchain is when a contract at that address performs the ``selfdestruct`` operation. The remaining Trx stored at that address is sent to a designated target and then the storage and code is removed from the state. Removing the contract in theory sounds like a good idea, but it is potentially dangerous, as if someone sends Ether to removed contracts, the Ether is forever lost.
 
 .. note::
     Even if a contract's code does not contain a call to ``selfdestruct``, it can still perform that operation using ``delegatecall`` or ``callcode``.

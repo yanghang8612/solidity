@@ -30,10 +30,12 @@ unsigned ConstantOptimisationMethod::optimiseConstants(
 	bool _isCreation,
 	size_t _runs,
 	solidity::EVMVersion _evmVersion,
-	Assembly& _assembly,
-	AssemblyItems& _items
+	Assembly& _assembly
 )
 {
+	// TODO: design the optimiser in a way this is not needed
+	AssemblyItems& _items = _assembly.items();
+
 	unsigned optimisations = 0;
 	map<AssemblyItem, size_t> pushes;
 	for (AssemblyItem const& item: _items)
@@ -129,14 +131,9 @@ bigint LiteralMethod::gasNeeded() const
 	return combineGas(
 		simpleRunGas({Instruction::PUSH1}),
 		// PUSHX plus data
-		(m_params.isCreation ? GasCosts::txDataNonZeroGas : GasCosts::createDataGas) + dataGas(),
+		(m_params.isCreation ? GasCosts::txDataNonZeroGas : GasCosts::createDataGas) + dataGas(toCompactBigEndian(m_value, 1)),
 		0
 	);
-}
-
-CodeCopyMethod::CodeCopyMethod(Params const& _params, u256 const& _value):
-	ConstantOptimisationMethod(_params, _value)
-{
 }
 
 bigint CodeCopyMethod::gasNeeded() const
@@ -193,7 +190,7 @@ AssemblyItems ComputeMethod::findRepresentation(u256 const& _value)
 		bigint bestGas = gasNeeded(routine);
 		for (unsigned bits = 255; bits > 8 && m_maxSteps > 0; --bits)
 		{
-			unsigned gapDetector = unsigned(_value >> (bits - 8)) & 0x1ff;
+			unsigned gapDetector = unsigned((_value >> (bits - 8)) & 0x1ff);
 			if (gapDetector != 0xff && gapDetector != 0x100)
 				continue;
 

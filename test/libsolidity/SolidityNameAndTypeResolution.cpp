@@ -26,13 +26,14 @@
 
 #include <libsolidity/ast/AST.h>
 
-#include <libdevcore/SHA3.h>
+#include <libdevcore/Keccak256.h>
 
 #include <boost/test/unit_test.hpp>
 
 #include <string>
 
 using namespace std;
+using namespace langutil;
 
 namespace dev
 {
@@ -197,7 +198,7 @@ BOOST_AUTO_TEST_CASE(enum_external_type)
 		}
 }
 
-BOOST_AUTO_TEST_CASE(external_structs)
+BOOST_AUTO_TEST_CASE(external_struct_signatures)
 {
 	char const* text = R"(
 		pragma experimental ABIEncoderV2;
@@ -212,7 +213,10 @@ BOOST_AUTO_TEST_CASE(external_structs)
 			function i(Nested[] calldata) external {}
 		}
 	)";
-	SourceUnit const* sourceUnit = parseAndAnalyse(text);
+	// Ignore analysis errors. This test only checks that correct signatures
+	// are generated for external structs, but they are not yet supported
+	// in code generation and therefore cause an error in the TypeChecker.
+	SourceUnit const* sourceUnit = parseAnalyseAndReturnError(text, false, true, true).first;
 	for (ASTPointer<ASTNode> const& node: sourceUnit->nodes())
 		if (ContractDefinition* contract = dynamic_cast<ContractDefinition*>(node.get()))
 		{
@@ -225,7 +229,7 @@ BOOST_AUTO_TEST_CASE(external_structs)
 		}
 }
 
-BOOST_AUTO_TEST_CASE(external_structs_in_libraries)
+BOOST_AUTO_TEST_CASE(external_struct_signatures_in_libraries)
 {
 	char const* text = R"(
 		pragma experimental ABIEncoderV2;
@@ -240,7 +244,10 @@ BOOST_AUTO_TEST_CASE(external_structs_in_libraries)
 			function i(Nested[] calldata) external {}
 		}
 	)";
-	SourceUnit const* sourceUnit = parseAndAnalyse(text);
+	// Ignore analysis errors. This test only checks that correct signatures
+	// are generated for external structs, but calldata structs are not yet supported
+	// in code generation and therefore cause an error in the TypeChecker.
+	SourceUnit const* sourceUnit = parseAnalyseAndReturnError(text, false, true, true).first;
 	for (ASTPointer<ASTNode> const& node: sourceUnit->nodes())
 		if (ContractDefinition* contract = dynamic_cast<ContractDefinition*>(node.get()))
 		{
@@ -373,18 +380,6 @@ BOOST_AUTO_TEST_CASE(warn_nonpresent_pragma)
 	BOOST_REQUIRE(!sourceAndError.second.empty());
 	BOOST_REQUIRE(!!sourceAndError.first);
 	BOOST_CHECK(searchErrorMessage(*sourceAndError.second.front(), "Source file does not specify required compiler version!"));
-}
-
-BOOST_AUTO_TEST_CASE(unsatisfied_version)
-{
-	char const* text = R"(
-		pragma solidity ^99.99.0;
-	)";
-	auto sourceAndError = parseAnalyseAndReturnError(text, false, false, false);
-	BOOST_REQUIRE(!sourceAndError.second.empty());
-	BOOST_REQUIRE(!!sourceAndError.first);
-	BOOST_CHECK(sourceAndError.second.front()->type() == Error::Type::SyntaxError);
-	BOOST_CHECK(searchErrorMessage(*sourceAndError.second.front(), "Source file requires different compiler version"));
 }
 
 BOOST_AUTO_TEST_CASE(returndatasize_as_variable)

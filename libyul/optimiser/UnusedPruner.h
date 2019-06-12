@@ -21,21 +21,18 @@
 #pragma once
 
 #include <libyul/optimiser/ASTWalker.h>
+#include <libyul/YulString.h>
 
-#include <string>
 #include <map>
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
- * Optimisation stage that removes unused variables and functions.
- *
- * TODO: Also remove intermediate variable assignments from movable expressions
- * which are not referenced until after the next assignment to the same variable.
+ * Optimisation stage that removes unused variables and functions and also
+ * removes movable expression statements.
  *
  * Note that this does not remove circular references.
  *
@@ -44,24 +41,45 @@ namespace yul
 class UnusedPruner: public ASTModifier
 {
 public:
-	explicit UnusedPruner(Block& _ast, std::set<std::string> const& _externallyUsedFunctions = std::set<std::string>());
+	UnusedPruner(
+		Dialect const& _dialect,
+		Block& _ast,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+	UnusedPruner(
+		Dialect const& _dialect,
+		FunctionDefinition& _function,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
 
 	using ASTModifier::operator();
-	virtual void operator()(Block& _block) override;
+	void operator()(Block& _block) override;
 
 	// @returns true iff the code changed in the previous run.
 	bool shouldRunAgain() const { return m_shouldRunAgain; }
 
 	// Run the pruner until the code does not change anymore.
-	static void runUntilStabilised(Block& _ast, std::set<std::string> const& _externallyUsedFunctions = std::set<std::string>());
+	static void runUntilStabilised(
+		Dialect const& _dialect,
+		Block& _ast,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+
+	// Run the pruner until the code does not change anymore.
+	// Only run on the given function.
+	static void runUntilStabilised(
+		Dialect const& _dialect,
+		FunctionDefinition& _functionDefinition,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
 
 private:
-	bool used(std::string const& _name) const;
-	void subtractReferences(std::map<std::string, size_t> const& _subtrahend);
+	bool used(YulString _name) const;
+	void subtractReferences(std::map<YulString, size_t> const& _subtrahend);
 
+	Dialect const& m_dialect;
 	bool m_shouldRunAgain = false;
-	std::map<std::string, size_t> m_references;
+	std::map<YulString, size_t> m_references;
 };
 
-}
 }

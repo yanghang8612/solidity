@@ -20,23 +20,16 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
+#include <libyul/AsmDataForward.h>
+#include <libyul/YulString.h>
 
-#include <string>
-#include <map>
 #include <set>
 
-namespace dev
-{
-namespace solidity
-{
-namespace assembly
-{
-struct AsmAnalysisInfo;
-}
-}
 namespace yul
 {
+
+struct AsmAnalysisInfo;
+struct Dialect;
 
 /**
  * Optimiser suite that combines all steps and also provides the settings for the heuristics
@@ -45,11 +38,11 @@ class OptimiserSuite
 {
 public:
 	static void run(
+		std::shared_ptr<Dialect> const& _dialect,
 		Block& _ast,
-		solidity::assembly::AsmAnalysisInfo const& _analysisInfo,
-		std::set<std::string> const& _externallyUsedIdentifiers = std::set<std::string>()
+		AsmAnalysisInfo const& _analysisInfo,
+		std::set<YulString> const& _externallyUsedIdentifiers = {}
 	);
 };
 
-}
 }

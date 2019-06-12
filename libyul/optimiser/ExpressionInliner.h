@@ -20,18 +20,16 @@
 #pragma once
 
 #include <libyul/optimiser/ASTWalker.h>
-
-#include <libyul/ASTDataForward.h>
+#include <libyul/AsmDataForward.h>
 
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
  * Optimiser component that modifies an AST in place, inlining functions that can be
@@ -47,26 +45,26 @@ namespace yul
 class ExpressionInliner: public ASTModifier
 {
 public:
-	ExpressionInliner(Block& _block):
-		m_block(_block)
+	ExpressionInliner(Dialect const& _dialect, Block& _block):
+		m_block(_block), m_dialect(_dialect)
 	{}
 
 	void run();
 
 	using ASTModifier::operator();
-	virtual void operator()(FunctionDefinition& _fun) override;
+	void operator()(FunctionDefinition& _fun) override;
 
-	virtual void visit(Expression& _expression) override;
+	void visit(Expression& _expression) override;
 
 private:
-	std::map<std::string, FunctionDefinition const*> m_inlinableFunctions;
-	std::map<std::string, std::string> m_varReplacements;
+	std::map<YulString, FunctionDefinition const*> m_inlinableFunctions;
+	std::map<YulString, YulString> m_varReplacements;
 	/// Set of functions we are currently visiting inside.
-	std::set<std::string> m_currentFunctions;
+	std::set<YulString> m_currentFunctions;
 
 	Block& m_block;
+	Dialect const& m_dialect;
 };
 
 
-}
 }

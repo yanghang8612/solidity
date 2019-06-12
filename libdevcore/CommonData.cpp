@@ -22,12 +22,34 @@
 #include <libdevcore/CommonData.h>
 #include <libdevcore/Exceptions.h>
 #include <libdevcore/Assertions.h>
-#include <libdevcore/SHA3.h>
+#include <libdevcore/Keccak256.h>
 
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace dev;
+
+string dev::toHex(bytes const& _data, HexPrefix _prefix, HexCase _case)
+{
+	std::ostringstream ret;
+	if (_prefix == HexPrefix::Add)
+		ret << "0x";
+
+	int rix = _data.size() - 1;
+	for (uint8_t c: _data)
+	{
+		// switch hex case every four hexchars
+		auto hexcase = std::nouppercase;
+		if (_case == HexCase::Upper)
+			hexcase = std::uppercase;
+		else if (_case == HexCase::Mixed)
+			hexcase = (rix-- & 2) == 0 ? std::nouppercase : std::uppercase;
+
+		ret << std::hex << hexcase << std::setfill('0') << std::setw(2) << size_t(c);
+	}
+
+	return ret.str();
+}
 
 int dev::fromHex(char _i, WhenError _throw)
 {
@@ -64,7 +86,7 @@ bytes dev::fromHex(std::string const& _s, WhenError _throw)
 		int h = fromHex(_s[i], WhenError::DontThrow);
 		int l = fromHex(_s[i + 1], WhenError::DontThrow);
 		if (h != -1 && l != -1)
-			ret.push_back((byte)(h * 16 + l));
+			ret.push_back((uint8_t)(h * 16 + l));
 		else if (_throw == WhenError::Throw)
 			BOOST_THROW_EXCEPTION(BadHexCharacter());
 		else

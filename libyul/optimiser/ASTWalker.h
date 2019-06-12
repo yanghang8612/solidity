@@ -20,9 +20,10 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
+#include <libyul/AsmDataForward.h>
 
 #include <libyul/Exceptions.h>
+#include <libyul/YulString.h>
 
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
@@ -31,8 +32,6 @@
 #include <set>
 #include <map>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -59,14 +58,8 @@ public:
 	virtual void operator()(ForLoop const&);
 	virtual void operator()(Block const& _block);
 
-	virtual void visit(Statement const& _st)
-	{
-		boost::apply_visitor(*this, _st);
-	}
-	virtual void visit(Expression const& _e)
-	{
-		boost::apply_visitor(*this, _e);
-	}
+	virtual void visit(Statement const& _st);
+	virtual void visit(Expression const& _e);
 
 protected:
 	template <class T>
@@ -100,14 +93,8 @@ public:
 	virtual void operator()(ForLoop&);
 	virtual void operator()(Block& _block);
 
-	virtual void visit(Statement& _st)
-	{
-		boost::apply_visitor(*this, _st);
-	}
-	virtual void visit(Expression& _e)
-	{
-		boost::apply_visitor(*this, _e);
-	}
+	virtual void visit(Statement& _st);
+	virtual void visit(Expression& _e);
 
 protected:
 	template <class T>
@@ -118,5 +105,4 @@ protected:
 	}
 };
 
-}
 }

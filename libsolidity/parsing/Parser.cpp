@@ -20,15 +20,20 @@
  * Solidity parser.
  */
 
+#include <libsolidity/parsing/Parser.h>
+
+#include <libsolidity/analysis/SemVerHandler.h>
+#include <libsolidity/interface/Version.h>
+#include <libyul/AsmParser.h>
+#include <libyul/backends/evm/EVMDialect.h>
+#include <liblangutil/ErrorReporter.h>
+#include <liblangutil/Scanner.h>
+#include <liblangutil/SourceLocation.h>
 #include <cctype>
 #include <vector>
-#include <libevmasm/SourceLocation.h>
-#include <libsolidity/parsing/Parser.h>
-#include <libsolidity/parsing/Scanner.h>
-#include <libsolidity/inlineasm/AsmParser.h>
-#include <libsolidity/interface/ErrorReporter.h>
 
 using namespace std;
+using namespace langutil;
 
 namespace dev
 {
@@ -41,9 +46,9 @@ class Parser::ASTNodeFactory
 {
 public:
 	explicit ASTNodeFactory(Parser const& _parser):
-		m_parser(_parser), m_location(_parser.position(), -1, _parser.sourceName()) {}
+		m_parser(_parser), m_location{_parser.position(), -1, _parser.source()} {}
 	ASTNodeFactory(Parser const& _parser, ASTPointer<ASTNode> const& _childNode):
-		m_parser(_parser), m_location(_childNode->location()) {}
+		m_parser(_parser), m_location{_childNode->location()} {}
 
 	void markEndPosition() { m_location.end = m_parser.endPosition(); }
 	void setLocation(SourceLocation const& _location) { m_location = _location; }
@@ -54,7 +59,7 @@ public:
 	template <class NodeType, typename... Args>
 	ASTPointer<NodeType> createNode(Args&& ... _args)
 	{
-		solAssert(m_location.sourceName, "");
+		solAssert(m_location.source, "");
 		if (m_location.end < 0)
 			markEndPosition();
 		return make_shared<NodeType>(m_location, std::forward<Args>(_args)...);
@@ -103,6 +108,20 @@ ASTPointer<SourceUnit> Parser::parse(shared_ptr<Scanner> const& _scanner)
 	}
 }
 
+void Parser::parsePragmaVersion(vector<Token> const& tokens, vector<string> const& literals)
+{
+	SemVerMatchExpressionParser parser(tokens, literals);
+	auto matchExpression = parser.parse();
+	static SemVerVersion const currentVersion{string(VersionString)};
+	// FIXME: only match for major version incompatibility
+	if (!matchExpression.matches(currentVersion))
+		fatalParserError(
+			"Source file requires different compiler version (current compiler is " +
+			string(VersionString) + " - note that nightly builds are considered to be "
+			"strictly less than the released version"
+		);
+}
+
 ASTPointer<PragmaDirective> Parser::parsePragmaDirective()
 {
 	RecursionGuard recursionGuard(*this);
@@ -131,6 +150,15 @@ ASTPointer<PragmaDirective> Parser::parsePragmaDirective()
 	while (m_scanner->currentToken() != Token::Semicolon && m_scanner->currentToken() != Token::EOS);
 	nodeFactory.markEndPosition();
 	expectToken(Token::Semicolon);
+
+	if (literals.size() >= 2 && literals[0] == "solidity")
+	{
+		parsePragmaVersion(
+			vector<Token>(tokens.begin() + 1, tokens.end()),
+			vector<string>(literals.begin() + 1, literals.end())
+		);
+	}
+
 	return nodeFactory.createNode<PragmaDirective>(tokens, literals);
 }
 
@@ -169,7 +197,7 @@ ASTPointer<ImportDirective> Parser::parseImportDirective()
 					expectToken(Token::As);
 					alias = expectIdentifierToken();
 				}
-				symbolAliases.push_back(make_pair(move(id), move(alias)));
+				symbolAliases.emplace_back(move(id), move(alias));
 				if (m_scanner->currentToken() != Token::Comma)
 					break;
 				m_scanner->next();
@@ -193,6 +221,8 @@ ASTPointer<ImportDirective> Parser::parseImportDirective()
 			fatalParserError("Expected import path.");
 		path = getLiteralAndAdvance();
 	}
+	if (path->empty())
+		fatalParserError("Import path cannot be empty.");
 	nodeFactory.markEndPosition();
 	expectToken(Token::Semicolon);
 	return nodeFactory.createNode<ImportDirective>(path, unitAlias, move(symbolAliases));
@@ -1011,8 +1041,8 @@ ASTPointer<InlineAssembly> Parser::parseInlineAssembly(ASTPointer<ASTString> con
 		m_scanner->next();
 	}
 
-	assembly::Parser asmParser(m_errorReporter);
-	shared_ptr<assembly::Block> block = asmParser.parse(m_scanner, true);
+	yul::Parser asmParser(m_errorReporter, yul::EVMDialect::looseAssemblyForEVM());
+	shared_ptr<yul::Block> block = asmParser.parse(m_scanner, true);
 	nodeFactory.markEndPosition();
 	return nodeFactory.createNode<InlineAssembly>(_docString, block);
 }
@@ -1495,6 +1525,9 @@ ASTPointer<Expression> Parser::parsePrimaryExpression()
 	case Token::Number:
 		if (TokenTraits::isEtherSubdenomination(m_scanner->peekNextToken()))
 		{
+			fatalParserError(string("Ether unit denomination is not supported by the compiler"));
+		}
+		else if (TokenTraits::isTronSubdenomination(m_scanner->peekNextToken())) {
 			ASTPointer<ASTString> literal = getLiteralAndAdvance();
 			nodeFactory.markEndPosition();
 			Literal::SubDenomination subdenomination = static_cast<Literal::SubDenomination>(m_scanner->currentToken());
@@ -1522,6 +1555,12 @@ ASTPointer<Expression> Parser::parsePrimaryExpression()
 	case Token::Identifier:
 		nodeFactory.markEndPosition();
 		expression = nodeFactory.createNode<Identifier>(getLiteralAndAdvance());
+		break;
+	case Token::Type:
+		// Inside expressions "type" is the name of a special, globally-available function.
+		nodeFactory.markEndPosition();
+		m_scanner->next();
+		expression = nodeFactory.createNode<Identifier>(make_shared<ASTString>("type"));
 		break;
 	case Token::LParen:
 	case Token::LBrack:
@@ -1554,9 +1593,9 @@ ASTPointer<Expression> Parser::parsePrimaryExpression()
 		expression = nodeFactory.createNode<TupleExpression>(components, isArray);
 		break;
 	}
-	case Token::IllegalHex:
-		fatalParserError("Expected even number of hex-nibbles within double-quotes.");
-		break;		
+	case Token::Illegal:
+		fatalParserError(to_string(m_scanner->currentError()));
+		break;
 	default:
 		if (TokenTraits::isElementaryTypeName(token))
 		{
@@ -1689,7 +1728,7 @@ Parser::IndexAccessedPath Parser::parseIndexAccessedPath()
 			index = parseExpression();
 		SourceLocation indexLocation = iap.path.front()->location();
 		indexLocation.end = endPosition();
-		iap.indices.push_back(make_pair(index, indexLocation));
+		iap.indices.emplace_back(index, indexLocation);
 		expectToken(Token::RBrack);
 	}
 

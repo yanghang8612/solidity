@@ -1,4 +1,128 @@
-### 0.5.0 (unreleased)
+### 0.5.4 (2019-02-12)
+
+Language Features:
+ * Allow calldata structs without dynamically encoded members with ABIEncoderV2.
+
+
+Compiler Features:
+ * ABIEncoderV2: Implement packed encoding.
+ * C API (``libsolc`` / raw ``soljson.js``): Introduce ``solidity_free`` method which releases all internal buffers to save memory.
+ * Commandline Interface: Adds new option ``--new-reporter`` for improved diagnostics formatting
+   along with ``--color`` and ``--no-color`` for colorized output to be forced (or explicitly disabled).
+
+
+Bugfixes:
+ * Code Generator: Defensively pad allocation of creationCode and runtimeCode to multiples of 32 bytes.
+ * Commandline Interface: Allow yul optimizer only for strict assembly.
+ * Parser: Disallow empty import statements.
+ * Type Checker: Disallow mappings with data locations other than ``storage``.
+ * Type Checker: Fix internal error when a struct array index does not fit into a uint256.
+ * Type System: Properly report packed encoded size for arrays and structs (mostly unused until now).
+
+
+Build System:
+ * Add support for continuous fuzzing via Google oss-fuzz
+ * SMT: If using Z3, require version 4.6.0 or newer.
+ * Soltest: Add parser that is used in the file-based unit test environment.
+ * Ubuntu PPA Packages: Use CVC4 as SMT solver instead of Z3
+
+
+### 0.5.3 (2019-01-22)
+
+Language Features:
+ * Provide access to creation and runtime code of contracts via ``type(C).creationCode`` / ``type(C).runtimeCode``.
+
+
+Compiler Features:
+ * Control Flow Graph: Warn about unreachable code.
+ * SMTChecker: Support basic typecasts without truncation.
+ * SMTChecker: Support external function calls and erase all knowledge regarding storage variables and references.
+
+
+Bugfixes:
+ * Emscripten: Split simplification rule initialization up further to work around issues with soljson.js in some browsers.
+ * Type Checker: Disallow calldata structs until implemented.
+ * Type Checker: Return type error if fixed point encoding is attempted instead of throwing ``UnimplementedFeatureError``.
+ * Yul: Check that arguments to ``dataoffset`` and ``datasize`` are literals at parse time and properly take this into account in the optimizer.
+ * Yul: Parse number literals for detecting duplicate switch cases.
+ * Yul: Require switch cases to have the same type.
+
+
+Build System:
+ * Emscripten: Upgrade to emscripten 1.38.8 on travis and circleci.
+
+
+### 0.5.2 (2018-12-19)
+
+Language Features:
+ * Control Flow Graph: Detect every access to uninitialized storage pointers.
+
+
+Compiler Features:
+ * Inline Assembly: Improve error messages around invalid function argument count.
+ * Code Generator: Only check callvalue once if all functions are non-payable.
+ * Code Generator: Use codecopy for string constants more aggressively.
+ * Code Generator: Use binary search for dispatch function if more efficient. The size/speed tradeoff can be tuned using ``--optimize-runs``.
+ * SMTChecker: Support mathematical and cryptographic functions in an uninterpreted way.
+ * SMTChecker: Support one-dimensional mappings.
+ * Standard JSON Interface: Disallow unknown keys in standard JSON input.
+ * Standard JSON Interface: Only run code generation if it has been requested. This could lead to unsupported feature errors only being reported at the point where you request bytecode.
+ * Static Analyzer: Do not warn about unused variables or state mutability for functions with an empty body.
+ * Type Checker: Add an additional reason to be displayed when type conversion fails.
+ * Yul: Support object access via ``datasize``, ``dataoffset`` and ``datacopy`` in standalone assembly mode.
+
+
+Bugfixes:
+ * Standard JSON Interface: Report specific error message for json input errors instead of internal compiler error.
+
+
+Build System:
+ * Replace the trusty PPA build by a static build on cosmic that is used for the trusty package instead.
+ * Remove support for Visual Studio 2015.
+
+
+### 0.5.1 (2018-12-03)
+
+Language Features:
+ * Allow mapping type for parameters and return variables of public and external library functions.
+ * Allow public functions to override external functions.
+
+Compiler Features:
+ * Code generator: Do not perform redundant double cleanup on unsigned integers when loading from calldata.
+ * Commandline interface: Experimental ``--optimize`` option for assembly mode (``--strict-assembly`` and ``--yul``).
+ * SMTChecker: SMTLib2 queries and responses passed via standard JSON compiler interface.
+ * SMTChecker: Support ``msg``, ``tx`` and ``block`` member variables.
+ * SMTChecker: Support ``gasleft()`` and ``blockhash()`` functions.
+ * SMTChecker: Support internal bound function calls.
+ * Yul: Support Yul objects in ``--assemble``, ``--strict-assembly`` and ``--yul`` commandline options.
+
+Bugfixes:
+ * Assembly output: Do not mix in/out jump annotations with arguments.
+ * Commandline interface: Fix crash when using ``--ast`` on empty runtime code.
+ * Code Generator: Annotate jump from calldata decoder to function as "jump in".
+ * Code Generator: Fix internal error related to state variables of function type access via base contract name.
+ * Optimizer: Fix nondeterminism bug related to the boost version and constants representation. The bug only resulted in less optimal but still correct code because the generated routine is always verified to be correct.
+ * Type Checker: Properly detect different return types when overriding an external interface function with a public contract function.
+ * Type Checker: Disallow struct return types for getters of public state variables unless the new ABI encoder is active.
+ * Type Checker: Fix internal compiler error when a field of a struct used as a parameter in a function type has a non-existent type.
+ * Type Checker: Disallow functions ``sha3`` and ``suicide`` also without a function call.
+ * Type Checker: Fix internal compiler error with ``super`` when base contract function is not implemented.
+ * Type Checker: Fixed internal error when trying to create abstract contract in some cases.
+ * Type Checker: Fixed internal error related to double declaration of events.
+ * Type Checker: Disallow inline arrays of mapping type.
+ * Type Checker: Consider abstract function to be implemented by public state variable.
+
+Build System:
+ * CMake: LLL is not built anymore by default. Must configure it with CMake as `-DLLL=ON`.
+ * Docker: Includes both Scratch and Alpine images.
+ * Emscripten: Upgrade to Emscripten SDK 1.37.21 and boost 1.67.
+
+Solc-Js:
+ * Fix handling of standard-json in the commandline executable.
+ * Remove support of nodejs 4.
+
+
+### 0.5.0 (2018-11-13)
 
 How to update your code:
  * Change every ``.call()`` to a ``.call("")`` and every ``.call(signature, a, b, c)`` to use ``.call(abi.encodeWithSignature(signature, a, b, c))`` (the last one only works for value types).
@@ -11,6 +135,8 @@ How to update your code:
 
 Breaking Changes:
  * ABI Encoder: Properly pad data from calldata (``msg.data`` and external function parameters). Use ``abi.encodePacked`` for unpadded encoding.
+ * C API (``libsolc`` / raw ``soljson.js``): Removed the ``version``, ``license``, ``compileSingle``, ``compileJSON``, ``compileJSONCallback`` methods
+   and replaced them with the ``solidity_license``, ``solidity_version`` and ``solidity_compile`` methods.
  * Code Generator: Signed right shift uses proper arithmetic shift, i.e. rounding towards negative infinity. Warning: this may silently change the semantics of existing code!
  * Code Generator: Revert at runtime if calldata is too short or points out of bounds. This is done inside the ``ABI decoder`` and therefore also applies to ``abi.decode()``.
  * Code Generator: Use ``STATICCALL`` for ``pure`` and ``view`` functions. This was already the case in the experimental 0.5.0 mode.
@@ -91,7 +217,6 @@ Language Features:
 
 Compiler Features:
  * Build System: Support for Mojave version of macOS added.
- * C API (``libsolc``): Export the ``solidity_license``, ``solidity_version`` and ``solidity_compile`` methods.
  * Code Generator: ``CREATE2`` instruction has been updated to match EIP1014 (aka "Skinny CREATE2"). It also is accepted as part of Constantinople.
  * Code Generator: ``EXTCODEHASH`` instruction has been added based on EIP1052.
  * Type Checker: Nicer error message when trying to reference overloaded identifiers in inline assembly.
@@ -111,6 +236,7 @@ Bugfixes:
  * Code Generator: Properly handle negative number literals in ABIEncoderV2.
  * Code Generator: Do not crash on using a length of zero for multidimensional fixed-size arrays.
  * Commandline Interface: Correctly handle paths with backslashes on windows.
+ * Control Flow Analyzer: Ignore unimplemented functions when detecting uninitialized storage pointer returns.
  * Fix NatSpec json output for `@notice` and `@dev` tags on contract definitions.
  * Optimizer: Correctly estimate gas costs of constants for special cases.
  * Optimizer: Fix simplification rule initialization bug that appeared on some emscripten platforms.
@@ -510,7 +636,7 @@ Features:
  * Add ``assert(condition)``, which throws if condition is false (meant for internal errors).
  * Add ``require(condition)``, which throws if condition is false (meant for invalid input).
  * Commandline interface: Do not overwrite files unless forced.
- * Introduce ``.transfer(value)`` for sending Ether.
+ * Introduce ``.transfer(value)`` for sending Trx.
  * Code generator: Support ``revert()`` to abort with rolling back, but not consuming all gas.
  * Inline assembly: Support ``revert`` (EIP140) as an opcode.
  * Parser: Support scientific notation in numbers (e.g. ``2e8`` and ``200e-2``).
@@ -657,11 +783,11 @@ Bugfixes:
 
 This release deliberately breaks backwards compatibility mostly to
 enforce some safety features. The most important change is that you have
-to explicitly specify if functions can receive ether via the ``payable``
+to explicitly specify if functions can receive trx via the ``payable``
 modifier. Furthermore, more situations cause exceptions to be thrown.
 
 Minimal changes to be made for upgrade:
- - Add ``payable`` to all functions that want to receive Ether
+ - Add ``payable`` to all functions that want to receive Trx
    (including the constructor and the fallback function).
  - Change ``_`` to ``_;`` in modifiers.
  - Add version pragma to each file: ``pragma solidity ^0.4.0;``
@@ -671,9 +797,9 @@ Breaking Changes:
  * Source files have to specify the compiler version they are
    compatible with using e.g. ``pragma solidity ^0.4.0;`` or
    ``pragma solidity >=0.4.0 <0.4.8;``
- * Functions that want to receive Ether have to specify the
+ * Functions that want to receive Trx have to specify the
    new ``payable`` modifier (otherwise they throw).
- * Contracts that want to receive Ether with a plain "send"
+ * Contracts that want to receive Trx with a plain "send"
    have to implement a fallback function with the ``payable``
    modifier. Contracts now throw if no payable fallback
    function is defined and no function matches the signature.

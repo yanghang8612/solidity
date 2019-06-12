@@ -21,8 +21,8 @@
 #include <libyul/optimiser/Semantics.h>
 
 #include <libyul/Exceptions.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
+#include <libyul/Dialect.h>
 
 #include <libevmasm/SemanticInformation.h>
 
@@ -30,9 +30,15 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
-MovableChecker::MovableChecker(Expression const& _expression)
+MovableChecker::MovableChecker(Dialect const& _dialect):
+	m_dialect(_dialect)
+{
+}
+
+MovableChecker::MovableChecker(Dialect const& _dialect, Expression const& _expression):
+	MovableChecker(_dialect)
 {
 	visit(_expression);
 }
@@ -40,7 +46,7 @@ MovableChecker::MovableChecker(Expression const& _expression)
 void MovableChecker::operator()(Identifier const& _identifier)
 {
 	ASTWalker::operator()(_identifier);
-	m_variableReferences.insert(_identifier.name);
+	m_variableReferences.emplace(_identifier.name);
 }
 
 void MovableChecker::operator()(FunctionalInstruction const& _instr)
@@ -51,8 +57,14 @@ void MovableChecker::operator()(FunctionalInstruction const& _instr)
 		ASTWalker::operator()(_instr);
 }
 
-void MovableChecker::operator()(FunctionCall const&)
+void MovableChecker::operator()(FunctionCall const& _functionCall)
 {
+	if (BuiltinFunction const* f = m_dialect.builtin(_functionCall.functionName.name))
+		if (f->movable)
+		{
+			ASTWalker::operator()(_functionCall);
+			return;
+		}
 	m_movable = false;
 }
 

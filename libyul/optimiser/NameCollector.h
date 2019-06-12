@@ -22,12 +22,9 @@
 
 #include <libyul/optimiser/ASTWalker.h>
 
-#include <string>
 #include <map>
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -43,12 +40,12 @@ public:
 	}
 
 	using ASTWalker::operator ();
-	virtual void operator()(VariableDeclaration const& _varDecl) override;
-	virtual void operator()(FunctionDefinition const& _funDef) override;
+	void operator()(VariableDeclaration const& _varDecl) override;
+	void operator()(FunctionDefinition const& _funDef) override;
 
-	std::set<std::string> names() const { return m_names; }
+	std::set<YulString> names() const { return m_names; }
 private:
-	std::set<std::string> m_names;
+	std::set<YulString> m_names;
 };
 
 /**
@@ -61,12 +58,13 @@ public:
 	virtual void operator()(Identifier const& _identifier);
 	virtual void operator()(FunctionCall const& _funCall);
 
-	static std::map<std::string, size_t> countReferences(Block const& _block);
-	static std::map<std::string, size_t> countReferences(Expression const& _expression);
+	static std::map<YulString, size_t> countReferences(Block const& _block);
+	static std::map<YulString, size_t> countReferences(FunctionDefinition const& _function);
+	static std::map<YulString, size_t> countReferences(Expression const& _expression);
 
-	std::map<std::string, size_t> const& references() const { return m_references; }
+	std::map<YulString, size_t> const& references() const { return m_references; }
 private:
-	std::map<std::string, size_t> m_references;
+	std::map<YulString, size_t> m_references;
 };
 
 /**
@@ -76,12 +74,11 @@ class Assignments: public ASTWalker
 {
 public:
 	using ASTWalker::operator ();
-	virtual void operator()(Assignment const& _assignment) override;
+	void operator()(Assignment const& _assignment) override;
 
-	std::set<std::string> const& names() const { return m_names; }
+	std::set<YulString> const& names() const { return m_names; }
 private:
-	std::set<std::string> m_names;
+	std::set<YulString> m_names;
 };
 
-}
 }

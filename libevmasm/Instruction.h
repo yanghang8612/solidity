@@ -188,6 +188,11 @@ enum class Instruction: uint8_t
 	PUTLOCAL,           ///< pop top of stack to local variable -- not part of Instructions.cpp
 	GETLOCAL,           ///< push local variable to top of stack -- not part of Instructions.cpp
 
+	CALLTOKEN = 0xd0,
+	TOKENBALANCE, //
+	CALLTOKENVALUE,
+	CALLTOKENID,
+
 	CREATE = 0xf0,		///< create a new account with associated code
 	CALL,				///< message-call into an account
 	CALLCODE,			///< message-call with another account's code only
@@ -228,25 +233,25 @@ inline bool isLogInstruction(Instruction _inst)
 /// @returns the number of PUSH Instruction _inst
 inline unsigned getPushNumber(Instruction _inst)
 {
-	return (byte)_inst - unsigned(Instruction::PUSH1) + 1;
+	return (uint8_t)_inst - unsigned(Instruction::PUSH1) + 1;
 }
 
 /// @returns the number of DUP Instruction _inst
 inline unsigned getDupNumber(Instruction _inst)
 {
-	return (byte)_inst - unsigned(Instruction::DUP1) + 1;
+	return (uint8_t)_inst - unsigned(Instruction::DUP1) + 1;
 }
 
 /// @returns the number of SWAP Instruction _inst
 inline unsigned getSwapNumber(Instruction _inst)
 {
-	return (byte)_inst - unsigned(Instruction::SWAP1) + 1;
+	return (uint8_t)_inst - unsigned(Instruction::SWAP1) + 1;
 }
 
 /// @returns the number of LOG Instruction _inst
 inline unsigned getLogNumber(Instruction _inst)
 {
-	return (byte)_inst - unsigned(Instruction::LOG0);
+	return (uint8_t)_inst - unsigned(Instruction::LOG0);
 }
 
 /// @returns the PUSH<_number> instruction

@@ -20,14 +20,11 @@
  */
 #pragma once
 
-#include <libyul/ASTDataForward.h>
-
+#include <libyul/AsmDataForward.h>
 #include <libyul/optimiser/ASTWalker.h>
 
 #include <map>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -93,10 +90,9 @@ private:
 	bool isLatestStatementVarDeclJoinable(Identifier const& _identifier);
 
 private:
-	Block* m_currentBlock = nullptr;            ///< Pointer to currently block holding the visiting statement.
-	size_t m_latestStatementInBlock = 0;        ///< Offset to m_currentBlock's statements of the last visited statement.
-	std::map<std::string, size_t> m_references; ///< Holds reference counts to all variable declarations in current block.
+	Block* m_currentBlock = nullptr;		///< Pointer to current block holding the statement being visited.
+	size_t m_latestStatementInBlock = 0;		///< Offset to m_currentBlock's statements of the last visited statement.
+	std::map<YulString, size_t> m_references;	///< Holds reference counts to all variable declarations in current block.
 };
 
-}
 }

@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <libsolidity/codegen/CompilerContext.h>
 #include <libsolidity/ast/ASTForward.h>
+#include <libsolidity/codegen/CompilerContext.h>
 
 namespace dev {
 namespace solidity {
@@ -69,7 +69,7 @@ public:
 	/// @returns the number of bytes consumed in memory.
 	unsigned loadFromMemory(
 		unsigned _offset,
-		Type const& _type = IntegerType(256),
+		Type const& _type = IntegerType::uint256(),
 		bool _fromCalldata = false,
 		bool _padToWords = false
 	);
@@ -159,7 +159,8 @@ public:
 	void abiEncodeV2(
 		TypePointers const& _givenTypes,
 		TypePointers const& _targetTypes,
-		bool _encodeAsLibraryTypes = false
+		bool _encodeAsLibraryTypes = false,
+		bool _padToWordBoundaries = true
 	);
 
 	/// Decodes data from ABI encoding into internal encoding. If @a _fromMemory is set to true,
@@ -262,6 +263,13 @@ public:
 
 	/// Appends code that computes the Keccak-256 hash of the topmost stack element of 32 byte type.
 	void computeHashStatic();
+
+	/// Apppends code that copies the code of the given contract to memory.
+	/// Stack pre: Memory position
+	/// Stack post: Updated memory position
+	/// @param creation if true, copies creation code, if false copies runtime code.
+	/// @note the contract has to be compiled already, so beware of cyclic dependencies!
+	void copyContractCodeToMemory(ContractDefinition const& contract, bool _creationCode);
 
 	/// Bytes we need to the start of call data.
 	///  - The size in bytes of the function (hash) identifier.

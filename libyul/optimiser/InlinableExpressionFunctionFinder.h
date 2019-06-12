@@ -20,13 +20,11 @@
 
 #pragma once
 
-#include <libyul/ASTDataForward.h>
+#include <libyul/AsmDataForward.h>
 #include <libyul/optimiser/ASTWalker.h>
 
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -43,27 +41,26 @@ class InlinableExpressionFunctionFinder: public ASTWalker
 {
 public:
 
-	std::map<std::string, FunctionDefinition const*> const& inlinableFunctions() const
+	std::map<YulString, FunctionDefinition const*> const& inlinableFunctions() const
 	{
 		return m_inlinableFunctions;
 	}
 
 	using ASTWalker::operator();
-	virtual void operator()(Identifier const& _identifier) override;
-	virtual void operator()(FunctionCall const& _funCall) override;
-	virtual void operator()(FunctionDefinition const& _function) override;
+	void operator()(Identifier const& _identifier) override;
+	void operator()(FunctionCall const& _funCall) override;
+	void operator()(FunctionDefinition const& _function) override;
 
 private:
-	void checkAllowed(std::string const& _name)
+	void checkAllowed(YulString _name)
 	{
 		if (m_disallowedIdentifiers.count(_name))
 			m_foundDisallowedIdentifier = true;
 	}
 
 	bool m_foundDisallowedIdentifier = false;
-	std::set<std::string> m_disallowedIdentifiers;
-	std::map<std::string, FunctionDefinition const*> m_inlinableFunctions;
+	std::set<YulString> m_disallowedIdentifiers;
+	std::map<YulString, FunctionDefinition const*> m_inlinableFunctions;
 };
 
-}
 }

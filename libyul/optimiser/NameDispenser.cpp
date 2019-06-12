@@ -21,43 +21,43 @@
 #include <libyul/optimiser/NameDispenser.h>
 
 #include <libyul/optimiser/NameCollector.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
+#include <libyul/Dialect.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
-NameDispenser::NameDispenser(Block const& _ast):
-	NameDispenser(NameCollector(_ast).names())
+NameDispenser::NameDispenser(Dialect const& _dialect, Block const& _ast):
+	NameDispenser(_dialect, NameCollector(_ast).names())
 {
 }
 
-NameDispenser::NameDispenser(set<string> _usedNames):
+NameDispenser::NameDispenser(Dialect const& _dialect, set<YulString> _usedNames):
+	m_dialect(_dialect),
 	m_usedNames(std::move(_usedNames))
 {
 }
 
-string NameDispenser::newName(string const& _nameHint, string const& _context)
+YulString NameDispenser::newName(YulString _nameHint, YulString _context)
 {
 	// Shortening rules: Use a suffix of _prefix and a prefix of _context.
-	string prefix = _nameHint;
+	YulString prefix = _nameHint;
 
 	if (!_context.empty())
-		prefix = _context.substr(0, 10) + "_" + prefix;
+		prefix = YulString{_context.str().substr(0, 10) + "_" + prefix.str()};
 
 	return newNameInternal(prefix);
 }
 
-string NameDispenser::newNameInternal(string const& _nameHint)
+YulString NameDispenser::newNameInternal(YulString _nameHint)
 {
-	size_t suffix = 0;
-	string name = _nameHint;
-	while (name.empty() || m_usedNames.count(name))
+	YulString name = _nameHint;
+	while (name.empty() || m_usedNames.count(name) || m_dialect.builtin(name))
 	{
-		suffix++;
-		name = _nameHint + "_" + to_string(suffix);
+		m_counter++;
+		name = YulString(_nameHint.str() + "_" + to_string(m_counter));
 	}
-	m_usedNames.insert(name);
+	m_usedNames.emplace(name);
 	return name;
 }

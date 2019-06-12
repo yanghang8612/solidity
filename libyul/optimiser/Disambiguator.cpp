@@ -21,20 +21,18 @@
 #include <libyul/optimiser/Disambiguator.h>
 
 #include <libyul/Exceptions.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
-#include <libsolidity/inlineasm/AsmScope.h>
+#include <libyul/AsmData.h>
+#include <libyul/AsmScope.h>
+#include <libyul/Dialect.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 using namespace dev::solidity;
 
-using Scope = dev::solidity::assembly::Scope;
-
-string Disambiguator::translateIdentifier(string const& _originalName)
+YulString Disambiguator::translateIdentifier(YulString _originalName)
 {
-	if ((m_externallyUsedIdentifiers.count(_originalName)))
+	if (m_dialect.builtin(_originalName) || m_externallyUsedIdentifiers.count(_originalName))
 		return _originalName;
 
 	assertThrow(!m_scopes.empty() && m_scopes.back(), OptimizerException, "");

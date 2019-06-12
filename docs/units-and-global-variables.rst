@@ -2,12 +2,12 @@
 Units and Globally Available Variables
 **************************************
 
-.. index:: wei, finney, szabo, ether
+.. index:: sun, trx
 
-Ether Units
+Trx Units
 ===========
 
-A literal number can take a suffix of ``wei``, ``finney``, ``szabo`` or ``ether`` to specify a subdenomination of Ether, where Ether numbers without a postfix are assumed to be Wei.
+A literal number can take a suffix of ``sun`` or ``trx`` to convert between the subdenominations of Trx, where Trx currency numbers without a postfix are assumed to be sun, e.g. ``2 trx == 2000000 sun`` evaluates to ``true``.
 
 ::
 
@@ -15,6 +15,8 @@ A literal number can take a suffix of ``wei``, ``finney``, ``szabo`` or ``ether`
     assert(1 szabo == 1e12);
     assert(1 finney == 1e15);
     assert(1 ether == 1e18);
+    assert(1 sun == 1);
+    assert(1 trx == 1e6);
 
 The only effect of the subdenomination suffix is a multiplication by a power of ten.
 
@@ -43,8 +45,8 @@ library has to be updated by an external oracle.
 .. note::
     The suffix ``years`` has been removed in version 0.5.0 due to the reasons above.
 
-These suffixes cannot be applied to variables. If you want to
-interpret some input variable in e.g. days, you can do it in the following way::
+These suffixes cannot be applied to variables. For example, if you want to
+interpret a function parameter in days, you can in the following way::
 
     function f(uint start, uint daysAfter) public {
         if (now >= start + daysAfter * 1 days) {
@@ -75,7 +77,7 @@ Block and Transaction Properties
 - ``msg.data`` (``bytes calldata``): complete calldata
 - ``msg.sender`` (``address payable``): sender of the message (current call)
 - ``msg.sig`` (``bytes4``): first four bytes of the calldata (i.e. function identifier)
-- ``msg.value`` (``uint``): number of wei sent with the message
+- ``msg.value`` (``uint``): number of sun sent with the message
 - ``now`` (``uint``): current block timestamp (alias for ``block.timestamp``)
 - ``tx.gasprice`` (``uint``): gas price of the transaction
 - ``tx.origin`` (``address payable``): sender of the transaction (full call chain)
@@ -103,11 +105,11 @@ Block and Transaction Properties
     values will be zero.
 
 .. note::
-    The function ``blockhash`` was previously known as ``block.blockhash``. It was deprecated in
+    The function ``blockhash`` was previously known as ``block.blockhash``, which was deprecated in
     version 0.4.22 and removed in version 0.5.0.
 
 .. note::
-    The function ``gasleft`` was previously known as ``msg.gas``. It was deprecated in
+    The function ``gasleft`` was previously known as ``msg.gas``, which was deprecated in
     version 0.4.21 and removed in version 0.5.0.
 
 .. index:: abi, encoding, packed
@@ -117,7 +119,7 @@ ABI Encoding and Decoding Functions
 
 - ``abi.decode(bytes memory encodedData, (...)) returns (...)``: ABI-decodes the given data, while the types are given in parentheses as second argument. Example: ``(uint a, uint[2] memory b, bytes memory c) = abi.decode(data, (uint, uint[2], bytes))``
 - ``abi.encode(...) returns (bytes memory)``: ABI-encodes the given arguments
-- ``abi.encodePacked(...) returns (bytes memory)``: Performs :ref:`packed encoding <abi_packed_mode>` of the given arguments
+- ``abi.encodePacked(...) returns (bytes memory)``: Performs :ref:`packed encoding <abi_packed_mode>` of the given arguments. Note that packed encoding can be ambiguous!
 - ``abi.encodeWithSelector(bytes4 selector, ...) returns (bytes memory)``: ABI-encodes the given arguments starting from the second and prepends the given four-byte selector
 - ``abi.encodeWithSignature(string memory signature, ...) returns (bytes memory)``: Equivalent to ``abi.encodeWithSelector(bytes4(keccak256(bytes(signature))), ...)```
 
@@ -125,7 +127,7 @@ ABI Encoding and Decoding Functions
     These encoding functions can be used to craft data for external function calls without actually
     calling an external function. Furthermore, ``keccak256(abi.encodePacked(a, b))`` is a way
     to compute the hash of structured data (although be aware that it is possible to
-    craft a "hash collision" using different inputs types).
+    craft a "hash collision" using different function parameter types).
 
 See the documentation about the :ref:`ABI <ABI>` and the
 :ref:`tightly packed encoding <abi_packed_mode>` for details about the encoding.
@@ -173,7 +175,7 @@ Mathematical and Cryptographic Functions
    payable``. See :ref:`address payable<address>` for conversion, in case you need
    to transfer funds to the recovered address.
 
-It might be that you run into Out-of-Gas for ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*. The reason for this is that those are implemented as so-called precompiled contracts and these contracts only really exist after they received the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution runs into an Out-of-Gas error. A workaround for this problem is to first send e.g. 1 Wei to each of the contracts before you use them in your actual contracts. This is not an issue on the official or test net.
+It might be that you run into Out-of-Gas for ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*. The reason for this is that those are implemented as so-called precompiled contracts and these contracts only really exist after they received the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution runs into an Out-of-Gas error. A workaround for this problem is to first send e.g. 1 sun to each of the contracts before you use them in your actual contracts. This is not an issue on the official or test net.
 
 .. note::
     There used to be an alias for ``keccak256`` called ``sha3``, which was removed in version 0.5.0.
@@ -185,11 +187,11 @@ Members of Address Types
 ------------------------
 
 ``<address>.balance`` (``uint256``):
-    balance of the :ref:`address` in Wei
+    balance of the :ref:`address` in sun
 ``<address payable>.transfer(uint256 amount)``:
-    send given amount of Wei to :ref:`address`, reverts on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of sun to :ref:`address`, reverts on failure, forwards 2300 gas stipend, not adjustable
 ``<address payable>.send(uint256 amount) returns (bool)``:
-    send given amount of Wei to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of sun to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
 ``<address>.call(bytes memory) returns (bool, bytes memory)``:
     issue low-level ``CALL`` with the given payload, returns success condition and return data, forwards all available gas, adjustable
 ``<address>.delegatecall(bytes memory) returns (bool, bytes memory)``:
@@ -200,9 +202,13 @@ Members of Address Types
 For more information, see the section on :ref:`address`.
 
 .. warning::
+    You should avoid using ``.call()`` whenever possible when executing another contract function as it bypasses type checking,
+    function existence check, and argument packing.
+
+.. warning::
     There are some dangers in using ``send``: The transfer fails if the call stack depth is at 1024
     (this can always be forced by the caller) and it also fails if the recipient runs out of gas. So in order
-    to make safe Ether transfers, always check the return value of ``send``, use ``transfer`` or even better:
+    to make safe Trx transfers, always check the return value of ``send``, use ``transfer`` or even better:
     Use a pattern where the recipient withdraws the money.
 
 .. note::
@@ -241,3 +247,32 @@ Furthermore, all functions of the current contract are callable directly includi
     Prior to version 0.5.0, there was a function called ``suicide`` with the same
     semantics as ``selfdestruct``.
 
+.. index:: type, creationCode, runtimeCode
+
+.. _meta-type:
+
+Type Information
+----------------
+
+The expression ``type(X)`` can be used to retrieve information about the
+type ``X``. Currently, there is limited support for this feature, but
+it might be expanded in the future. The following properties are
+available for a contract type ``C``:
+
+``type(C).creationCode``:
+    Memory byte array that contains the creation bytecode of the contract.
+    This can be used in inline assembly to build custom creation routines,
+    especially by using the ``create2`` opcode.
+    This property can **not** be accessed in the contract itself or any
+    derived contract. It causes the bytecode to be included in the bytecode
+    of the call site and thus circular references like that are not possible.
+
+``type(C).runtimeCode``:
+    Memory byte array that contains the runtime bytecode of the contract.
+    This is the code that is usually deployed by the constructor of ``C``.
+    If ``C`` has a constructor that uses inline assembly, this might be
+    different from the actually deployed bytecode. Also note that libraries
+    modify their runtime bytecode at time of deployment to guard against
+    regular calls.
+    The same restrictions as with ``.creationCode`` also apply for this
+    property.

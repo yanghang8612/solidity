@@ -23,7 +23,7 @@
 
 #include <libsolidity/interface/CompilerStack.h>
 #include <libsolidity/interface/AssemblyStack.h>
-#include <libsolidity/interface/EVMVersion.h>
+#include <liblangutil/EVMVersion.h>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -41,8 +41,6 @@ enum class DocumentationType: uint8_t;
 class CommandLineInterface
 {
 public:
-	CommandLineInterface() {}
-
 	/// Parse command line arguments and return false if we should not continue
 	bool parseArguments(int _argc, char** _argv);
 	/// Parse the files and create source code objects
@@ -59,7 +57,7 @@ private:
 	/// @returns the full object with library placeholder hints in hex.
 	static std::string objectWithLinkRefsHex(eth::LinkerObject const& _obj);
 
-	bool assemble(AssemblyStack::Language _language, AssemblyStack::Machine _targetMachine);
+	bool assemble(AssemblyStack::Language _language, AssemblyStack::Machine _targetMachine, bool _optimize);
 
 	void outputCompilationResults();
 
@@ -111,6 +109,8 @@ private:
 	std::unique_ptr<dev::solidity::CompilerStack> m_compiler;
 	/// EVM version to use
 	EVMVersion m_evmVersion;
+	/// Whether or not to colorize diagnostics output.
+	bool m_coloredOutput = true;
 };
 
 }

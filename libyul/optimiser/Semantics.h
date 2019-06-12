@@ -22,14 +22,11 @@
 
 #include <libyul/optimiser/ASTWalker.h>
 
-#include <string>
-#include <map>
 #include <set>
 
-namespace dev
-{
 namespace yul
 {
+struct Dialect;
 
 /**
  * Specific AST walker that determines whether an expression is movable.
@@ -37,26 +34,26 @@ namespace yul
 class MovableChecker: public ASTWalker
 {
 public:
-	MovableChecker() = default;
-	explicit MovableChecker(Expression const& _expression);
+	explicit MovableChecker(Dialect const& _dialect);
+	MovableChecker(Dialect const& _dialect, Expression const& _expression);
 
-	virtual void operator()(Identifier const& _identifier) override;
-	virtual void operator()(FunctionalInstruction const& _functionalInstruction) override;
-	virtual void operator()(FunctionCall const& _functionCall) override;
+	void operator()(Identifier const& _identifier) override;
+	void operator()(FunctionalInstruction const& _functionalInstruction) override;
+	void operator()(FunctionCall const& _functionCall) override;
 
 	/// Disallow visiting anything apart from Expressions (this throws).
-	virtual void visit(Statement const&) override;
+	void visit(Statement const&) override;
 	using ASTWalker::visit;
 
 	bool movable() const { return m_movable; }
-	std::set<std::string> const& referencedVariables() const { return m_variableReferences; }
+	std::set<YulString> const& referencedVariables() const { return m_variableReferences; }
 
 private:
+	Dialect const& m_dialect;
 	/// Which variables the current expression references.
-	std::set<std::string> m_variableReferences;
+	std::set<YulString> m_variableReferences;
 	/// Is the current expression movable or not.
 	bool m_movable = true;
 };
 
-}
 }

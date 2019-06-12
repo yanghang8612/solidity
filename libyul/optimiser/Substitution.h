@@ -21,13 +21,10 @@
 #pragma once
 
 #include <libyul/optimiser/ASTCopier.h>
+#include <libyul/YulString.h>
 
-#include <string>
 #include <map>
-#include <set>
 
-namespace dev
-{
 namespace yul
 {
 
@@ -37,14 +34,13 @@ namespace yul
 class Substitution: public ASTCopier
 {
 public:
-	Substitution(std::map<std::string, Expression const*> const& _substitutions):
+	Substitution(std::map<YulString, Expression const*> const& _substitutions):
 		m_substitutions(_substitutions)
 	{}
-	virtual Expression translate(Expression const& _expression) override;
+	Expression translate(Expression const& _expression) override;
 
 private:
-	std::map<std::string, Expression const*> const& m_substitutions;
+	std::map<YulString, Expression const*> const& m_substitutions;
 };
 
-}
 }

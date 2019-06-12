@@ -115,7 +115,7 @@ Arch Linux also has packages, albeit limited to the latest development version:
 
     pacman -S solidity
 
-We distribute the Solidity compiler through Homebrow
+We distribute the Solidity compiler through Homebrew
 as a build-from-source version. Pre-built bottles are
 currently not supported.
 
@@ -296,13 +296,13 @@ And for Windows:
 This latter set of instructions should result in the creation of
 **solidity.sln** in that build directory.  Double-clicking on that file
 should result in Visual Studio firing up.  We suggest building
-**RelWithDebugInfo** configuration, but all others work.
+**Release** configuration, but all others work.
 
 Alternatively, you can build for Windows on the command-line, like so:
 
 .. code-block:: bash
 
-    cmake --build . --config RelWithDebInfo
+    cmake --build . --config Release
 
 CMake options
 =============

@@ -25,9 +25,6 @@
 #include <libsolidity/interface/Version.h>
 #include <libsolc/libsolc.h>
 
-#include <test/Metadata.h>
-#include <test/Options.h>
-
 using namespace std;
 
 namespace dev
@@ -40,31 +37,31 @@ namespace test
 namespace
 {
 
-Json::Value compileSingle(string const& _input)
+/// TODO: share this between StandardCompiler.cpp
+/// Helper to match a specific error type and message
+bool containsError(Json::Value const& _compilerResult, string const& _type, string const& _message)
 {
-	string output(compileJSON(_input.c_str(), dev::test::Options::get().optimize));
-	Json::Value ret;
-	BOOST_REQUIRE(jsonParseStrict(output, ret));
-	return ret;
+	if (!_compilerResult.isMember("errors"))
+		return false;
+
+	for (auto const& error: _compilerResult["errors"])
+	{
+		BOOST_REQUIRE(error.isObject());
+		BOOST_REQUIRE(error["type"].isString());
+		BOOST_REQUIRE(error["message"].isString());
+		if ((error["type"].asString() == _type) && (error["message"].asString() == _message))
+			return true;
+	}
+
+	return false;
 }
 
-Json::Value compileMulti(string const& _input, bool _callback)
+Json::Value compile(string const& _input, CStyleReadFileCallback _callback = nullptr)
 {
-	string output(
-		_callback ?
-		compileJSONCallback(_input.c_str(), dev::test::Options::get().optimize, nullptr) :
-		compileJSONMulti(_input.c_str(), dev::test::Options::get().optimize)
-	);
+	string output(solidity_compile(_input.c_str(), _callback));
 	Json::Value ret;
 	BOOST_REQUIRE(jsonParseStrict(output, ret));
-	return ret;
-}
-
-Json::Value compile(string const& _input)
-{
-	string output(compileStandard(_input.c_str(), nullptr));
-	Json::Value ret;
-	BOOST_REQUIRE(jsonParseStrict(output, ret));
+	solidity_free();
 	return ret;
 }
 
@@ -74,111 +71,16 @@ BOOST_AUTO_TEST_SUITE(LibSolc)
 
 BOOST_AUTO_TEST_CASE(read_version)
 {
-	string output(version());
+	string output(solidity_version());
 	BOOST_CHECK(output.find(VersionString) == 0);
+	solidity_free();
 }
 
 BOOST_AUTO_TEST_CASE(read_license)
 {
-	string output(license());
+	string output(solidity_license());
 	BOOST_CHECK(output.find("GNU GENERAL PUBLIC LICENSE") != string::npos);
-}
-
-BOOST_AUTO_TEST_CASE(basic_compilation)
-{
-	char const* input = R"(
-	{
-		"sources": {
-			"fileA": "contract A { }"
-		}
-	}
-	)";
-	Json::Value result = compileMulti(input, false);
-	BOOST_CHECK(result.isObject());
-
-	// Compare with compileJSONCallback
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(result),
-		dev::jsonCompactPrint(compileMulti(input, true))
-	);
-
-	BOOST_CHECK(result["contracts"].isObject());
-	BOOST_CHECK(result["contracts"]["fileA:A"].isObject());
-	Json::Value contract = result["contracts"]["fileA:A"];
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["interface"].isString());
-	BOOST_CHECK_EQUAL(contract["interface"].asString(), "[]");
-	BOOST_CHECK(contract["bytecode"].isString());
-	BOOST_CHECK_EQUAL(
-		dev::test::bytecodeSansMetadata(contract["bytecode"].asString()),
-		"6080604052348015600f57600080fd5b50603580601d6000396000f3fe6080604052600080fdfe"
-	);
-	BOOST_CHECK(contract["runtimeBytecode"].isString());
-	BOOST_CHECK_EQUAL(
-		dev::test::bytecodeSansMetadata(contract["runtimeBytecode"].asString()),
-		"6080604052600080fdfe"
-	);
-	BOOST_CHECK(contract["functionHashes"].isObject());
-	BOOST_CHECK(contract["gasEstimates"].isObject());
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(contract["gasEstimates"]),
-		"{\"creation\":[66,10600],\"external\":{},\"internal\":{}}"
-	);
-	BOOST_CHECK(contract["metadata"].isString());
-	BOOST_CHECK(dev::test::isValidMetadata(contract["metadata"].asString()));
-	BOOST_CHECK(result["sources"].isObject());
-	BOOST_CHECK(result["sources"]["fileA"].isObject());
-	BOOST_CHECK(result["sources"]["fileA"]["AST"].isObject());
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(result["sources"]["fileA"]["AST"]),
-		"{\"attributes\":{\"absolutePath\":\"fileA\",\"exportedSymbols\":{\"A\":[1]}},"
-		"\"children\":[{\"attributes\":{\"baseContracts\":[null],\"contractDependencies\":[null],"
-		"\"contractKind\":\"contract\",\"documentation\":null,\"fullyImplemented\":true,\"linearizedBaseContracts\":[1],"
-		"\"name\":\"A\",\"nodes\":[null],\"scope\":2},\"id\":1,\"name\":\"ContractDefinition\","
-		"\"src\":\"0:14:0\"}],\"id\":2,\"name\":\"SourceUnit\",\"src\":\"0:14:0\"}"
-	);
-}
-
-BOOST_AUTO_TEST_CASE(single_compilation)
-{
-	Json::Value result = compileSingle("contract A { }");
-	BOOST_CHECK(result.isObject());
-
-	BOOST_CHECK(result["contracts"].isObject());
-	BOOST_CHECK(result["contracts"][":A"].isObject());
-	Json::Value contract = result["contracts"][":A"];
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["interface"].isString());
-	BOOST_CHECK_EQUAL(contract["interface"].asString(), "[]");
-	BOOST_CHECK(contract["bytecode"].isString());
-	BOOST_CHECK_EQUAL(
-		dev::test::bytecodeSansMetadata(contract["bytecode"].asString()),
-		"6080604052348015600f57600080fd5b50603580601d6000396000f3fe6080604052600080fdfe"
-	);
-	BOOST_CHECK(contract["runtimeBytecode"].isString());
-	BOOST_CHECK_EQUAL(
-		dev::test::bytecodeSansMetadata(contract["runtimeBytecode"].asString()),
-		"6080604052600080fdfe"
-	);
-	BOOST_CHECK(contract["functionHashes"].isObject());
-	BOOST_CHECK(contract["gasEstimates"].isObject());
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(contract["gasEstimates"]),
-		"{\"creation\":[66,10600],\"external\":{},\"internal\":{}}"
-	);
-	BOOST_CHECK(contract["metadata"].isString());
-	BOOST_CHECK(dev::test::isValidMetadata(contract["metadata"].asString()));
-	BOOST_CHECK(result["sources"].isObject());
-	BOOST_CHECK(result["sources"][""].isObject());
-	BOOST_CHECK(result["sources"][""]["AST"].isObject());
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(result["sources"][""]["AST"]),
-		"{\"attributes\":{\"absolutePath\":\"\",\"exportedSymbols\":{\"A\":[1]}},"
-		"\"children\":[{\"attributes\":{\"baseContracts\":[null],\"contractDependencies\":[null],"
-		"\"contractKind\":\"contract\",\"documentation\":null,\"fullyImplemented\":true,\"linearizedBaseContracts\":[1],"
-		"\"name\":\"A\",\"nodes\":[null],\"scope\":2},\"id\":1,\"name\":\"ContractDefinition\","
-		"\"src\":\"0:14:0\"}],\"id\":2,\"name\":\"SourceUnit\",\"src\":\"0:14:0\"}"
-	);
+	solidity_free();
 }
 
 BOOST_AUTO_TEST_CASE(standard_compilation)
@@ -198,27 +100,74 @@ BOOST_AUTO_TEST_CASE(standard_compilation)
 
 	// Only tests some assumptions. The StandardCompiler is tested properly in another suite.
 	BOOST_CHECK(result.isMember("sources"));
-	BOOST_CHECK(result.isMember("contracts"));
+	// This used to test that it is a member, but we did not actually request any output,
+	// so there should not be a contract member.
+	BOOST_CHECK(!result.isMember("contracts"));
 }
 
-BOOST_AUTO_TEST_CASE(new_api)
+BOOST_AUTO_TEST_CASE(missing_callback)
 {
 	char const* input = R"(
 	{
 		"language": "Solidity",
 		"sources": {
 			"fileA": {
-				"content": "contract A { }"
+				"content": "import \"missing.sol\"; contract A { }"
 			}
 		}
 	}
 	)";
-	BOOST_CHECK_EQUAL(string(version()), string(solidity_version()));
-	BOOST_CHECK_EQUAL(string(license()), string(solidity_license()));
-	BOOST_CHECK_EQUAL(
-		string(compileStandard(input, nullptr)),
-		string(solidity_compile(input, nullptr))
-	);
+	Json::Value result = compile(input);
+	BOOST_CHECK(result.isObject());
+
+	BOOST_CHECK(containsError(result, "ParserError", "Source \"missing.sol\" not found: File not supplied initially."));
+}
+
+BOOST_AUTO_TEST_CASE(with_callback)
+{
+	char const* input = R"(
+	{
+		"language": "Solidity",
+		"sources": {
+			"fileA": {
+				"content": "import \"found.sol\"; import \"notfound.sol\"; contract A { }"
+			}
+		}
+	}
+	)";
+
+	CStyleReadFileCallback callback{
+		[](char const* _path, char** o_contents, char** o_error)
+		{
+			// Caller frees the pointers.
+			if (string(_path) == "found.sol")
+			{
+				static string content{"import \"missing.sol\"; contract B {}"};
+				*o_contents = strdup(content.c_str());
+				*o_error = nullptr;
+			}
+			else if (string(_path) == "missing.sol")
+			{
+				static string errorMsg{"Missing file."};
+				*o_error = strdup(errorMsg.c_str());
+				*o_contents = nullptr;
+			}
+			else
+			{
+				*o_error = nullptr;
+				*o_contents = nullptr;
+			}
+		}
+	};
+
+	Json::Value result = compile(input, callback);
+	BOOST_CHECK(result.isObject());
+
+	// This ensures that "found.sol" was properly loaded which triggered the second import statement.
+	BOOST_CHECK(containsError(result, "ParserError", "Source \"missing.sol\" not found: Missing file."));
+
+	// This should be placed due to the missing "notfound.sol" which sets both pointers to null.
+	BOOST_CHECK(containsError(result, "ParserError", "Source \"notfound.sol\" not found: File not found."));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -23,7 +23,7 @@
 
 #include <test/Options.h>
 
-#include <libsolidity/interface/EVMVersion.h>
+#include <liblangutil/EVMVersion.h>
 
 #include <libdevcore/CommonData.h>
 
@@ -263,14 +263,14 @@ void RPCSession::test_setChainParams(vector<string> const& _accounts)
 			"difficulty": "131072"
         },
 		"accounts": {
-			"0000000000000000000000000000000000000001": { "wei": "1", "precompiled": { "name": "ecrecover", "linear": { "base": 3000, "word": 0 } } },
-			"0000000000000000000000000000000000000002": { "wei": "1", "precompiled": { "name": "sha256", "linear": { "base": 60, "word": 12 } } },
-			"0000000000000000000000000000000000000003": { "wei": "1", "precompiled": { "name": "ripemd160", "linear": { "base": 600, "word": 120 } } },
-			"0000000000000000000000000000000000000004": { "wei": "1", "precompiled": { "name": "identity", "linear": { "base": 15, "word": 3 } } },
-			"0000000000000000000000000000000000000005": { "wei": "1", "precompiled": { "name": "modexp" } },
-			"0000000000000000000000000000000000000006": { "wei": "1", "precompiled": { "name": "alt_bn128_G1_add", "linear": { "base": 500, "word": 0 } } },
-			"0000000000000000000000000000000000000007": { "wei": "1", "precompiled": { "name": "alt_bn128_G1_mul", "linear": { "base": 40000, "word": 0 } } },
-			"0000000000000000000000000000000000000008": { "wei": "1", "precompiled": { "name": "alt_bn128_pairing_product" } }
+			"0000000000000000000000000000000000000001": { "sun": "1", "precompiled": { "name": "ecrecover", "linear": { "base": 3000, "word": 0 } } },
+			"0000000000000000000000000000000000000002": { "sun": "1", "precompiled": { "name": "sha256", "linear": { "base": 60, "word": 12 } } },
+			"0000000000000000000000000000000000000003": { "sun": "1", "precompiled": { "name": "ripemd160", "linear": { "base": 600, "word": 120 } } },
+			"0000000000000000000000000000000000000004": { "sun": "1", "precompiled": { "name": "identity", "linear": { "base": 15, "word": 3 } } },
+			"0000000000000000000000000000000000000005": { "sun": "1", "precompiled": { "name": "modexp" } },
+			"0000000000000000000000000000000000000006": { "sun": "1", "precompiled": { "name": "alt_bn128_G1_add", "linear": { "base": 500, "word": 0 } } },
+			"0000000000000000000000000000000000000007": { "sun": "1", "precompiled": { "name": "alt_bn128_G1_mul", "linear": { "base": 40000, "word": 0 } } },
+			"0000000000000000000000000000000000000008": { "sun": "1", "precompiled": { "name": "alt_bn128_pairing_product" } }
 		}
 	}
 	)";
@@ -278,7 +278,7 @@ void RPCSession::test_setChainParams(vector<string> const& _accounts)
 	Json::Value config;
 	BOOST_REQUIRE(jsonParseStrict(c_configString, config));
 	for (auto const& account: _accounts)
-		config["accounts"][account]["wei"] = "0x100000000000000000000000000000000000000000";
+		config["accounts"][account]["sun"] = "0x100000000000000000000000000000000000000000";
 	test_setChainParams(jsonCompactPrint(config));
 }
 
@@ -296,40 +296,7 @@ void RPCSession::test_mineBlocks(int _number)
 {
 	u256 startBlock = fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString()));
 	BOOST_REQUIRE(rpcCall("test_mineBlocks", { to_string(_number) }, true) == true);
-
-	// We auto-calibrate the time it takes to mine the transaction.
-	// It would be better to go without polling, but that would probably need a change to the test client
-
-	auto startTime = std::chrono::steady_clock::now();
-	unsigned sleepTime = m_sleepTime;
-	size_t tries = 0;
-	for (; ; ++tries)
-	{
-		std::this_thread::sleep_for(chrono::milliseconds(sleepTime));
-		auto endTime = std::chrono::steady_clock::now();
-		unsigned timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-		if (timeSpent > m_maxMiningTime)
-			BOOST_FAIL("Error in test_mineBlocks: block mining timeout!");
-		if (fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString())) >= startBlock + _number)
-			break;
-		else
-			sleepTime *= 2;
-	}
-	if (tries > 1)
-	{
-		m_successfulMineRuns = 0;
-		m_sleepTime += 2;
-	}
-	else if (tries == 1)
-	{
-		m_successfulMineRuns++;
-		if (m_successfulMineRuns > 5)
-		{
-			m_successfulMineRuns = 0;
-			if (m_sleepTime > 2)
-				m_sleepTime--;
-		}
-	}
+	BOOST_REQUIRE(fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString())) == startBlock + _number);
 }
 
 void RPCSession::test_modifyTimestamp(size_t _timestamp)
@@ -357,7 +324,15 @@ Json::Value RPCSession::rpcCall(string const& _methodName, vector<string> const&
 	Json::Value result;
 	string errorMsg;
 	if (!jsonParseStrict(reply, result, &errorMsg))
-		BOOST_REQUIRE_MESSAGE(false, errorMsg);
+		BOOST_FAIL("Failed to parse JSON-RPC response: " + errorMsg);
+
+	if (!result.isMember("id") || !result["id"].isUInt())
+		BOOST_FAIL("Badly formatted JSON-RPC response (missing or non-integer \"id\")");
+	if (result["id"].asUInt() != (m_rpcSequence - 1))
+		BOOST_FAIL(
+			"Response identifier mismatch. "
+			"Expected " + to_string(m_rpcSequence - 1) + " but got " + to_string(result["id"].asUInt()) + "."
+		);
 
 	if (result.isMember("error"))
 	{

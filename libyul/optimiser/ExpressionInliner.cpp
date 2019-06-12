@@ -23,14 +23,13 @@
 #include <libyul/optimiser/InlinableExpressionFunctionFinder.h>
 #include <libyul/optimiser/Substitution.h>
 #include <libyul/optimiser/Semantics.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 #include <boost/algorithm/cxx11/all_of.hpp>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 using namespace dev::solidity;
 
 void ExpressionInliner::run()
@@ -57,12 +56,12 @@ void ExpressionInliner::visit(Expression& _expression)
 
 		bool movable = boost::algorithm::all_of(
 			funCall.arguments,
-			[=](Expression const& _arg) { return MovableChecker(_arg).movable(); }
+			[=](Expression const& _arg) { return MovableChecker(m_dialect, _arg).movable(); }
 		);
 		if (m_inlinableFunctions.count(funCall.functionName.name) && movable)
 		{
 			FunctionDefinition const& fun = *m_inlinableFunctions.at(funCall.functionName.name);
-			map<string, Expression const*> substitutions;
+			map<YulString, Expression const*> substitutions;
 			for (size_t i = 0; i < fun.parameters.size(); ++i)
 				substitutions[fun.parameters[i].name] = &funCall.arguments[i];
 			_expression = Substitution(substitutions).translate(*boost::get<Assignment>(fun.body.statements.front()).value);

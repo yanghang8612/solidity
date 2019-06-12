@@ -21,11 +21,11 @@
 
 #include <libyul/optimiser/SSAValueTracker.h>
 
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
 void SSAValueTracker::operator()(Assignment const& _assignment)
 {
@@ -33,21 +33,31 @@ void SSAValueTracker::operator()(Assignment const& _assignment)
 		m_values.erase(var.name);
 }
 
-void SSAValueTracker::operator()(VariableDeclaration const& _varDecl)
+void SSAValueTracker::operator()(FunctionDefinition const& _funDef)
 {
-	if (_varDecl.variables.size() == 1)
-		setValue(_varDecl.variables.front().name, _varDecl.value.get());
-	else
-		for (auto const& var: _varDecl.variables)
-			setValue(var.name, nullptr);
+	for (auto const& var: _funDef.returnVariables)
+		setValue(var.name, nullptr);
+	ASTWalker::operator()(_funDef);
 }
 
-void SSAValueTracker::setValue(string const& _name, Expression const* _value)
+void SSAValueTracker::operator()(VariableDeclaration const& _varDecl)
+{
+	if (!_varDecl.value)
+		for (auto const& var: _varDecl.variables)
+			setValue(var.name, nullptr);
+	else if (_varDecl.variables.size() == 1)
+		setValue(_varDecl.variables.front().name, _varDecl.value.get());
+}
+
+void SSAValueTracker::setValue(YulString _name, Expression const* _value)
 {
 	assertThrow(
 		m_values.count(_name) == 0,
 		OptimizerException,
 		"Source needs to be disambiguated."
 	);
+	static Expression const zero{Literal{{}, LiteralKind::Number, YulString{"0"}, {}}};
+	if (!_value)
+		_value = &zero;
 	m_values[_name] = _value;
 }

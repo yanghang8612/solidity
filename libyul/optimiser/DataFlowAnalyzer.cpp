@@ -25,8 +25,7 @@
 #include <libyul/optimiser/NameCollector.h>
 #include <libyul/optimiser/Semantics.h>
 #include <libyul/Exceptions.h>
-
-#include <libsolidity/inlineasm/AsmData.h>
+#include <libyul/AsmData.h>
 
 #include <libdevcore/CommonData.h>
 
@@ -34,13 +33,13 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::yul;
+using namespace yul;
 
 void DataFlowAnalyzer::operator()(Assignment& _assignment)
 {
-	set<string> names;
+	set<YulString> names;
 	for (auto const& var: _assignment.variableNames)
-		names.insert(var.name);
+		names.emplace(var.name);
 	assertThrow(_assignment.value, OptimizerException, "");
 	visit(*_assignment.value);
 	handleAssignment(names, _assignment.value.get());
@@ -48,12 +47,14 @@ void DataFlowAnalyzer::operator()(Assignment& _assignment)
 
 void DataFlowAnalyzer::operator()(VariableDeclaration& _varDecl)
 {
-	set<string> names;
+	set<YulString> names;
 	for (auto const& var: _varDecl.variables)
-		names.insert(var.name);
+		names.emplace(var.name);
 	m_variableScopes.back().variables += names;
+
 	if (_varDecl.value)
 		visit(*_varDecl.value);
+
 	handleAssignment(names, _varDecl.value.get());
 }
 
@@ -69,7 +70,7 @@ void DataFlowAnalyzer::operator()(If& _if)
 void DataFlowAnalyzer::operator()(Switch& _switch)
 {
 	visit(*_switch.expression);
-	set<string> assignedVariables;
+	set<YulString> assignedVariables;
 	for (auto& _case: _switch.cases)
 	{
 		(*this)(_case.body);
@@ -84,13 +85,29 @@ void DataFlowAnalyzer::operator()(Switch& _switch)
 
 void DataFlowAnalyzer::operator()(FunctionDefinition& _fun)
 {
+	// Save all information. We might rather reinstantiate this class,
+	// but this could be difficult if it is subclassed.
+	map<YulString, Expression const*> value;
+	map<YulString, set<YulString>> references;
+	map<YulString, set<YulString>> referencedBy;
+	m_value.swap(value);
+	m_references.swap(references);
+	m_referencedBy.swap(referencedBy);
 	pushScope(true);
+
 	for (auto const& parameter: _fun.parameters)
-		m_variableScopes.back().variables.insert(parameter.name);
+		m_variableScopes.back().variables.emplace(parameter.name);
 	for (auto const& var: _fun.returnVariables)
-		m_variableScopes.back().variables.insert(var.name);
+	{
+		m_variableScopes.back().variables.emplace(var.name);
+		handleAssignment({var.name}, nullptr);
+	}
 	ASTModifier::operator()(_fun);
+
 	popScope();
+	m_value.swap(value);
+	m_references.swap(references);
+	m_referencedBy.swap(referencedBy);
 }
 
 void DataFlowAnalyzer::operator()(ForLoop& _for)
@@ -122,19 +139,24 @@ void DataFlowAnalyzer::operator()(Block& _block)
 	assertThrow(numScopes == m_variableScopes.size(), OptimizerException, "");
 }
 
-void DataFlowAnalyzer::handleAssignment(set<string> const& _variables, Expression* _value)
+void DataFlowAnalyzer::handleAssignment(set<YulString> const& _variables, Expression* _value)
 {
+	static Expression const zero{Literal{{}, LiteralKind::Number, YulString{"0"}, {}}};
 	clearValues(_variables);
 
-	MovableChecker movableChecker;
+	MovableChecker movableChecker{m_dialect};
 	if (_value)
 		movableChecker.visit(*_value);
-	if (_variables.size() == 1)
+	else
+		for (auto const& var: _variables)
+			m_value[var] = &zero;
+
+	if (_value && _variables.size() == 1)
 	{
-		string const& name = *_variables.begin();
+		YulString name = *_variables.begin();
 		// Expression has to be movable and cannot contain a reference
 		// to the variable that will be assigned to.
-		if (_value && movableChecker.movable() && !movableChecker.referencedVariables().count(name))
+		if (movableChecker.movable() && !movableChecker.referencedVariables().count(name))
 			m_value[name] = _value;
 	}
 
@@ -143,7 +165,7 @@ void DataFlowAnalyzer::handleAssignment(set<string> const& _variables, Expressio
 	{
 		m_references[name] = referencedVariables;
 		for (auto const& ref: referencedVariables)
-			m_referencedBy[ref].insert(name);
+			m_referencedBy[ref].emplace(name);
 	}
 }
 
@@ -158,7 +180,7 @@ void DataFlowAnalyzer::popScope()
 	m_variableScopes.pop_back();
 }
 
-void DataFlowAnalyzer::clearValues(set<string> _variables)
+void DataFlowAnalyzer::clearValues(set<YulString> _variables)
 {
 	// All variables that reference variables to be cleared also have to be
 	// cleared, but not recursively, since only the value of the original
@@ -176,7 +198,7 @@ void DataFlowAnalyzer::clearValues(set<string> _variables)
 	// Clear variables that reference variables to be cleared.
 	for (auto const& name: _variables)
 		for (auto const& ref: m_referencedBy[name])
-			_variables.insert(ref);
+			_variables.emplace(ref);
 
 	// Clear the value and update the reference relation.
 	for (auto const& name: _variables)
@@ -189,7 +211,7 @@ void DataFlowAnalyzer::clearValues(set<string> _variables)
 	}
 }
 
-bool DataFlowAnalyzer::inScope(string const& _variableName) const
+bool DataFlowAnalyzer::inScope(YulString _variableName) const
 {
 	for (auto const& scope: m_variableScopes | boost::adaptors::reversed)
 	{

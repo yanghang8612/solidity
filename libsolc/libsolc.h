@@ -17,8 +17,10 @@
 /**
  * @author Christian <c@ethdev.com>
  * @date 2014
- * JSON interface for the solidity compiler to be used from Javascript.
+ * Public compiler API.
  */
+
+#pragma once
 
 #include <stdbool.h>
 
@@ -32,20 +34,31 @@
 extern "C" {
 #endif
 
-/// Callback used to retrieve additional source files. "Returns" two pointers that should be
-/// heap-allocated and are free'd by the caller.
+/// Callback used to retrieve additional source files.
+///
+/// "Returns" two pointers that should be heap-allocated and are free'd by the caller.
 typedef void (*CStyleReadFileCallback)(char const* _path, char** o_contents, char** o_error);
 
-char const* license() SOLC_NOEXCEPT;
-char const* version() SOLC_NOEXCEPT;
-char const* compileJSON(char const* _input, bool _optimize) SOLC_NOEXCEPT;
-char const* compileJSONMulti(char const* _input, bool _optimize) SOLC_NOEXCEPT;
-char const* compileJSONCallback(char const* _input, bool _optimize, CStyleReadFileCallback _readCallback) SOLC_NOEXCEPT;
-char const* compileStandard(char const* _input, CStyleReadFileCallback _readCallback) SOLC_NOEXCEPT;
-
+/// Returns the complete license document.
+///
+/// The pointer returned must not be freed by the caller.
 char const* solidity_license() SOLC_NOEXCEPT;
+
+/// Returns the compiler version.
+///
+/// The pointer returned must not be freed by the caller.
 char const* solidity_version() SOLC_NOEXCEPT;
+
+/// Takes a "Standard Input JSON" and an optional callback (can be set to null). Returns
+/// a "Standard Output JSON". Both are to be UTF-8 encoded.
+///
+/// The pointer returned must not be freed by the caller.
 char const* solidity_compile(char const* _input, CStyleReadFileCallback _readCallback) SOLC_NOEXCEPT;
+
+/// Frees up any allocated memory.
+///
+/// NOTE: the pointer returned by solidity_compile is invalid after calling this!
+void solidity_free() SOLC_NOEXCEPT;
 
 #ifdef __cplusplus
 }
