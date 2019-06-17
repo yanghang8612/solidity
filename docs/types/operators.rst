@@ -7,6 +7,8 @@ If ``a`` is an LValue (i.e. a variable or something that can be assigned to), th
 
 ``a += e`` is equivalent to ``a = a + e``. The operators ``-=``, ``*=``, ``/=``, ``%=``, ``|=``, ``&=`` and ``^=`` are defined accordingly. ``a++`` and ``a--`` are equivalent to ``a += 1`` / ``a -= 1`` but the expression itself still has the previous value of ``a``. In contrast, ``--a`` and ``++a`` have the same effect on ``a`` but return the value after the change.
 
+.. _delete:
+
 delete
 ------
 
@@ -27,7 +29,7 @@ value it referred to previously.
 
 ::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
 
     contract DeleteExample {
         uint data;

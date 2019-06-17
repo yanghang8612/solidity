@@ -19,6 +19,8 @@ For contracts that use inheritance, the ordering of state variables is determine
 C3-linearized order of contracts starting with the most base-ward contract. If allowed
 by the above rules, state variables from different contracts do share the same storage slot.
 
+The elements of structs and arrays are stored after each other, just as if they were given explicitly.
+
 .. warning::
     When using elements that are smaller than 32 bytes, your contract's gas usage may be higher.
     This is because the EVM operates on 32 bytes at a time. Therefore, if the element is smaller
@@ -36,15 +38,13 @@ by the above rules, state variables from different contracts do share the same s
     ``uint128, uint256, uint128``, as the former will only take up two slots of storage whereas the
     latter will take up three.
 
- .. note::
+.. note::
      The layout of state variables in storage is considered to be part of the external interface
      of Solidity due to the fact that storage pointers can be passed to libraries. This means that
      any change to the rules outlined in this section is considered a breaking change
      of the language and due to its critical nature should be considered very carefully before
      being executed.
 
-
-The elements of structs and arrays are stored after each other, just as if they were given explicitly.
 
 Mappings and Dynamic Arrays
 ===========================
@@ -62,7 +62,7 @@ non-elementary type, the positions are found by adding an offset of ``keccak256(
 
 So for the following contract snippet::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
 
     contract C {
       struct s { uint a; uint b; }
@@ -336,12 +336,12 @@ The following is the order of precedence for operators, listed in order of evalu
 | *13*       | Logical OR                          | ``||``                                     |
 +------------+-------------------------------------+--------------------------------------------+
 | *14*       | Ternary operator                    | ``<conditional> ? <if-true> : <if-false>`` |
-+------------+-------------------------------------+--------------------------------------------+
-| *15*       | Assignment operators                | ``=``, ``|=``, ``^=``, ``&=``, ``<<=``,    |
++            +-------------------------------------+--------------------------------------------+
+|            | Assignment operators                | ``=``, ``|=``, ``^=``, ``&=``, ``<<=``,    |
 |            |                                     | ``>>=``, ``+=``, ``-=``, ``*=``, ``/=``,   |
 |            |                                     | ``%=``                                     |
 +------------+-------------------------------------+--------------------------------------------+
-| *16*       | Comma operator                      | ``,``                                      |
+| *15*       | Comma operator                      | ``,``                                      |
 +------------+-------------------------------------+--------------------------------------------+
 
 .. index:: assert, block, coinbase, difficulty, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin, revert, require, keccak256, ripemd160, sha256, ecrecover, addmod, mulmod, cryptography, this, super, selfdestruct, balance, send
@@ -385,6 +385,7 @@ Global Variables
 - ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Wei
 - ``<address payable>.send(uint256 amount) returns (bool)``: send given amount of Wei to :ref:`address`, returns ``false`` on failure
 - ``<address payable>.transfer(uint256 amount)``: send given amount of Wei to :ref:`address`, throws on failure
+- ``type(C).name`` (``string``): the name of the contract
 - ``type(C).creationCode`` (``bytes memory``): creation bytecode of the given contract, see :ref:`Type Information<meta-type>`.
 - ``type(C).runtimeCode`` (``bytes memory``): runtime bytecode of the given contract, see :ref:`Type Information<meta-type>`.
 

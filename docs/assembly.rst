@@ -42,7 +42,8 @@ Syntax
 ------
 
 Assembly parses comments, literals and identifiers in the same way as Solidity, so you can use the
-usual ``//`` and ``/* */`` comments. Inline assembly is marked by ``assembly { ... }`` and inside
+usual ``//`` and ``/* */`` comments. There is one exception: Identifiers in inline assembly can contain
+``.``. Inline assembly is marked by ``assembly { ... }`` and inside
 these curly braces, you can use the following (see the later sections for more details):
 
  - literals, i.e. ``0x123``, ``42`` or ``"abc"`` (strings up to 32 characters)
@@ -76,7 +77,7 @@ idea is that assembly libraries will be used to enhance the Solidity language.
 
 .. code::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
 
     library GetCode {
         function at(address _addr) public view returns (bytes memory o_code) {
@@ -101,49 +102,50 @@ efficient code, for example:
 
 .. code::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
+
 
     library VectorSum {
         // This function is less efficient because the optimizer currently fails to
         // remove the bounds checks in array access.
-        function sumSolidity(uint[] memory _data) public pure returns (uint o_sum) {
+        function sumSolidity(uint[] memory _data) public pure returns (uint sum) {
             for (uint i = 0; i < _data.length; ++i)
-                o_sum += _data[i];
+                sum += _data[i];
         }
 
         // We know that we only access the array in bounds, so we can avoid the check.
         // 0x20 needs to be added to an array because the first slot contains the
         // array length.
-        function sumAsm(uint[] memory _data) public pure returns (uint o_sum) {
+        function sumAsm(uint[] memory _data) public pure returns (uint sum) {
             for (uint i = 0; i < _data.length; ++i) {
                 assembly {
-                    o_sum := add(o_sum, mload(add(add(_data, 0x20), mul(i, 0x20))))
+                    sum := add(sum, mload(add(add(_data, 0x20), mul(i, 0x20))))
                 }
             }
         }
 
         // Same as above, but accomplish the entire code within inline assembly.
-        function sumPureAsm(uint[] memory _data) public pure returns (uint o_sum) {
+        function sumPureAsm(uint[] memory _data) public pure returns (uint sum) {
             assembly {
-               // Load the length (first 32 bytes)
-               let len := mload(_data)
+                // Load the length (first 32 bytes)
+                let len := mload(_data)
 
-               // Skip over the length field.
-               //
-               // Keep temporary variable so it can be incremented in place.
-               //
-               // NOTE: incrementing _data would result in an unusable
-               //       _data variable after this assembly block
-               let data := add(_data, 0x20)
+                // Skip over the length field.
+                //
+                // Keep temporary variable so it can be incremented in place.
+                //
+                // NOTE: incrementing _data would result in an unusable
+                //       _data variable after this assembly block
+                let data := add(_data, 0x20)
 
-               // Iterate until the bound is not met.
-               for
-                   { let end := add(data, mul(len, 0x20)) }
-                   lt(data, end)
-                   { data := add(data, 0x20) }
-               {
-                   o_sum := add(o_sum, mload(data))
-               }
+                // Iterate until the bound is not met.
+                for
+                    { let end := add(data, mul(len, 0x20)) }
+                    lt(data, end)
+                    { data := add(data, 0x20) }
+                {
+                    sum := add(sum, mload(data))
+                }
             }
         }
     }
@@ -162,7 +164,6 @@ Note that the order of arguments can be seen to be reversed in non-functional st
 Opcodes marked with ``-`` do not push an item onto the stack (do not return a result),
 those marked with ``*`` are special and all others push exactly one item onto the stack (their "return value").
 Opcodes marked with ``F``, ``H``, ``B`` or ``C`` are present since Frontier, Homestead, Byzantium or Constantinople, respectively.
-Constantinople is still in planning and all instructions marked as such will result in an invalid instruction exception.
 
 In the following, ``mem[a...b)`` signifies the bytes of memory starting at position ``a`` up to
 but not including position ``b`` and ``storage[p]`` signifies the storage contents at position ``p``.
@@ -395,7 +396,7 @@ Local Solidity variables are available for assignments, for example:
 
 .. code::
 
-    pragma solidity >=0.4.11 <0.6.0;
+    pragma solidity >=0.4.11 <0.7.0;
 
     contract C {
         uint b;
@@ -434,7 +435,7 @@ be just ``0``, but it can also be a complex functional-style expression.
 
 .. code::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
 
     contract C {
         function f(uint x) public view returns (uint b) {
@@ -691,14 +692,15 @@ Example:
 We will follow an example compilation from Solidity to assembly.
 We consider the runtime bytecode of the following Solidity program::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
+
 
     contract C {
-      function f(uint x) public pure returns (uint y) {
-        y = 1;
-        for (uint i = 0; i < x; i++)
-          y = 2 * y;
-      }
+        function f(uint x) public pure returns (uint y) {
+            y = 1;
+            for (uint i = 0; i < x; i++)
+                y = 2 * y;
+        }
     }
 
 The following assembly will be generated::
@@ -766,7 +768,7 @@ Grammar::
         SubAssembly
     AssemblyExpression = AssemblyCall | Identifier | AssemblyLiteral
     AssemblyLiteral = NumberLiteral | StringLiteral | HexLiteral
-    Identifier = [a-zA-Z_$] [a-zA-Z_0-9]*
+    Identifier = [a-zA-Z_$] [a-zA-Z_0-9.]*
     AssemblyCall = Identifier '(' ( AssemblyExpression ( ',' AssemblyExpression )* )? ')'
     AssemblyLocalDefinition = 'let' IdentifierOrList ( ':=' AssemblyExpression )?
     AssemblyAssignment = IdentifierOrList ':=' AssemblyExpression
