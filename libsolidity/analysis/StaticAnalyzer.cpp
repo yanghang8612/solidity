@@ -216,19 +216,6 @@ bool StaticAnalyzer::visit(MemberAccess const& _memberAccess)
 		}
 	}
 
-//  TODO check this
-//	if (m_nonPayablePublic && !m_library)
-//		if (MagicType const* type = dynamic_cast<MagicType const*>(_memberAccess.expression().annotation().type.get()))
-//			if (type->kind() == MagicType::Kind::Message &&
-//				(_memberAccess.memberName() == "value" ||
-//				 _memberAccess.memberName() == "tokenvalue" ||
-//				 _memberAccess.memberName() == "tokenid"))
-//
-//				m_errorReporter.warning(
-//					_memberAccess.location(),
-//					"\"msg.value\", \"msg.tokenvalue\" and \"msg.tokenid\" used in non-payable function. Do you want to add the \"payable\" modifier to this function?"
-//				);
-
 	if (_memberAccess.memberName() == "callcode")
 		if (auto const* type = dynamic_cast<FunctionType const*>(_memberAccess.annotation().type))
 			if (type->kind() == FunctionType::Kind::BareCallCode)

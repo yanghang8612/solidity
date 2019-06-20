@@ -189,7 +189,7 @@ enum class Instruction: uint8_t
 	GETLOCAL,           ///< push local variable to top of stack -- not part of Instructions.cpp
 
 	CALLTOKEN = 0xd0,
-	TOKENBALANCE, //
+	TOKENBALANCE,
 	CALLTOKENVALUE,
 	CALLTOKENID,
 

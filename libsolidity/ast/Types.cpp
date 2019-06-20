@@ -512,7 +512,7 @@ string IntegerType::richIdentifier() const
 	if (isTrcToken())
 		return "t_trcToken";
 	else
-	    return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
+		return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
 }
 
 BoolResult IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
@@ -561,7 +561,7 @@ TypeResult IntegerType::unaryOperatorResult(Token _operator) const
 	else if (isTrcToken())
 		return TypeResult::err("");
 	// for non-trctoken integers
-    // we allow -, ++ and --
+	// we allow -, ++ and --
 	else if (_operator == Token::Sub || _operator == Token::Inc ||
 		_operator == Token::Dec || _operator == Token::BitNot)
 		return TypeResult{this};
@@ -2715,9 +2715,6 @@ string FunctionType::richIdentifier() const
 		id += "gas";
 	if (m_valueSet)
 		id += "value";
-	// TODO check this
- //	if (m_tokenName)
-//		id += "tokenName";
 	if (bound())
 		id += "bound_to" + identifierList(selfType());
 	return id;
@@ -2879,8 +2876,6 @@ unsigned FunctionType::sizeOnStack() const
 		size++;
 	if (m_valueSet)
 		size++;
-//	if (m_tokenName)
-//		size++;
 	if (bound())
 		size += m_parameterTypes.front()->sizeOnStack();
 	return size;
@@ -2950,8 +2945,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 						nullptr,
 						m_gasSet,
 						m_valueSet,
-						m_tokenSet,
-						m_bound
+						m_tokenSet
 					)
 				);
 		}
@@ -2969,8 +2963,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 					nullptr,
 					m_gasSet,
 					m_valueSet,
-					m_tokenSet,
-					m_bound
+					m_tokenSet
 				)
 			);
 		return members;
@@ -3508,7 +3501,6 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"value", TypeProvider::uint256()},
 			{"data", TypeProvider::array(DataLocation::CallData)},
 			{"sig", TypeProvider::fixedBytes(4)},
-// TODO check this; is tokenvalue different from value?
 			{"tokenvalue", TypeProvider::uint256()},
 			{"tokenid", TypeProvider::trcToken()},
 		});

@@ -704,59 +704,55 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context.appendConditionalRevert(true);
 			}
 			break;
-        case FunctionType::Kind::TransferToken :
-		    _functionCall.expression().accept(*this);
-		    // Provide the gas stipend manually at first because we may send zero trx.
-            // Will be zeroed if we send more than zero trx.
-            m_context << u256(eth::GasCosts::callStipend);
-            arguments.front()->accept(*this);
-            utils().convertType(
-                    *arguments.front()->annotation().type,
-                    *function.parameterTypes().front(), true
-            );
-            // gas <- gas * !value
-            m_context << Instruction::SWAP1 << Instruction::DUP2;
-            m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
-            arguments[1]->accept(*this);
-//            utils().convertType(
-//                    *arguments[1]->annotation().type,
-//                    *function.parameterTypes()[1], true
-//            );
+		case FunctionType::Kind::TransferToken :
+			_functionCall.expression().accept(*this);
+			// Provide the gas stipend manually at first because we may send zero trx.
+			// Will be zeroed if we send more than zero trx.
+			m_context << u256(eth::GasCosts::callStipend);
+			arguments.front()->accept(*this);
+			utils().convertType(
+				*arguments.front()->annotation().type,
+				*function.parameterTypes().front(), true
+			);
+			// gas <- gas * !value
+			m_context << Instruction::SWAP1 << Instruction::DUP2;
+			m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
+			arguments[1]->accept(*this);
 
-            // will be removed in next release
-            m_context << Instruction::DUP1 << Instruction::ISZERO;
-            m_context.appendConditionalRevert(false);
-            m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
-            m_context << Instruction::GT << Instruction::ISZERO;
-            m_context.appendConditionalRevert(false);
-            m_context << Instruction::DUP1 << (u256(0xF4240));
-            m_context << Instruction::LT << Instruction::ISZERO;
-            m_context.appendConditionalRevert(false);
+			// will be removed in next release
+			m_context << Instruction::DUP1 << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
+			m_context << Instruction::GT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << (u256(0xF4240));
+			m_context << Instruction::LT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
 
-            // now on Stack:
-            //   tokenId
-            //   value
-            //   !value * gas
-            appendExternalFunctionCall(
-                    FunctionType(
-                            TypePointers{},
-                            TypePointers{},
-                            strings(),
-                            strings(),
-                            FunctionType::Kind::BareCall,
-                            false,
-                            StateMutability::NonPayable,
-                            nullptr,
-                            true,
-                            true,
-                            true
-                    ),
-                    {}
-            );
+			// now on Stack:
+			// tokenId
+			// value
+			// !value * gas
+			appendExternalFunctionCall(
+				FunctionType(
+					TypePointers{},
+					TypePointers{},
+					strings(),
+					strings(),
+					FunctionType::Kind::BareCall,
+					false,
+					StateMutability::NonPayable,
+					nullptr,
+					true,
+					true,
+					true
+				),
+				{}
+			);
 
-            m_context << Instruction::ISZERO;
-            m_context.appendConditionalRevert(true);
-            break;
+			m_context << Instruction::ISZERO;
+			m_context.appendConditionalRevert(true);
+			break;
 		case FunctionType::Kind::TokenBalance:
 			// stack layout: address token_id
 			_functionCall.expression().accept(*this);
@@ -1284,10 +1280,6 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::Transfer:
 				case FunctionType::Kind::TransferToken:
 				case FunctionType::Kind::TokenBalance:
-				    // TODO can delete
-					_memberAccess.expression().accept(*this);
-					m_context << funType->externalIdentifier();
-					break;
 				case FunctionType::Kind::Log0:
 				case FunctionType::Kind::Log1:
 				case FunctionType::Kind::Log2:
@@ -2050,7 +2042,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	unsigned valueStackPos = m_context.currentToBaseStackOffset(1 + tokenSize);
 	unsigned tokenStackPos = m_context.currentToBaseStackOffset(1);
 
-
 	// move self object to top
 	if (_functionType.bound())
 		utils().moveToStackTop(gasValueSize, _functionType.selfType()->sizeOnStack());
@@ -2229,24 +2220,20 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	}
 	// Order is important here, STATICCALL might overlap with DELEGATECALL.
 	if (isTokenCall)
-        m_context << Instruction::CALLTOKEN;
-    else if (isDelegateCall)
+		m_context << Instruction::CALLTOKEN;
+	else if (isDelegateCall)
 		m_context << Instruction::DELEGATECALL;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
 	else
 		m_context << Instruction::CALL;
 
-	// TODO check this
 	unsigned remainsSize =
 		2 + // contract address, input_memory_end
-        _functionType.tokenSet() +
-		_functionType.valueSet() +
-		_functionType.gasSet() +
-		(!_functionType.isBareCall());
-//		(_functionType.valueSet() ? 1 : 0) +
-//		(_functionType.gasSet() ? 1 : 0) +
-//		(!_functionType.isBareCall() ? 1 : 0);
+		(_functionType.tokenSet() ? 1 : 0) +
+		(_functionType.valueSet() ? 1 : 0) +
+		(_functionType.gasSet() ? 1 : 0) +
+		(!_functionType.isBareCall() ? 1 : 0);
 
 	if (returnSuccessConditionAndReturndata)
 		m_context << swapInstruction(remainsSize);
