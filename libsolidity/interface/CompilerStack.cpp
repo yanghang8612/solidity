@@ -1188,9 +1188,9 @@ bytes CompilerStack::createCBORMetadata(string const& _metadata, bool _experimen
 	if (_experimentalMode)
 		encoder.pushBool("experimental", true);
 	if (m_release)
-		encoder.pushBytes("solc", VersionCompactBytes);
+		encoder.pushBytes("tron", VersionCompactBytes);
 	else
-		encoder.pushString("solc", VersionStringStrict);
+		encoder.pushString("tron", VersionStringStrict);
 	return encoder.serialise();
 }
 
