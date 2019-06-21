@@ -38,6 +38,7 @@ In this tutorial, we will sign messages in the browser using `web3.js <https://g
 as it provides a number of other security benefits.
 
 ::
+
     /// Hashing first makes things easier
     var hash = web3.utils.sha3("message to sign");
     web3.eth.personal.sign(hash, web3.eth.defaultAccount, function () { console.log("Signed"); });
@@ -112,7 +113,7 @@ The full contract
 
 ::
 
-    pragma solidity >=0.4.24 <0.6.0;
+    pragma solidity >=0.4.24 <0.7.0;
 
     contract ReceiverPays {
         address owner = msg.sender;
@@ -286,7 +287,7 @@ The full contract
 
 ::
 
-    pragma solidity >=0.4.24 <0.6.0;
+    pragma solidity >=0.4.24 <0.7.0;
 
     contract SimplePaymentChannel {
         address payable public sender;      // The account sending payments.

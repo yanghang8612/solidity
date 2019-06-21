@@ -59,11 +59,13 @@ logs that match a topic with a certain address value:
 
 The hash of the signature of the event is one of the topics, except if you
 declared the event with the ``anonymous`` specifier. This means that it is
-not possible to filter for specific anonymous events by name.
+not possible to filter for specific anonymous events by name, you can
+only filter by the contract address. The advantage of anonymous events
+is that they are cheaper to deploy and call.
 
 ::
 
-    pragma solidity >=0.4.21 <0.6.0;
+    pragma solidity >=0.4.21 <0.7.0;
 
     contract ClientReceipt {
         event Deposit(
@@ -136,7 +138,7 @@ as topics. The event call above can be performed in the same way as
 
 ::
 
-    pragma solidity >=0.4.10 <0.6.0;
+    pragma solidity >=0.4.10 <0.7.0;
 
     contract C {
         function f() public payable {
