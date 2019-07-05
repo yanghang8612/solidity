@@ -36,41 +36,78 @@ namespace solidity
 
 GlobalContext::GlobalContext():
 m_magicVariables(vector<shared_ptr<MagicVariableDeclaration const>>{
-	make_shared<MagicVariableDeclaration>("abi", make_shared<MagicType>(MagicType::Kind::ABI)),
-	make_shared<MagicVariableDeclaration>("addmod", make_shared<FunctionType>(strings{"uint256", "uint256", "uint256"}, strings{"uint256"}, FunctionType::Kind::AddMod, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("assert", make_shared<FunctionType>(strings{"bool"}, strings{}, FunctionType::Kind::Assert, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("block", make_shared<MagicType>(MagicType::Kind::Block)),
-	make_shared<MagicVariableDeclaration>("blockhash", make_shared<FunctionType>(strings{"uint256"}, strings{"bytes32"}, FunctionType::Kind::BlockHash, false, StateMutability::View)),
+//	make_shared<MagicVariableDeclaration>("abi", make_shared<MagicType>(MagicType::Kind::ABI)),
+//	make_shared<MagicVariableDeclaration>("addmod", make_shared<FunctionType>(strings{"uint256", "uint256", "uint256"}, strings{"uint256"}, FunctionType::Kind::AddMod, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("assert", make_shared<FunctionType>(strings{"bool"}, strings{}, FunctionType::Kind::Assert, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("block", make_shared<MagicType>(MagicType::Kind::Block)),
+//	make_shared<MagicVariableDeclaration>("blockhash", make_shared<FunctionType>(strings{"uint256"}, strings{"bytes32"}, FunctionType::Kind::BlockHash, false, StateMutability::View)),
 	make_shared<MagicVariableDeclaration>("ecrecover", make_shared<FunctionType>(strings{"bytes32", "uint8", "bytes32", "bytes32"}, strings{"address"}, FunctionType::Kind::ECRecover, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("gasleft", make_shared<FunctionType>(strings(), strings{"uint256"}, FunctionType::Kind::GasLeft, false, StateMutability::View)),
-	make_shared<MagicVariableDeclaration>("keccak256", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("log0", make_shared<FunctionType>(strings{"bytes32"}, strings{}, FunctionType::Kind::Log0)),
-	make_shared<MagicVariableDeclaration>("log1", make_shared<FunctionType>(strings{"bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log1)),
-	make_shared<MagicVariableDeclaration>("log2", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log2)),
-	make_shared<MagicVariableDeclaration>("log3", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log3)),
-	make_shared<MagicVariableDeclaration>("log4", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log4)),
-	make_shared<MagicVariableDeclaration>("msg", make_shared<MagicType>(MagicType::Kind::Message)),
-	make_shared<MagicVariableDeclaration>("mulmod", make_shared<FunctionType>(strings{"uint256", "uint256", "uint256"}, strings{"uint256"}, FunctionType::Kind::MulMod, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("now", make_shared<IntegerType>(256)),
-	make_shared<MagicVariableDeclaration>("require", make_shared<FunctionType>(strings{"bool"}, strings{}, FunctionType::Kind::Require, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("require", make_shared<FunctionType>(strings{"bool", "string memory"}, strings{}, FunctionType::Kind::Require, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("revert", make_shared<FunctionType>(strings(), strings(), FunctionType::Kind::Revert, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("revert", make_shared<FunctionType>(strings{"string memory"}, strings(), FunctionType::Kind::Revert, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("ripemd160", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes20"}, FunctionType::Kind::RIPEMD160, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("selfdestruct", make_shared<FunctionType>(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
-	make_shared<MagicVariableDeclaration>("sha256", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::SHA256, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("sha3", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
-	make_shared<MagicVariableDeclaration>("suicide", make_shared<FunctionType>(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
-	make_shared<MagicVariableDeclaration>("tx", make_shared<MagicType>(MagicType::Kind::Transaction)),
-	make_shared<MagicVariableDeclaration>("type", make_shared<FunctionType>(
-		strings{"address"} /* accepts any contract type, handled by the type checker */,
-		strings{} /* returns a MagicType, handled by the type checker */,
-		FunctionType::Kind::MetaType,
-		false,
-		StateMutability::Pure
-	)),
+//	make_shared<MagicVariableDeclaration>("gasleft", make_shared<FunctionType>(strings(), strings{"uint256"}, FunctionType::Kind::GasLeft, false, StateMutability::View)),
+//	make_shared<MagicVariableDeclaration>("keccak256", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("log0", make_shared<FunctionType>(strings{"bytes32"}, strings{}, FunctionType::Kind::Log0)),
+//	make_shared<MagicVariableDeclaration>("log1", make_shared<FunctionType>(strings{"bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log1)),
+//	make_shared<MagicVariableDeclaration>("log2", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log2)),
+//	make_shared<MagicVariableDeclaration>("log3", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log3)),
+//	make_shared<MagicVariableDeclaration>("log4", make_shared<FunctionType>(strings{"bytes32", "bytes32", "bytes32", "bytes32", "bytes32"}, strings{}, FunctionType::Kind::Log4)),
+//	make_shared<MagicVariableDeclaration>("msg", make_shared<MagicType>(MagicType::Kind::Message)),
+//	make_shared<MagicVariableDeclaration>("mulmod", make_shared<FunctionType>(strings{"uint256", "uint256", "uint256"}, strings{"uint256"}, FunctionType::Kind::MulMod, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("now", make_shared<IntegerType>(256)),
+//	make_shared<MagicVariableDeclaration>("require", make_shared<FunctionType>(strings{"bool"}, strings{}, FunctionType::Kind::Require, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("require", make_shared<FunctionType>(strings{"bool", "string memory"}, strings{}, FunctionType::Kind::Require, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("revert", make_shared<FunctionType>(strings(), strings(), FunctionType::Kind::Revert, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("revert", make_shared<FunctionType>(strings{"string memory"}, strings(), FunctionType::Kind::Revert, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("ripemd160", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes20"}, FunctionType::Kind::RIPEMD160, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("selfdestruct", make_shared<FunctionType>(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
+//	make_shared<MagicVariableDeclaration>("sha256", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::SHA256, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("sha3", make_shared<FunctionType>(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
+//	make_shared<MagicVariableDeclaration>("suicide", make_shared<FunctionType>(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
+//	make_shared<MagicVariableDeclaration>("tx", make_shared<MagicType>(MagicType::Kind::Transaction)),
+//	make_shared<MagicVariableDeclaration>("type", make_shared<FunctionType>(
+//		strings{"address"} /* accepts any contract type, handled by the type checker */,
+//		strings{} /* returns a MagicType, handled by the type checker */,
+//		FunctionType::Kind::MetaType,
+//		false,
+//		StateMutability::Pure
+//	)),
 })
 {
+    generateCustomFunction();
+}
+
+		void GlobalContext::generateCustomFunction() {
+
+	TypePointers parameterTypes;
+    parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
+                                                    make_shared<AddressType>(StateMutability::NonPayable)));
+	parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
+													make_shared<ArrayType>(DataLocation::Memory)));
+	parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
+													make_shared<ArrayType>(DataLocation::Memory)));
+
+    TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(make_shared<BoolType>());
+
+    strings parameterNames;
+    parameterNames.push_back("addresses");
+    parameterNames.push_back("signatures");
+    parameterNames.push_back("hashes");
+    strings returnParameterNames;
+    returnParameterNames.push_back("ok");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("parallelecrecover", make_shared<FunctionType>(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::ParallelECRecover,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+	));
 }
 
 void GlobalContext::setCurrentContract(ContractDefinition const& _contract)

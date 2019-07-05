@@ -195,6 +195,8 @@ bool CompilerStack::analyze()
 			if (!docStringAnalyser.analyseDocStrings(*source->ast))
 				noErrors = false;
 
+
+
 		m_globalContext = make_shared<GlobalContext>();
 		NameAndTypeResolver resolver(m_globalContext->declarations(), m_scopes, m_errorReporter);
 		for (Source const* source: m_sourceOrder)

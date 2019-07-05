@@ -894,12 +894,14 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::ECRecover:
 		case FunctionType::Kind::SHA256:
 		case FunctionType::Kind::RIPEMD160:
+		case FunctionType::Kind::ParallelECRecover:
 		{
 			_functionCall.expression().accept(*this);
 			static map<FunctionType::Kind, u256> const contractAddresses{
 				{FunctionType::Kind::ECRecover, 1},
 				{FunctionType::Kind::SHA256, 2},
-				{FunctionType::Kind::RIPEMD160, 3}
+				{FunctionType::Kind::RIPEMD160, 3},
+				{FunctionType::Kind::ParallelECRecover, 10}
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
@@ -1264,6 +1266,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::Log3:
 				case FunctionType::Kind::Log4:
 				case FunctionType::Kind::ECRecover:
+				case FunctionType::Kind::ParallelECRecover:
 				case FunctionType::Kind::SHA256:
 				case FunctionType::Kind::RIPEMD160:
 				default:
@@ -1969,7 +1972,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	bool returnSuccessConditionAndReturndata = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::BareStaticCall;
 	bool isTokenCall = _functionType.tokenSet();
-//	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall;
 //	bool isCallCode = funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::CallCode;
 	bool isDelegateCall = funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::DelegateCall;
 	bool useStaticCall = funKind == FunctionType::Kind::BareStaticCall || (_functionType.stateMutability() <= StateMutability::View && m_context.evmVersion().hasStaticCall());
@@ -2013,7 +2015,8 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		argumentTypes.push_back(_arguments[i]->annotation().type);
 	}
 
-	if (funKind == FunctionType::Kind::ECRecover)
+	// TODO feat complete logic
+	if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::ParallelECRecover)
 	{
 		// Clears 32 bytes of currently free memory and advances free memory pointer.
 		// Output area will be "start of input area" - 32.
@@ -2074,7 +2077,9 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// put on stack: <size of output> <memory pos of output> <size of input> <memory pos of input>
 	m_context << u256(retSize);
 	utils().fetchFreeMemoryPointer(); // This is the start of input
-	if (funKind == FunctionType::Kind::ECRecover)
+
+	// TODO feat
+	if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::ParallelECRecover)
 	{
 		// In this case, output is 32 bytes before input and has already been cleared.
 		m_context << u256(32) << Instruction::DUP2 << Instruction::SUB << Instruction::SWAP1;
@@ -2194,7 +2199,14 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		utils().loadFromMemoryDynamic(IntegerType(160), false, true, false);
 		utils().convertType(IntegerType(160), FixedBytesType(20));
 	}
-	else if (funKind == FunctionType::Kind::ECRecover)
+
+//	else if (funKind == FunctionType::Kind::ParallelECRecover) {
+//
+//
+//	}
+
+	// TODO feat
+	else if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::ParallelECRecover)
 	{
 		// Output is 32 bytes before input / free mem pointer.
 		// Failing ecrecover cannot be detected, so we clear output before the call.

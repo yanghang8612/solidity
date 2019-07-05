@@ -2691,6 +2691,7 @@ string FunctionType::richIdentifier() const
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
 	case Kind::ECRecover: id += "ecrecover"; break;
+	case Kind::ParallelECRecover: id += "parellelecrecover"; break;
 	case Kind::SHA256: id += "sha256"; break;
 	case Kind::RIPEMD160: id += "ripemd160"; break;
 	case Kind::Log0: id += "log0"; break;
@@ -3075,6 +3076,7 @@ bool FunctionType::isBareCall() const
 	case Kind::BareDelegateCall:
 	case Kind::BareStaticCall:
 	case Kind::ECRecover:
+	case Kind::ParallelECRecover:
 	case Kind::SHA256:
 	case Kind::RIPEMD160:
 		return true;
@@ -3125,6 +3127,7 @@ bool FunctionType::isPure() const
 	return
 		m_kind == Kind::KECCAK256 ||
 		m_kind == Kind::ECRecover ||
+        m_kind == Kind::ParallelECRecover ||
 		m_kind == Kind::SHA256 ||
 		m_kind == Kind::RIPEMD160 ||
 		m_kind == Kind::AddMod ||
@@ -3235,6 +3238,7 @@ bool FunctionType::padArguments() const
 	case Kind::RIPEMD160:
 	case Kind::KECCAK256:
 	case Kind::ABIEncodePacked:
+	case Kind::ParallelECRecover:
 		return false;
 	default:
 		return true;
