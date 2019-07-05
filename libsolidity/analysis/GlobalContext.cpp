@@ -80,6 +80,43 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 
 GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
+    generateCustomFunction();
+}
+
+void GlobalContext::generateCustomFunction() {
+	// bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)
+	TypePointers parameterTypes;
+    parameterTypes.push_back(make_shared<FixedBytesType>(32));
+    parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
+                                                    make_shared<ArrayType>(DataLocation::Memory)));
+    parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
+													make_shared<AddressType>(StateMutability::NonPayable)));
+
+
+
+    TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(make_shared<BoolType>());
+    strings parameterNames;
+    parameterNames.push_back("hash");
+	parameterNames.push_back("signatures");
+    parameterNames.push_back("addresses");
+    strings returnParameterNames;
+    returnParameterNames.push_back("ok");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("multivalidatesign", make_shared<FunctionType>(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::MultiValidateSign,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+	));
 }
 
 void GlobalContext::setCurrentContract(ContractDefinition const& _contract)
