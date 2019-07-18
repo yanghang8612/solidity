@@ -981,6 +981,10 @@ string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertOnFail
 		switch (_type.category())
 		{
 		case Type::Category::Address:
+		{
+			templ("condition", "1");
+			break;
+		}
 		case Type::Category::Integer:
 		case Type::Category::RationalNumber:
 		case Type::Category::Bool:
