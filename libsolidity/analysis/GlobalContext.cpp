@@ -67,7 +67,6 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 		magicVarDecl("sha256", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::SHA256, false, StateMutability::Pure)),
 		magicVarDecl("sha3", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
 		magicVarDecl("suicide", TypeProvider::function(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
-//        magicVarDecl("test", TypeProvider::function(strings()))
 		magicVarDecl("tx", TypeProvider::magic(MagicType::Kind::Transaction)),
 		magicVarDecl("type", TypeProvider::function(
 			strings{"address"} /* accepts any contract type, handled by the type checker */,
@@ -81,16 +80,13 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 
 GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
-    generateCustomFunction();
+	addMultiValidateSignMethod();
 }
 
-void GlobalContext::generateCustomFunction() {
+void GlobalContext::addMultiValidateSignMethod() {
 	// bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)
 	TypePointers parameterTypes;
-//    parameterTypes.push_back(<FixedBytesType>(32));
     parameterTypes.push_back(TypeProvider::fixedBytes(32));
-//    parameterTypes.push_back(make_shared<ArrayType>(DataLocation::Memory,
-//                                                    make_shared<ArrayType>(DataLocation::Memory)));
     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::bytesMemory()));
     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
 
