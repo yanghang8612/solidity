@@ -982,7 +982,7 @@ string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertOnFail
 		{
 		case Type::Category::Address:
 		{
-			templ("condition", "1");
+			templ("condition", "eq(value, " + cleanupFunction(IntegerType(168)) + "(value))");
 			break;
 		}
 		case Type::Category::Integer:
