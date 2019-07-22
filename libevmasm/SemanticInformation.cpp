@@ -174,6 +174,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::MSIZE: // depends on previous writes and reads, not only on content
 	case Instruction::BALANCE: // depends on previous calls
 	case Instruction::TOKENBALANCE:
+	case Instruction::ISCONTRACT:
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
 	case Instruction::RETURNDATACOPY: // depends on previous calls
@@ -197,6 +198,7 @@ bool SemanticInformation::movable(Instruction _instruction)
 	case Instruction::KECCAK256:
 	case Instruction::BALANCE:
 	case Instruction::TOKENBALANCE:
+	case Instruction::ISCONTRACT:
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
 	case Instruction::RETURNDATASIZE:
@@ -272,6 +274,7 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::ADDRESS:
 	case Instruction::BALANCE:
 	case Instruction::TOKENBALANCE:
+	case Instruction::ISCONTRACT:
 	case Instruction::ORIGIN:
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
