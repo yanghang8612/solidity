@@ -86,7 +86,7 @@ public:
 	static IntegerType const* integer(unsigned _bits, IntegerType::Modifier _modifier)
 	{
 		solAssert((_bits % 8) == 0, "");
-		if (_modifier == IntegerType::Modifier::Unsigned)
+		if (_modifier == IntegerType::Modifier::Unsigned || _modifier == IntegerType::Modifier::TrcToken)
 			return m_uintM.at(_bits / 8 - 1).get();
 		else
 			return m_intM.at(_bits / 8 - 1).get();
