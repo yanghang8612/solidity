@@ -50,17 +50,22 @@ static void setDefaultOrCLocale()
 #endif
 }
 
+// solc 入口
 int main(int argc, char** argv)
 {
+
 	setDefaultOrCLocale();
 	dev::solidity::CommandLineInterface cli;
+	// 1. 解析参数
 	if (!cli.parseArguments(argc, argv))
 		return 1;
+	// 2. 根据输入/配置执行，主要是进行编译
 	if (!cli.processInput())
 		return 1;
 	bool success = false;
 	try
 	{
+		// 3. 结果处理
 		success = cli.actOnInput();
 	}
 	catch (boost::exception const& _exception)

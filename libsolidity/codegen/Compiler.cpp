@@ -35,10 +35,12 @@ void Compiler::compileContract(
 	bytes const& _metadata
 )
 {
+	// 先编译非constructor方法
 	ContractCompiler runtimeCompiler(nullptr, m_runtimeContext, m_optimiserSettings);
 	runtimeCompiler.compileContract(_contract, _otherCompilers);
 	m_runtimeContext.appendAuxiliaryData(_metadata);
 
+	//
 	// This might modify m_runtimeContext because it can access runtime functions at
 	// creation time.
 	OptimiserSettings creationSettings{m_optimiserSettings};

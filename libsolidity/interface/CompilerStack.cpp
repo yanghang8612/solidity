@@ -394,6 +394,7 @@ bool CompilerStack::isRequestedContract(ContractDefinition const& _contract) con
 {
 	return
 		m_requestedContractNames.empty() ||
+				// 指定编译某个合约
 		m_requestedContractNames.count(_contract.fullyQualifiedName()) ||
 		m_requestedContractNames.count(_contract.name()) ||
 		m_requestedContractNames.count(":" + _contract.name());
@@ -907,6 +908,8 @@ void CompilerStack::compileContract(
 
 	if (_otherCompilers.count(&_contract) || !_contract.canBeDeployed())
 		return;
+
+	// 如果有依赖关系，则先编译被依赖的合约
 	for (auto const* dependency: _contract.annotation().contractDependencies)
 		compileContract(*dependency, _otherCompilers);
 
@@ -933,6 +936,7 @@ void CompilerStack::compileContract(
 	try
 	{
 		// Assemble deployment (incl. runtime)  object.
+		// 编译的结果
 		compiledContract.object = compiler->assembledObject();
 	}
 	catch(eth::AssemblyException const&)

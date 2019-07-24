@@ -772,6 +772,7 @@ Allowed options)",
 
 bool CommandLineInterface::processInput()
 {
+	// 定义了一个函数，传入CompilerStack中
 	ReadCallback::Callback fileReader = [this](string const& _path)
 	{
 		try
@@ -934,6 +935,8 @@ bool CommandLineInterface::processInput()
 		settings.optimizeStackAllocation = settings.runYulOptimiser;
 		m_compiler->setOptimiserSettings(settings);
 
+		// 核心流程：编译
+		// 业务层面的失败
 		bool successful = m_compiler->compile();
 
 		for (auto const& error: m_compiler->errors())
@@ -945,12 +948,14 @@ bool CommandLineInterface::processInput()
 		if (!successful)
 			return false;
 	}
+	// 编译层面的失败
 	catch (CompilerError const& _exception)
 	{
 		g_hasOutput = true;
 		formatter->printExceptionInformation(_exception, "Compiler error");
 		return false;
 	}
+	// 内部错误？
 	catch (InternalCompilerError const& _exception)
 	{
 		serr() <<

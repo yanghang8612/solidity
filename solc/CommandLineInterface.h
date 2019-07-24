@@ -61,6 +61,7 @@ private:
 
 	void outputCompilationResults();
 
+	// 对于具体执行参数
 	void handleCombinedJSON();
 	void handleAst(std::string const& _argStr);
 	void handleBinary(std::string const& _contract);
