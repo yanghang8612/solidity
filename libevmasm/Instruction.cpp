@@ -62,7 +62,7 @@ std::map<std::string, Instruction> const dev::eth::c_instructions =
 	{ "ADDRESS", Instruction::ADDRESS },
 	{ "BALANCE", Instruction::BALANCE },
 	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
-	{ "ISCONTRACR", Instruction::ISCONTRACT },
+	{ "ISCONTRACT", Instruction::ISCONTRACT },
 	{ "ORIGIN", Instruction::ORIGIN },
 	{ "CALLER", Instruction::CALLER },
 	{ "CALLVALUE", Instruction::CALLVALUE },
