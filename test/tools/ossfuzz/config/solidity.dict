@@ -5,8 +5,6 @@
 " block.number "
 " block.timestamp "
 " days "
-" trx "
-" sun "
 " ether "
 " finney "
 " gasleft() "

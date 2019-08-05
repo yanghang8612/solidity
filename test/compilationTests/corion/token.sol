@@ -52,7 +52,8 @@ contract token is safeMath, module, announcementTypes {
         /*
             Installation function
 
-            When _icoAddr is defined, 0.2 trx has to be attached  as many times  as many genesis addresses are given
+            When _icoAddr is defined, 0.2 ether has to be attached  as many times  as many genesis addresses are given
+
             @forReplace                 This address will be replaced with the old one or not.
             @moduleHandler              Modulhandler's address
             @dbAddr                     Address of database
@@ -72,11 +73,11 @@ contract token is safeMath, module, announcementTypes {
         if ( ! forReplace ) {
             require( db.replaceOwner(address(this)) );
             assert( genesisAddr.length == genesisValue.length );
-            require( address(this).balance >= genesisAddr.length * 0.2 trx );
+            require( address(this).balance >= genesisAddr.length * 0.2 ether );
             for ( uint256 a=0 ; a<genesisAddr.length ; a++ ) {
                 genesis[genesisAddr[a]] = true;
                 require( db.increase(genesisAddr[a], genesisValue[a]) );
-                if ( ! genesisAddr[a].send(0.2 trx) ) {}
+                if ( ! genesisAddr[a].send(0.2 ether) ) {}
                 emit Mint(genesisAddr[a], genesisValue[a]);
             }
         }

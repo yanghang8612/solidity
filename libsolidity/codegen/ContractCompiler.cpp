@@ -124,6 +124,7 @@ void ContractCompiler::appendCallValueCheck()
 	// TODO: error message?
 	m_context.appendConditionalRevert();
 
+#ifndef __ETH_MODE__
 	m_context << Instruction::CALLTOKENID;
 	// TODO: error message?
 	m_context.appendConditionalRevert();
@@ -131,6 +132,7 @@ void ContractCompiler::appendCallValueCheck()
 	m_context << Instruction::CALLTOKENVALUE;
 	// TODO: error message?
 	m_context.appendConditionalRevert();
+#endif
 }
 
 void ContractCompiler::appendInitAndConstructorCode(ContractDefinition const& _contract)

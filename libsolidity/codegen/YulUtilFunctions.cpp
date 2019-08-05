@@ -1311,10 +1311,12 @@ string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertOnFail
 		switch (_type.category())
 		{
 		case Type::Category::Address:
+#ifndef __ETH_MODE__
 		{
 			templ("condition", "eq(value, " + cleanupFunction(IntegerType(168)) + "(value))");
 			break;
 		}
+#endif
 		case Type::Category::Integer:
 		case Type::Category::RationalNumber:
 		case Type::Category::Bool:

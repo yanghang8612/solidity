@@ -113,6 +113,10 @@ set(sources
 	parsing/Token.h
 )
 
+if (ETH)
+  add_definitions(-D__ETH_MODE__)
+endif()
+
 find_package(Z3 4.6.0)
 if (${Z3_FOUND})
   add_definitions(-DHAVE_Z3)

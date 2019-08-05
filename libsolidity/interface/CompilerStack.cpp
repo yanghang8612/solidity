@@ -1184,7 +1184,11 @@ private:
 bytes CompilerStack::createCBORMetadata(string const& _metadata, bool _experimentalMode)
 {
 	MetadataCBOREncoder encoder;
+#ifdef __ETH_MODE__
+	encoder.pushBytes("bzzr0", dev::swarmHash(_metadata).asBytes());
+#else
 	encoder.pushBytes("tron", dev::swarmHash(_metadata).asBytes());
+#endif
 	if (_experimentalMode)
 		encoder.pushBool("experimental", true);
 	if (m_release)

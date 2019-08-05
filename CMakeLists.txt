@@ -29,6 +29,8 @@ option(SOLC_LINK_STATIC "Link solc executable statically on supported platforms"
 option(LLLC_LINK_STATIC "Link lllc executable statically on supported platforms" OFF)
 option(INSTALL_LLLC "Include lllc executable in installation" ${LLL})
 
+option(ETH "Build ETH" OFF)
+
 # Setup cccache.
 include(EthCcache)
 

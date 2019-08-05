@@ -3031,7 +3031,7 @@ BOOST_AUTO_TEST_CASE(contracts_as_addresses)
 {
 	char const* sourceCode = R"(
 		contract helper {
-			function() external payable { } // can receive trx
+			function() external payable { } // can receive ether
 		}
 		contract test {
 			helper h;
@@ -11715,7 +11715,7 @@ BOOST_AUTO_TEST_CASE(no_nonpayable_circumvention_by_modifier)
 	char const* sourceCode = R"(
 		contract C {
 			modifier tryCircumvent {
-				if (false) _; // avoid the function, we should still not accept trx
+				if (false) _; // avoid the function, we should still not accept ether
 			}
 			function f() tryCircumvent public returns (uint) {
 				return msgvalue();
@@ -13573,10 +13573,10 @@ BOOST_AUTO_TEST_CASE(scientific_notation)
 	char const* sourceCode = R"(
 		contract C {
 			function f() public returns (uint) {
-				return 2e10 sun;
+				return 2e10 wei;
 			}
 			function g() public returns (uint) {
-				return 200e-2 sun;
+				return 200e-2 wei;
 			}
 			function h() public returns (uint) {
 				return 2.5e1;
