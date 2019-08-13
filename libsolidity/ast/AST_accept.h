@@ -203,6 +203,8 @@ void FunctionDefinition::accept(ASTVisitor& _visitor)
 
 void FunctionDefinition::accept(ASTConstVisitor& _visitor) const
 {
+
+    // 函数的访问
 	if (_visitor.visit(*this))
 	{
 		m_parameters->accept(_visitor);

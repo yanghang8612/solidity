@@ -62,11 +62,13 @@ private:
 
 }
 
+// 编译合约的核心逻辑
 void ContractCompiler::compileContract(
 	ContractDefinition const& _contract,
 	map<ContractDefinition const*, shared_ptr<Compiler const>> const& _otherCompilers
 )
 {
+    //
 	CompilerContext::LocationSetter locationSetter(m_context, _contract);
 
 	if (_contract.isLibrary())
@@ -510,6 +512,7 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 	// stack upon entry: [return address] [arg0] [arg1] ... [argn]
 	// reserve additional slots: [retarg0] ... [retargm]
 
+    // 由于访问函数参数，对后续访问函数的block是有影响的，所以没有完全使用 Node的遍历方式
 	unsigned parametersSize = CompilerUtils::sizeOnStack(_function.parameters());
 	if (!_function.isConstructor())
 		// adding 1 for return address.
@@ -534,6 +537,7 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 	m_modifierDepth = -1;
 	m_scopeStackHeight.clear();
 
+	//
 	appendModifierOrFunctionCode();
 	solAssert(m_returnTags.empty(), "");
 
@@ -586,7 +590,8 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 			m_context.appendJump(eth::AssemblyItem::JumpType::OutOfFunction);
 	}
 
-	return false;
+    // 由于访问函数参数，对后续访问函数的block是有影响的，所以没有完全使用 Node的遍历方式，不需要访问子节点
+    return false;
 }
 
 bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
@@ -895,6 +900,7 @@ bool ContractCompiler::visit(EmitStatement const& _emit)
 	return false;
 }
 
+// 局部变量申明访问
 bool ContractCompiler::visit(VariableDeclarationStatement const& _variableDeclarationStatement)
 {
 	CompilerContext::LocationSetter locationSetter(m_context, _variableDeclarationStatement);
@@ -934,6 +940,7 @@ bool ContractCompiler::visit(VariableDeclarationStatement const& _variableDeclar
 	return false;
 }
 
+// 编译某一个
 bool ContractCompiler::visit(ExpressionStatement const& _expressionStatement)
 {
 	StackHeightChecker checker(m_context);
@@ -968,14 +975,19 @@ void ContractCompiler::endVisit(Block const& _block)
 
 void ContractCompiler::appendMissingFunctions()
 {
-	while (Declaration const* function = m_context.nextFunctionToCompile())
+    // 依次编译合约的每个函数
+ 	while (Declaration const* function = m_context.nextFunctionToCompile())
 	{
 		m_context.setStackOffset(0);
+		// 这里的本质就是就是visitor visit node逻辑
 		function->accept(*this);
 		solAssert(m_context.nextFunctionToCompile() != function, "Compiled the wrong function?");
 	}
+	// TODO : 底层函数？
 	m_context.appendMissingLowLevelFunctions();
 	auto abiFunctions = m_context.abiFunctions().requestedFunctions();
+
+	// TODO : Assembly ??
 	if (!abiFunctions.first.empty())
 		m_context.appendInlineAssembly(
 			"{" + move(abiFunctions.first) + "}",
@@ -986,6 +998,7 @@ void ContractCompiler::appendMissingFunctions()
 		);
 }
 
+// 具体编译某一个函数的内容
 void ContractCompiler::appendModifierOrFunctionCode()
 {
 	solAssert(m_currentFunction, "");
@@ -993,8 +1006,10 @@ void ContractCompiler::appendModifierOrFunctionCode()
 	Block const* codeBlock = nullptr;
 	vector<VariableDeclaration const*> addedVariables;
 
+
 	m_modifierDepth++;
 
+	// modifier已经编译完之后，编译函数体
 	if (m_modifierDepth >= m_currentFunction->modifiers().size())
 	{
 		solAssert(m_currentFunction->isImplemented(), "");
@@ -1002,9 +1017,11 @@ void ContractCompiler::appendModifierOrFunctionCode()
 	}
 	else
 	{
+	    // 编译 modifier
 		ASTPointer<ModifierInvocation> const& modifierInvocation = m_currentFunction->modifiers()[m_modifierDepth];
 
 		// constructor call should be excluded
+        // 这里是一个递归调用
 		if (dynamic_cast<ContractDefinition const*>(modifierInvocation->name()->annotation().referencedDeclaration))
 			appendModifierOrFunctionCode();
 		else
@@ -1033,6 +1050,8 @@ void ContractCompiler::appendModifierOrFunctionCode()
 		}
 	}
 
+
+	// 编译函数体
 	if (codeBlock)
 	{
 		m_returnTags.emplace_back(m_context.newTag(), m_context.stackHeight());

@@ -413,6 +413,7 @@ bool CompilerStack::compile()
 			if (auto contract = dynamic_cast<ContractDefinition const*>(node.get()))
 				if (isRequestedContract(*contract))
 				{
+
 					compileContract(*contract, otherCompilers);
 					if (m_generateIR)
 						generateIR(*contract);
