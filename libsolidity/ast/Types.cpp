@@ -3147,7 +3147,7 @@ bool FunctionType::isPure() const
 	return
 		m_kind == Kind::KECCAK256 ||
 		m_kind == Kind::ECRecover ||
-        m_kind == Kind::MultiValidateSign ||
+		m_kind == Kind::MultiValidateSign ||
 		m_kind == Kind::SHA256 ||
 		m_kind == Kind::RIPEMD160 ||
 		m_kind == Kind::AddMod ||
