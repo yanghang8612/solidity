@@ -86,32 +86,32 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 void GlobalContext::addMultiValidateSignMethod() {
 	// bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)
 	TypePointers parameterTypes;
-    parameterTypes.push_back(TypeProvider::fixedBytes(32));
-    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::bytesMemory()));
-    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+	parameterTypes.push_back(TypeProvider::fixedBytes(32));
+	parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::bytesMemory()));
+	parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
 
-    TypePointers returnParameterTypes;
-	returnParameterTypes.push_back(TypeProvider::boolean());
-    strings parameterNames;
-    parameterNames.push_back("hash");
+	TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(TypeProvider::fixedBytes(32));
+	strings parameterNames;
+	parameterNames.push_back("hash");
 	parameterNames.push_back("signatures");
-    parameterNames.push_back("addresses");
-    strings returnParameterNames;
-    returnParameterNames.push_back("ok");
+	parameterNames.push_back("addresses");
+	strings returnParameterNames;
+	returnParameterNames.push_back("ok");
 
-    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("multivalidatesign", TypeProvider::function(
-            parameterTypes,
-            returnParameterTypes,
-            parameterNames,
-            returnParameterNames,
-            FunctionType::Kind::MultiValidateSign,
-            false,
-            StateMutability::Pure,
-            nullptr,
-            false,
-            false,
-            false,
-            false)
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("multivalidatesign", TypeProvider::function(
+		parameterTypes,
+		returnParameterTypes,
+		parameterNames,
+		returnParameterNames,
+		FunctionType::Kind::MultiValidateSign,
+		false,
+		StateMutability::Pure,
+		nullptr,
+		false,
+		false,
+		false,
+		false)
 	));
 }
 

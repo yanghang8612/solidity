@@ -2683,7 +2683,7 @@ string FunctionType::richIdentifier() const
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
 	case Kind::ECRecover: id += "ecrecover"; break;
-	case Kind::MultiValidateSign: id += "mulivalidatesign"; break;
+	case Kind::MultiValidateSign: id += "multivalidatesign"; break;
 	case Kind::SHA256: id += "sha256"; break;
 	case Kind::RIPEMD160: id += "ripemd160"; break;
 	case Kind::Log0: id += "log0"; break;
@@ -3148,7 +3148,7 @@ bool FunctionType::isPure() const
 	return
 		m_kind == Kind::KECCAK256 ||
 		m_kind == Kind::ECRecover ||
-        m_kind == Kind::MultiValidateSign ||
+		m_kind == Kind::MultiValidateSign ||
 		m_kind == Kind::SHA256 ||
 		m_kind == Kind::RIPEMD160 ||
 		m_kind == Kind::AddMod ||
