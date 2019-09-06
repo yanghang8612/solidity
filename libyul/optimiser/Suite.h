@@ -22,6 +22,7 @@
 
 #include <libyul/AsmDataForward.h>
 #include <libyul/YulString.h>
+#include <liblangutil/EVMVersion.h>
 
 #include <set>
 
@@ -41,6 +42,7 @@ public:
 		std::shared_ptr<Dialect> const& _dialect,
 		Block& _ast,
 		AsmAnalysisInfo const& _analysisInfo,
+		bool _optimizeStackAllocation,
 		std::set<YulString> const& _externallyUsedIdentifiers = {}
 	);
 };

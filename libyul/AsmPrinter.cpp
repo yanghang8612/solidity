@@ -36,7 +36,6 @@
 using namespace std;
 using namespace dev;
 using namespace yul;
-using namespace dev::solidity;
 
 //@TODO source locations
 
@@ -222,6 +221,16 @@ string AsmPrinter::operator()(ForLoop const& _forLoop) const
 	out += "\n";
 	out += (*this)(_forLoop.body);
 	return out;
+}
+
+string AsmPrinter::operator()(Break const&) const
+{
+	return "break";
+}
+
+string AsmPrinter::operator()(Continue const&) const
+{
+	return "continue";
 }
 
 string AsmPrinter::operator()(Block const& _block) const

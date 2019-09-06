@@ -64,8 +64,8 @@ void UnusedPruner::operator()(Block& _block)
 		{
 			VariableDeclaration& varDecl = boost::get<VariableDeclaration>(statement);
 			// Multi-variable declarations are special. We can only remove it
-			// if all vairables are unused and the right-hand-side is either
-			// movable or it return a single value. In the latter case, we
+			// if all variables are unused and the right-hand-side is either
+			// movable or it returns a single value. In the latter case, we
 			// replace `let a := f()` by `pop(f())` (in pure Yul, this will be
 			// `drop(f())`).
 			if (boost::algorithm::none_of(
@@ -85,7 +85,7 @@ void UnusedPruner::operator()(Block& _block)
 					// instead of `pop`.
 					statement = ExpressionStatement{varDecl.location, FunctionalInstruction{
 						varDecl.location,
-						solidity::Instruction::POP,
+						dev::eth::Instruction::POP,
 						{*std::move(varDecl.value)}
 					}};
 			}

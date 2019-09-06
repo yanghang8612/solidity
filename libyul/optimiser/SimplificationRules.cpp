@@ -30,11 +30,12 @@
 
 using namespace std;
 using namespace dev;
+using namespace dev::eth;
 using namespace langutil;
 using namespace yul;
 
 
-SimplificationRule<Pattern> const* SimplificationRules::findFirstMatch(
+SimplificationRule<yul::Pattern> const* SimplificationRules::findFirstMatch(
 	Expression const& _expr,
 	Dialect const& _dialect,
 	map<YulString, Expression const*> const& _ssaValues
@@ -51,14 +52,15 @@ SimplificationRule<Pattern> const* SimplificationRules::findFirstMatch(
 	{
 		rules.resetMatchGroups();
 		if (rule.pattern.matches(_expr, _dialect, _ssaValues))
-			return &rule;
+			if (!rule.feasible || rule.feasible())
+				return &rule;
 	}
 	return nullptr;
 }
 
 bool SimplificationRules::isInitialized() const
 {
-	return !m_rules[uint8_t(solidity::Instruction::ADD)].empty();
+	return !m_rules[uint8_t(dev::eth::Instruction::ADD)].empty();
 }
 
 void SimplificationRules::addRules(vector<SimplificationRule<Pattern>> const& _rules)
@@ -92,7 +94,7 @@ SimplificationRules::SimplificationRules()
 	assertThrow(isInitialized(), OptimizerException, "Rule list not properly initialized.");
 }
 
-Pattern::Pattern(solidity::Instruction _instruction, vector<Pattern> const& _arguments):
+yul::Pattern::Pattern(dev::eth::Instruction _instruction, vector<Pattern> const& _arguments):
 	m_kind(PatternKind::Operation),
 	m_instruction(_instruction),
 	m_arguments(_arguments)
@@ -186,7 +188,7 @@ bool Pattern::matches(
 	return true;
 }
 
-solidity::Instruction Pattern::instruction() const
+dev::eth::Instruction Pattern::instruction() const
 {
 	assertThrow(m_kind == PatternKind::Operation, OptimizerException, "");
 	return m_instruction;

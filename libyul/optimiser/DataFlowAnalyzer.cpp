@@ -112,10 +112,12 @@ void DataFlowAnalyzer::operator()(FunctionDefinition& _fun)
 
 void DataFlowAnalyzer::operator()(ForLoop& _for)
 {
-	// Special scope handling of the pre block.
-	pushScope(false);
-	for (auto& statement: _for.pre.statements)
-		visit(statement);
+	// If the pre block was not empty,
+	// we would have to deal with more complicated scoping rules.
+	assertThrow(_for.pre.statements.empty(), OptimizerException, "");
+
+	AssignmentsSinceContinue assignmentsSinceCont;
+	assignmentsSinceCont(_for.body);
 
 	Assignments assignments;
 	assignments(_for.body);
@@ -124,10 +126,9 @@ void DataFlowAnalyzer::operator()(ForLoop& _for)
 
 	visit(*_for.condition);
 	(*this)(_for.body);
+	clearValues(assignmentsSinceCont.names());
 	(*this)(_for.post);
-
 	clearValues(assignments.names());
-	popScope();
 }
 
 void DataFlowAnalyzer::operator()(Block& _block)

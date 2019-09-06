@@ -30,6 +30,8 @@
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 
+#include <stack>
+
 namespace langutil
 {
 class ErrorReporter;
@@ -57,6 +59,20 @@ struct CodeTransformContext
 	std::map<Scope::Function const*, AbstractAssembly::LabelID> functionEntryIDs;
 	std::map<Scope::Variable const*, int> variableStackHeights;
 	std::map<Scope::Variable const*, unsigned> variableReferences;
+
+	struct JumpInfo
+	{
+		AbstractAssembly::LabelID label;  ///< Jump's LabelID to jump to.
+		int targetStackHeight;            ///< Stack height after the jump.
+	};
+
+	struct ForLoopLabels
+	{
+		JumpInfo post; ///< Jump info for jumping to post branch.
+		JumpInfo done; ///< Jump info for jumping to done branch.
+	};
+
+	std::stack<ForLoopLabels> forLoopStack;
 };
 
 /**
@@ -166,6 +182,8 @@ public:
 	void operator()(Switch const& _switch);
 	void operator()(FunctionDefinition const&);
 	void operator()(ForLoop const&);
+	void operator()(Break const&);
+	void operator()(Continue const&);
 	void operator()(Block const& _block);
 
 private:
@@ -198,6 +216,10 @@ private:
 	/// Stores the stack error in the list of errors, appends an invalid opcode
 	/// and corrects the stack height to the target stack height.
 	void stackError(StackTooDeepError _error, int _targetStackSize);
+
+	/// Ensures stack height is down to @p _targetDepth by appending POP instructions to the output assembly.
+	/// Returns the number of POP statements that have been appended.
+	int appendPopUntil(int _targetDepth);
 
 	AbstractAssembly& m_assembly;
 	AsmAnalysisInfo& m_info;

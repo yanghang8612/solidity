@@ -52,28 +52,28 @@ int parseUnsignedInteger(string::iterator& _it, string::iterator _end)
 
 }
 
-SyntaxTest::SyntaxTest(string const& _filename)
+SyntaxTest::SyntaxTest(string const& _filename, langutil::EVMVersion _evmVersion): m_evmVersion(_evmVersion)
 {
 	ifstream file(_filename);
 	if (!file)
 		BOOST_THROW_EXCEPTION(runtime_error("Cannot open test contract: \"" + _filename + "\"."));
 	file.exceptions(ios::badbit);
 
-	m_source = parseSource(file);
+	m_source = parseSourceAndSettings(file);
 	m_expectations = parseExpectations(file);
 }
 
-bool SyntaxTest::run(ostream& _stream, string const& _linePrefix, bool const _formatted)
+bool SyntaxTest::run(ostream& _stream, string const& _linePrefix, bool _formatted)
 {
 	string const versionPragma = "pragma solidity >=0.0;\n";
-	m_compiler.reset();
-	m_compiler.addSource("", versionPragma + m_source);
-	m_compiler.setEVMVersion(dev::test::Options::get().evmVersion());
+	compiler().reset();
+	compiler().setSources({{"", versionPragma + m_source}});
+	compiler().setEVMVersion(m_evmVersion);
 
-	if (m_compiler.parse())
-		m_compiler.analyze();
+	if (compiler().parse())
+		compiler().analyze();
 
-	for (auto const& currentError: filterErrors(m_compiler.errors(), true))
+	for (auto const& currentError: filterErrors(compiler().errors(), true))
 	{
 		int locationStart = -1, locationEnd = -1;
 		if (auto location = boost::get_error_info<errinfo_sourceLocation>(*currentError))
@@ -95,7 +95,7 @@ bool SyntaxTest::run(ostream& _stream, string const& _linePrefix, bool const _fo
 	return printExpectationAndError(_stream, _linePrefix, _formatted);
 }
 
-bool SyntaxTest::printExpectationAndError(ostream& _stream, string const& _linePrefix, bool const _formatted)
+bool SyntaxTest::printExpectationAndError(ostream& _stream, string const& _linePrefix, bool _formatted)
 {
 	if (m_expectations != m_errorList)
 	{
@@ -109,7 +109,7 @@ bool SyntaxTest::printExpectationAndError(ostream& _stream, string const& _lineP
 	return true;
 }
 
-void SyntaxTest::printSource(ostream& _stream, string const& _linePrefix, bool const _formatted) const
+void SyntaxTest::printSource(ostream& _stream, string const& _linePrefix, bool _formatted) const
 {
 	if (_formatted)
 	{
@@ -162,7 +162,7 @@ void SyntaxTest::printErrorList(
 	ostream& _stream,
 	vector<SyntaxTestError> const& _errorList,
 	string const& _linePrefix,
-	bool const _formatted
+	bool _formatted
 )
 {
 	if (_errorList.empty())

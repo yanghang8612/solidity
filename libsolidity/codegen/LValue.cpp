@@ -29,12 +29,13 @@
 
 using namespace std;
 using namespace dev;
+using namespace dev::eth;
+using namespace dev::solidity;
 using namespace langutil;
-using namespace solidity;
 
 
 StackVariable::StackVariable(CompilerContext& _compilerContext, VariableDeclaration const& _declaration):
-	LValue(_compilerContext, _declaration.annotation().type.get()),
+	LValue(_compilerContext, _declaration.annotation().type),
 	m_baseStackOffset(m_context.baseStackOffsetOfVariable(_declaration)),
 	m_size(m_dataType->sizeOnStack())
 {
@@ -418,11 +419,8 @@ void StorageItem::setToZero(SourceLocation const&, bool _removeReference) const
 	}
 }
 
-/// Used in StorageByteArrayElement
-static FixedBytesType byteType(1);
-
 StorageByteArrayElement::StorageByteArrayElement(CompilerContext& _compilerContext):
-	LValue(_compilerContext, &byteType)
+	LValue(_compilerContext, TypeProvider::byte())
 {
 }
 
@@ -473,8 +471,8 @@ void StorageByteArrayElement::setToZero(SourceLocation const&, bool _removeRefer
 	m_context << Instruction::SWAP1 << Instruction::SSTORE;
 }
 
-StorageArrayLength::StorageArrayLength(CompilerContext& _compilerContext, const ArrayType& _arrayType):
-	LValue(_compilerContext, _arrayType.memberType("length").get()),
+StorageArrayLength::StorageArrayLength(CompilerContext& _compilerContext, ArrayType const& _arrayType):
+	LValue(_compilerContext, _arrayType.memberType("length")),
 	m_arrayType(_arrayType)
 {
 	solAssert(m_arrayType.isDynamicallySized(), "");

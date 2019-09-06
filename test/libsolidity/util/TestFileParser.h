@@ -56,10 +56,15 @@ namespace test
 	/* Literals & identifier */    \
 	T(Comment, "#", 0)             \
 	T(Number, "number", 0)         \
+	T(HexNumber, "hex_number", 0)  \
 	T(Identifier, "identifier", 0) \
 	/* type keywords */            \
 	K(Ether, "ether", 0)           \
+	K(Hex, "hex", 0)               \
+	K(Boolean, "boolean", 0)       \
 	/* special keywords */         \
+	K(Left, "left", 0)             \
+	K(Right, "right", 0)           \
 	K(Failure, "FAILURE", 0)       \
 
 namespace soltest
@@ -98,14 +103,26 @@ namespace soltest
  */
 struct ABIType
 {
-	enum Type {
+	enum Type
+	{
 		UnsignedDec,
 		SignedDec,
+		Boolean,
+		Hex,
+		HexString,
 		Failure,
 		None
 	};
+	enum Align
+	{
+		AlignLeft,
+		AlignRight,
+		AlignNone,
+	};
 	Type type = ABIType::None;
+	Align align = ABIType::AlignRight;
 	size_t size = 0;
+	bool alignDeclared = false;
 };
 
 /**
@@ -114,7 +131,7 @@ struct ABIType
  */
 struct FormatInfo
 {
-	bool newline;
+	bool newline = false;
 };
 
 /**
@@ -132,6 +149,9 @@ struct Parameter
 	/// compared to the actual result of a function call
 	/// and used for validating it.
 	bytes rawBytes;
+	/// Stores the raw string representation of this parameter.
+	/// Used to print the unformatted arguments of a function call.
+	std::string rawString;
 	/// Types that were used to encode `rawBytes`. Expectations
 	/// are usually comma separated literals. Their type is auto-
 	/// detected and retained in order to format them later on.
@@ -278,7 +298,8 @@ private:
 
 		std::string scanComment();
 		std::string scanIdentifierOrKeyword();
-		std::string scanNumber();
+		std::string scanDecimalNumber();
+		std::string scanHexNumber();
 
 	private:
 		using TokenDesc = std::pair<Token, std::string>;
@@ -327,28 +348,48 @@ private:
 	Parameter parseParameter();
 
 	/// Parses and converts the current literal to its byte representation and
-	/// preserves the chosen ABI type. Based on that type information, the driver of
-	/// this parser can format arguments, expectations and results. Supported types:
+	/// preserves the chosen ABI type, as well as a raw, unformatted string representation
+	/// of this literal.
+	/// Based on the type information retrieved, the driver of this parser may format arguments,
+	/// expectations and results. Supported types:
 	/// - unsigned and signed decimal number literals.
 	/// Returns invalid ABI type for empty literal. This is needed in order
 	/// to detect empty expectations. Throws a ParserError if data is encoded incorrectly or
 	/// if data type is not supported.
-	std::pair<bytes, ABIType> parseABITypeLiteral();
+	std::tuple<bytes, ABIType, std::string> parseABITypeLiteral();
 
 	/// Recursively parses an identifier or a tuple definition that contains identifiers
 	/// and / or parentheses like `((uint, uint), (uint, (uint, uint)), uint)`.
 	std::string parseIdentifierOrTuple();
 
+	/// Parses a boolean literal.
+	std::string parseBoolean();
+
 	/// Parses a comment that is defined like this:
 	/// # A nice comment. #
 	std::string parseComment();
 
-	/// Parses the current number literal.
-	std::string parseNumber();
+	/// Parses the current decimal number literal.
+	std::string parseDecimalNumber();
 
-	/// Tries to convert \param _literal to `uint256` and throws if
-	/// conversion fails.
-	u256 convertNumber(std::string const& _literal);
+	/// Parses the current hex number literal.
+	std::string parseHexNumber();
+
+	/// Tries to convert \param _literal to an unpadded `bytes`
+	/// representation of the boolean number literal. Throws if conversion fails.
+	bytes convertBoolean(std::string const& _literal);
+
+	/// Tries to convert \param _literal to an unpadded `bytes`
+	/// representation of the decimal number literal. Throws if conversion fails.
+	bytes convertNumber(std::string const& _literal);
+
+	/// Tries to convert \param _literal to an unpadded `bytes`
+	/// representation of the hex literal. Throws if conversion fails.
+	bytes convertHexNumber(std::string const& _literal);
+
+	/// Tries to convert \param _literal to left-aligned, unpadded `bytes`
+	/// representation of the hex string literal. Throws if conversion fails.
+	bytes convertHexString(std::string const& _literal);
 
 	/// A scanner instance
 	Scanner m_scanner;

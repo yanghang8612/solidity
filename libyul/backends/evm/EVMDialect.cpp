@@ -34,11 +34,9 @@
 using namespace std;
 using namespace dev;
 using namespace yul;
-using namespace dev::solidity;
 
-
-EVMDialect::EVMDialect(AsmFlavour _flavour, bool _objectAccess):
-	Dialect{_flavour}, m_objectAccess(_objectAccess)
+EVMDialect::EVMDialect(AsmFlavour _flavour, bool _objectAccess, langutil::EVMVersion _evmVersion):
+	Dialect{_flavour}, m_objectAccess(_objectAccess), m_evmVersion(_evmVersion)
 {
 	// The EVM instructions will be moved to builtins at some point.
 	if (!m_objectAccess)
@@ -56,7 +54,10 @@ EVMDialect::EVMDialect(AsmFlavour _flavour, bool _objectAccess):
 		if (m_currentObject->name == dataName)
 			_assembly.appendAssemblySize();
 		else
+		{
+			yulAssert(m_subIDs.count(dataName) != 0, "Could not find assembly object <" + dataName.str() + ">.");
 			_assembly.appendDataSize(m_subIDs.at(dataName));
+		}
 	});
 	addFunction("dataoffset", 1, 1, true, true, [this](
 		FunctionCall const& _call,
@@ -70,7 +71,10 @@ EVMDialect::EVMDialect(AsmFlavour _flavour, bool _objectAccess):
 		if (m_currentObject->name == dataName)
 			_assembly.appendConstant(0);
 		else
+		{
+			yulAssert(m_subIDs.count(dataName) != 0, "Could not find assembly object <" + dataName.str() + ">.");
 			_assembly.appendDataOffset(m_subIDs.at(dataName));
+		}
 	});
 	addFunction("datacopy", 3, 0, false, false, [](
 		FunctionCall const&,
@@ -78,7 +82,7 @@ EVMDialect::EVMDialect(AsmFlavour _flavour, bool _objectAccess):
 		std::function<void()> _visitArguments
 	) {
 		_visitArguments();
-		_assembly.appendInstruction(solidity::Instruction::CODECOPY);
+		_assembly.appendInstruction(dev::eth::Instruction::CODECOPY);
 	});
 }
 
@@ -91,24 +95,24 @@ BuiltinFunctionForEVM const* EVMDialect::builtin(YulString _name) const
 		return nullptr;
 }
 
-shared_ptr<EVMDialect> EVMDialect::looseAssemblyForEVM()
+shared_ptr<EVMDialect> EVMDialect::looseAssemblyForEVM(langutil::EVMVersion _version)
 {
-	return make_shared<EVMDialect>(AsmFlavour::Loose, false);
+	return make_shared<EVMDialect>(AsmFlavour::Loose, false, _version);
 }
 
-shared_ptr<EVMDialect> EVMDialect::strictAssemblyForEVM()
+shared_ptr<EVMDialect> EVMDialect::strictAssemblyForEVM(langutil::EVMVersion _version)
 {
-	return make_shared<EVMDialect>(AsmFlavour::Strict, false);
+	return make_shared<EVMDialect>(AsmFlavour::Strict, false, _version);
 }
 
-shared_ptr<EVMDialect> EVMDialect::strictAssemblyForEVMObjects()
+shared_ptr<EVMDialect> EVMDialect::strictAssemblyForEVMObjects(langutil::EVMVersion _version)
 {
-	return make_shared<EVMDialect>(AsmFlavour::Strict, true);
+	return make_shared<EVMDialect>(AsmFlavour::Strict, true, _version);
 }
 
-shared_ptr<yul::EVMDialect> EVMDialect::yulForEVM()
+shared_ptr<yul::EVMDialect> EVMDialect::yulForEVM(langutil::EVMVersion _version)
 {
-	return make_shared<EVMDialect>(AsmFlavour::Yul, false);
+	return make_shared<EVMDialect>(AsmFlavour::Yul, false, _version);
 }
 
 void EVMDialect::setSubIDs(map<YulString, AbstractAssembly::SubID> _subIDs)

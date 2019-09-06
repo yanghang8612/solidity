@@ -37,7 +37,6 @@
 using namespace std;
 using namespace dev;
 using namespace yul;
-using namespace dev::solidity;
 
 FullInliner::FullInliner(Block& _ast, NameDispenser& _dispenser):
 	m_ast(_ast), m_nameDispenser(_dispenser)
@@ -177,7 +176,7 @@ vector<Statement> InlineModifier::performInline(Statement& _statement, FunctionC
 	// helper function to create a new variable that is supposed to model
 	// an existing variable.
 	auto newVariable = [&](TypedName const& _existingVariable, Expression* _value) {
-		YulString newName = m_nameDispenser.newName(_existingVariable.name, function->name);
+		YulString newName = m_nameDispenser.newName(_existingVariable.name);
 		variableReplacements[_existingVariable.name] = newName;
 		VariableDeclaration varDecl{_funCall.location, {{_funCall.location, newName, _existingVariable.type}}, {}};
 		if (_value)
@@ -192,7 +191,7 @@ vector<Statement> InlineModifier::performInline(Statement& _statement, FunctionC
 	for (auto const& var: function->returnVariables)
 		newVariable(var, nullptr);
 
-	Statement newBody = BodyCopier(m_nameDispenser, function->name, variableReplacements)(function->body);
+	Statement newBody = BodyCopier(m_nameDispenser, variableReplacements)(function->body);
 	newStatements += std::move(boost::get<Block>(newBody).statements);
 
 	boost::apply_visitor(GenericFallbackVisitor<Assignment, VariableDeclaration>{
@@ -228,7 +227,7 @@ vector<Statement> InlineModifier::performInline(Statement& _statement, FunctionC
 Statement BodyCopier::operator()(VariableDeclaration const& _varDecl)
 {
 	for (auto const& var: _varDecl.variables)
-		m_variableReplacements[var.name] = m_nameDispenser.newName(var.name, m_varNamePrefix);
+		m_variableReplacements[var.name] = m_nameDispenser.newName(var.name);
 	return ASTCopier::operator()(_varDecl);
 }
 

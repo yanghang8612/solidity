@@ -17,6 +17,7 @@
 
 #include <libsolidity/formal/SymbolicTypes.h>
 
+#include <libsolidity/ast/TypeProvider.h>
 #include <libsolidity/ast/Types.h>
 #include <memory>
 
@@ -57,8 +58,13 @@ smt::SortPointer dev::solidity::smtSort(Type const& _type)
 			solAssert(mapType, "");
 			return make_shared<smt::ArraySort>(smtSort(*mapType->keyType()), smtSort(*mapType->valueType()));
 		}
-		// TODO Solidity array
-		return make_shared<smt::Sort>(smt::Kind::Int);
+		else
+		{
+			solAssert(isArray(_type.category()), "");
+			auto arrayType = dynamic_cast<ArrayType const*>(&_type);
+			solAssert(arrayType, "");
+			return make_shared<smt::ArraySort>(make_shared<smt::Sort>(smt::Kind::Int), smtSort(*arrayType->baseType()));
+		}
 	}
 	default:
 		// Abstract case.
@@ -82,7 +88,7 @@ smt::Kind dev::solidity::smtKind(Type::Category _category)
 		return smt::Kind::Bool;
 	else if (isFunction(_category))
 		return smt::Kind::Function;
-	else if (isMapping(_category))
+	else if (isMapping(_category) || isArray(_category))
 		return smt::Kind::Array;
 	// Abstract case.
 	return smt::Kind::Int;
@@ -92,7 +98,8 @@ bool dev::solidity::isSupportedType(Type::Category _category)
 {
 	return isNumber(_category) ||
 		isBool(_category) ||
-		isMapping(_category);
+		isMapping(_category) ||
+		isArray(_category);
 }
 
 bool dev::solidity::isSupportedTypeDeclaration(Type::Category _category)
@@ -109,11 +116,11 @@ pair<bool, shared_ptr<SymbolicVariable>> dev::solidity::newSymbolicVariable(
 {
 	bool abstract = false;
 	shared_ptr<SymbolicVariable> var;
-	TypePointer type = _type.shared_from_this();
+	TypePointer type = &_type;
 	if (!isSupportedTypeDeclaration(_type))
 	{
 		abstract = true;
-		var = make_shared<SymbolicIntVariable>(make_shared<IntegerType>(256), _uniqueName, _solver);
+		var = make_shared<SymbolicIntVariable>(TypeProvider::uint256(), _uniqueName, _solver);
 	}
 	else if (isBool(_type.category()))
 		var = make_shared<SymbolicBoolVariable>(type, _uniqueName, _solver);
@@ -123,23 +130,27 @@ pair<bool, shared_ptr<SymbolicVariable>> dev::solidity::newSymbolicVariable(
 		var = make_shared<SymbolicIntVariable>(type, _uniqueName, _solver);
 	else if (isFixedBytes(_type.category()))
 	{
-		auto fixedBytesType = dynamic_cast<FixedBytesType const*>(type.get());
+		auto fixedBytesType = dynamic_cast<FixedBytesType const*>(type);
 		solAssert(fixedBytesType, "");
 		var = make_shared<SymbolicFixedBytesVariable>(fixedBytesType->numBytes(), _uniqueName, _solver);
 	}
-	else if (isAddress(_type.category()))
+	else if (isAddress(_type.category()) || isContract(_type.category()))
 		var = make_shared<SymbolicAddressVariable>(_uniqueName, _solver);
+	else if (isEnum(_type.category()))
+		var = make_shared<SymbolicEnumVariable>(type, _uniqueName, _solver);
 	else if (isRational(_type.category()))
 	{
 		auto rational = dynamic_cast<RationalNumberType const*>(&_type);
 		solAssert(rational, "");
 		if (rational->isFractional())
-			var = make_shared<SymbolicIntVariable>(make_shared<IntegerType>(256), _uniqueName, _solver);
+			var = make_shared<SymbolicIntVariable>(TypeProvider::uint256(), _uniqueName, _solver);
 		else
 			var = make_shared<SymbolicIntVariable>(type, _uniqueName, _solver);
 	}
 	else if (isMapping(_type.category()))
 		var = make_shared<SymbolicMappingVariable>(type, _uniqueName, _solver);
+	else if (isArray(_type.category()))
+		var = make_shared<SymbolicArrayVariable>(type, _uniqueName, _solver);
 	else
 		solAssert(false, "");
 	return make_pair(abstract, var);
@@ -175,12 +186,24 @@ bool dev::solidity::isAddress(Type::Category _category)
 	return _category == Type::Category::Address;
 }
 
+bool dev::solidity::isContract(Type::Category _category)
+{
+	return _category == Type::Category::Contract;
+}
+
+bool dev::solidity::isEnum(Type::Category _category)
+{
+	return _category == Type::Category::Enum;
+}
+
 bool dev::solidity::isNumber(Type::Category _category)
 {
 	return isInteger(_category) ||
 		isRational(_category) ||
 		isFixedBytes(_category) ||
-		isAddress(_category);
+		isAddress(_category) ||
+		isContract(_category) ||
+		isEnum(_category);
 }
 
 bool dev::solidity::isBool(Type::Category _category)
@@ -196,6 +219,11 @@ bool dev::solidity::isFunction(Type::Category _category)
 bool dev::solidity::isMapping(Type::Category _category)
 {
 	return _category == Type::Category::Mapping;
+}
+
+bool dev::solidity::isArray(Type::Category _category)
+{
+	return _category == Type::Category::Array;
 }
 
 smt::Expression dev::solidity::minValue(IntegerType const& _type)
@@ -215,6 +243,7 @@ void dev::solidity::smt::setSymbolicZeroValue(SymbolicVariable const& _variable,
 
 void dev::solidity::smt::setSymbolicZeroValue(smt::Expression _expr, TypePointer const& _type, smt::SolverInterface& _interface)
 {
+	solAssert(_type, "");
 	if (isInteger(_type->category()))
 		_interface.addAssertion(_expr == 0);
 	else if (isBool(_type->category()))
@@ -228,9 +257,17 @@ void dev::solidity::smt::setSymbolicUnknownValue(SymbolicVariable const& _variab
 
 void dev::solidity::smt::setSymbolicUnknownValue(smt::Expression _expr, TypePointer const& _type, smt::SolverInterface& _interface)
 {
-	if (isInteger(_type->category()))
+	solAssert(_type, "");
+	if (isEnum(_type->category()))
 	{
-		auto intType = dynamic_cast<IntegerType const*>(_type.get());
+		auto enumType = dynamic_cast<EnumType const*>(_type);
+		solAssert(enumType, "");
+		_interface.addAssertion(_expr >= 0);
+		_interface.addAssertion(_expr < enumType->numberOfMembers());
+	}
+	else if (isInteger(_type->category()))
+	{
+		auto intType = dynamic_cast<IntegerType const*>(_type);
 		solAssert(intType, "");
 		_interface.addAssertion(_expr >= minValue(*intType));
 		_interface.addAssertion(_expr <= maxValue(*intType));

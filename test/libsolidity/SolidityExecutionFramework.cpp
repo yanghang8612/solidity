@@ -28,7 +28,12 @@ using namespace dev::test;
 using namespace dev::solidity;
 using namespace dev::solidity::test;
 
-SolidityExecutionFramework::SolidityExecutionFramework() :
+SolidityExecutionFramework::SolidityExecutionFramework():
 	ExecutionFramework()
+{
+}
+
+SolidityExecutionFramework::SolidityExecutionFramework(std::string const& _ipcPath, langutil::EVMVersion _evmVersion):
+	ExecutionFramework(_ipcPath, _evmVersion)
 {
 }

@@ -23,7 +23,9 @@
 
 #include <test/libsolidity/ErrorCheck.h>
 
-#include <libsolidity/interface/AssemblyStack.h>
+#include <libyul/AssemblyStack.h>
+
+#include <libsolidity/interface/OptimiserSettings.h>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -34,8 +36,6 @@
 using namespace std;
 using namespace langutil;
 
-namespace dev
-{
 namespace yul
 {
 namespace test
@@ -48,9 +48,10 @@ std::pair<bool, ErrorList> parse(string const& _source)
 {
 	try
 	{
-		solidity::AssemblyStack asmStack(
+		AssemblyStack asmStack(
 			dev::test::Options::get().evmVersion(),
-			solidity::AssemblyStack::Language::StrictAssembly
+			AssemblyStack::Language::StrictAssembly,
+			dev::solidity::OptimiserSettings::none()
 		);
 		bool success = asmStack.parseAndAnalyze("source", _source);
 		return {success, asmStack.errors()};
@@ -107,7 +108,7 @@ do \
 { \
 	Error err = expectError((text), false); \
 	BOOST_CHECK(err.type() == (Error::Type::typ)); \
-	BOOST_CHECK(solidity::searchErrorMessage(err, (substring))); \
+	BOOST_CHECK(dev::solidity::searchErrorMessage(err, (substring))); \
 } while(0)
 
 BOOST_AUTO_TEST_SUITE(YulObjectParser)
@@ -242,9 +243,10 @@ BOOST_AUTO_TEST_CASE(to_string)
 }
 )";
 	expectation = boost::replace_all_copy(expectation, "\t", "    ");
-	solidity::AssemblyStack asmStack(
+	AssemblyStack asmStack(
 		dev::test::Options::get().evmVersion(),
-		solidity::AssemblyStack::Language::StrictAssembly
+		AssemblyStack::Language::StrictAssembly,
+		dev::solidity::OptimiserSettings::none()
 	);
 	BOOST_REQUIRE(asmStack.parseAndAnalyze("source", code));
 	BOOST_CHECK_EQUAL(asmStack.print(), expectation);
@@ -284,4 +286,3 @@ BOOST_AUTO_TEST_SUITE_END()
 
 }
 }
-} // end namespaces

@@ -61,7 +61,6 @@ bool parse(string const& _source, std::shared_ptr<Dialect> _dialect, ErrorReport
 			return (yul::AsmAnalyzer(
 				analysisInfo,
 				errorReporter,
-				dev::test::Options::get().evmVersion(),
 				boost::none,
 				_dialect
 			)).analyze(*parserResult);
@@ -152,6 +151,33 @@ BOOST_AUTO_TEST_CASE(assignment)
 	BOOST_CHECK(successParse("{ let x:u256 := 2:u256 let y:u256 := x }"));
 }
 
+BOOST_AUTO_TEST_CASE(period_in_identifier)
+{
+	BOOST_CHECK(successParse("{ let x.y:u256 := 2:u256 }"));
+}
+
+BOOST_AUTO_TEST_CASE(period_not_as_identifier_start)
+{
+	CHECK_ERROR("{ let .y:u256 }", ParserError, "Expected identifier but got '.'");
+}
+
+BOOST_AUTO_TEST_CASE(period_in_identifier_spaced)
+{
+	CHECK_ERROR("{ let x. y:u256 }", ParserError, "Expected ':' but got identifier");
+	CHECK_ERROR("{ let x .y:u256 }", ParserError, "Expected ':' but got '.'");
+	CHECK_ERROR("{ let x . y:u256 }", ParserError, "Expected ':' but got '.'");
+}
+
+BOOST_AUTO_TEST_CASE(period_in_identifier_start)
+{
+	BOOST_CHECK(successParse("{ x.y(2:u256) function x.y(a:u256) {} }"));
+}
+
+BOOST_AUTO_TEST_CASE(period_in_identifier_start_with_comment)
+{
+	BOOST_CHECK(successParse("/// comment\n{ x.y(2:u256) function x.y(a:u256) {} }"));
+}
+
 BOOST_AUTO_TEST_CASE(vardecl_complex)
 {
 	BOOST_CHECK(successParse("{ function add(a:u256, b:u256) -> c:u256 {} let y:u256 := 2:u256 let x:u256 := add(7:u256, add(6:u256, y)) }"));
@@ -217,7 +243,7 @@ BOOST_AUTO_TEST_CASE(tokens_as_identifers)
 
 BOOST_AUTO_TEST_CASE(lacking_types)
 {
-	CHECK_ERROR("{ let x := 1:u256 }", ParserError, "Expected identifier but got '='");
+	CHECK_ERROR("{ let x := 1:u256 }", ParserError, "Expected ':' but got ':='");
 	CHECK_ERROR("{ let x:u256 := 1 }", ParserError, "Expected ':' but got '}'");
 	CHECK_ERROR("{ function f(a) {} }", ParserError, "Expected ':' but got ')'");
 	CHECK_ERROR("{ function f(a:u256) -> b {} }", ParserError, "Expected ':' but got '{'");
@@ -271,8 +297,8 @@ BOOST_AUTO_TEST_CASE(recursion_depth)
 
 BOOST_AUTO_TEST_CASE(multiple_assignment)
 {
-	CHECK_ERROR("{ let x:u256 function f() -> a:u256, b:u256 {} 123:u256, x := f() }", ParserError, "Label name / variable name must precede \",\" (multiple assignment).");
-	CHECK_ERROR("{ let x:u256 function f() -> a:u256, b:u256 {} x, 123:u256 := f() }", ParserError, "Variable name expected in multiple assignment.");
+	CHECK_ERROR("{ let x:u256 function f() -> a:u256, b:u256 {} 123:u256, x := f() }", ParserError, "Variable name must precede \",\" in multiple assignment.");
+	CHECK_ERROR("{ let x:u256 function f() -> a:u256, b:u256 {} x, 123:u256 := f() }", ParserError, "Variable name must precede \":=\" in assignment.");
 
 	/// NOTE: Travis hiccups if not having a variable
 	char const* text = R"(
@@ -296,6 +322,181 @@ BOOST_AUTO_TEST_CASE(if_statement)
 	BOOST_CHECK(successParse("{ function f() -> x:bool {} if f() { let b:bool := f() } }"));
 }
 
+BOOST_AUTO_TEST_CASE(break_outside_of_for_loop)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ let x if x { break } }",
+		SyntaxError,
+		"Keyword \"break\" needs to be inside a for-loop body.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(continue_outside_of_for_loop)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ let x if x { continue } }",
+		SyntaxError,
+		"Keyword \"continue\" needs to be inside a for-loop body.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	BOOST_CHECK(successParse("{ for {let i := 0} iszero(eq(i, 10)) {i := add(i, 1)} {} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_break)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	BOOST_CHECK(successParse("{ for {let i := 0} iszero(eq(i, 10)) {i := add(i, 1)} {break} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_break_init)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0 break} iszero(eq(i, 10)) {i := add(i, 1)} {} }",
+		SyntaxError,
+		"Keyword \"break\" in for-loop init block is not allowed.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_break_post)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0} iszero(eq(i, 10)) {i := add(i, 1) break} {} }",
+		SyntaxError,
+		"Keyword \"break\" in for-loop post block is not allowed.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_nested_break)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0} iszero(eq(i, 10)) {} { function f() { break } } }",
+		SyntaxError,
+		"Keyword \"break\" needs to be inside a for-loop body.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	BOOST_CHECK(successParse("{ for {let i := 0} iszero(eq(i, 10)) {i := add(i, 1)} {continue} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue_fail_init)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0 continue} iszero(eq(i, 10)) {i := add(i, 1)} {} }",
+		SyntaxError,
+		"Keyword \"continue\" in for-loop init block is not allowed.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue_fail_post)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0} iszero(eq(i, 10)) {i := add(i, 1) continue} {} }",
+		SyntaxError,
+		"Keyword \"continue\" in for-loop post block is not allowed.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_nested_continue)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {let i := 0} iszero(eq(i, 10)) {} { function f() { continue } } }",
+		SyntaxError,
+		"Keyword \"continue\" needs to be inside a for-loop body.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue_nested_init_in_body)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion::constantinople());
+	CHECK_ERROR_DIALECT(
+		"{ for {} 1 {} {let x for { continue } x {} {}} }",
+		SyntaxError,
+		"Keyword \"continue\" in for-loop init block is not allowed.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue_nested_body_in_init)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse("{ for {let x for {} x {} { continue }} 1 {} {} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_break_nested_body_in_init)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse("{ for {let x for {} x {} { break }} 1 {} {} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_continue_nested_body_in_post)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse("{ for {} 1 {let x for {} x {} { continue }} {} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(for_statement_break_nested_body_in_post)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse("{ for {} 1 {let x for {} x {} { break }} {} }", dialect));
+}
+
+BOOST_AUTO_TEST_CASE(function_defined_in_init_block)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse("{ for { } 1 { function f() {} } {} }", dialect));
+	BOOST_CHECK(successParse("{ for { } 1 {} { function f() {} } }", dialect));
+	CHECK_ERROR_DIALECT(
+		"{ for { function f() {} } 1 {} {} }",
+		SyntaxError,
+		"Functions cannot be defined inside a for-loop init block.",
+		dialect
+	);
+}
+
+BOOST_AUTO_TEST_CASE(function_defined_in_init_nested)
+{
+	auto dialect = EVMDialect::strictAssemblyForEVMObjects(EVMVersion{});
+	BOOST_CHECK(successParse(
+		"{ for {"
+			"for { } 1 { function f() {} } {}"
+		"} 1 {} {} }", dialect));
+	CHECK_ERROR_DIALECT(
+		"{ for { for {function foo() {}} 1 {} {} } 1 {} {} }",
+		SyntaxError,
+		"Functions cannot be defined inside a for-loop init block.",
+		dialect
+	);
+	CHECK_ERROR_DIALECT(
+		"{ for {} 1 {for {function foo() {}} 1 {} {} } {} }",
+		SyntaxError,
+		"Functions cannot be defined inside a for-loop init block.",
+		dialect
+	);
+}
+
 BOOST_AUTO_TEST_CASE(if_statement_invalid)
 {
 	CHECK_ERROR("{ if let x:u256 {} }", ParserError, "Literal or identifier expected.");
@@ -317,6 +518,24 @@ BOOST_AUTO_TEST_CASE(switch_duplicate_case)
 	BOOST_CHECK(successParse("{ switch 0:u256 case 42:u256 {} case 0x42:u256 {} }"));
 }
 
+BOOST_AUTO_TEST_CASE(switch_duplicate_case_different_literal)
+{
+	CHECK_ERROR("{ switch 0:u256 case 0:u256 {} case \"\":u256 {} }", DeclarationError, "Duplicate case defined.");
+	BOOST_CHECK(successParse("{ switch 1:u256 case \"1\":u256 {} case \"2\":u256 {} }"));
+}
+
+BOOST_AUTO_TEST_CASE(switch_case_string_literal_too_long)
+{
+	BOOST_CHECK(successParse("{let x:u256 switch x case \"01234567890123456789012345678901\":u256 {}}"));
+	CHECK_ERROR("{let x:u256 switch x case \"012345678901234567890123456789012\":u256 {}}", TypeError, "String literal too long (33 > 32)");
+}
+
+BOOST_AUTO_TEST_CASE(function_shadowing_outside_vars)
+{
+	CHECK_ERROR("{ let x:u256 function f() -> x:u256 {} }", DeclarationError, "already taken in this scope");
+	BOOST_CHECK(successParse("{ { let x:u256 } function f() -> x:u256 {} }"));
+}
+
 BOOST_AUTO_TEST_CASE(builtins_parser)
 {
 	struct SimpleDialect: public Dialect
@@ -333,6 +552,7 @@ BOOST_AUTO_TEST_CASE(builtins_parser)
 	CHECK_ERROR_DIALECT("{ let builtin := 6 }", ParserError, "Cannot use builtin function name \"builtin\" as identifier name.", dialect);
 	CHECK_ERROR_DIALECT("{ function builtin() {} }", ParserError, "Cannot use builtin function name \"builtin\" as identifier name.", dialect);
 	CHECK_ERROR_DIALECT("{ builtin := 6 }", ParserError, "Cannot assign to builtin function \"builtin\".", dialect);
+	CHECK_ERROR_DIALECT("{ function g() -> a,b  {} builtin, builtin2 := g() }", ParserError, "Cannot assign to builtin function \"builtin\".", dialect);
 }
 
 BOOST_AUTO_TEST_CASE(builtins_analysis)
