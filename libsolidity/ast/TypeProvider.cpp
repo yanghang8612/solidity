@@ -37,6 +37,7 @@ unique_ptr<ArrayType> TypeProvider::m_stringMemory;
 TupleType const TypeProvider::m_emptyTuple{};
 AddressType const TypeProvider::m_payableAddress{StateMutability::Payable};
 AddressType const TypeProvider::m_address{StateMutability::NonPayable};
+IntegerType const TypeProvider::m_trcToken{256, IntegerType::Modifier::TrcToken};
 
 array<unique_ptr<IntegerType>, 32> const TypeProvider::m_intM{{
 	{make_unique<IntegerType>(8 * 1, IntegerType::Modifier::Signed)},
@@ -182,6 +183,7 @@ void TypeProvider::reset()
 	clearCache(m_emptyTuple);
 	clearCache(m_payableAddress);
 	clearCache(m_address);
+	clearCache(m_trcToken);
 	clearCaches(instance().m_intM);
 	clearCaches(instance().m_uintM);
 	clearCaches(instance().m_bytesM);
@@ -240,6 +242,8 @@ Type const* TypeProvider::fromElementaryTypeName(ElementaryTypeNameToken const& 
 		return bytesStorage();
 	case Token::String:
 		return stringStorage();
+	case Token::TrcToken:
+		return trcToken();
 	default:
 		solAssert(
 			false,
@@ -441,6 +445,7 @@ FunctionType const* TypeProvider::function(
 	Declaration const* _declaration,
 	bool _gasSet,
 	bool _valueSet,
+	bool _tokenSet,
 	bool _bound
 )
 {
@@ -455,6 +460,7 @@ FunctionType const* TypeProvider::function(
 		_declaration,
 		_gasSet,
 		_valueSet,
+		_tokenSet,
 		_bound
 	);
 }

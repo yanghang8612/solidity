@@ -469,14 +469,14 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
 		{"staticcall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareStaticCall, false, StateMutability::View)},
-        {"tokenBalance", make_shared<FunctionType>(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
-    };
+		{"tokenBalance", TypeProvider::function(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
+	};
 	if (m_stateMutability == StateMutability::Payable)
 	{
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
-        members.emplace_back(MemberList::Member{"transferToken", make_shared<FunctionType>(strings{"uint","trcToken"}, strings(), FunctionType::Kind::TransferToken)});
-    }
+		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
+	}
 	return members;
 }
 
@@ -512,7 +512,7 @@ string IntegerType::richIdentifier() const
 	if (isTrcToken())
 		return "t_trcToken";
 	else
-	    return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
+		return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
 }
 
 BoolResult IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
@@ -3503,8 +3503,8 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"value", TypeProvider::uint256()},
 			{"data", TypeProvider::array(DataLocation::CallData)},
 			{"sig", TypeProvider::fixedBytes(4)},
-            {"tokenvalue", make_shared<IntegerType>(256)},
-            {"tokenid", make_shared<IntegerType>(256, IntegerType::Modifier::TrcToken)}
+			{"tokenvalue", TypeProvider::uint256()},
+			{"tokenid", TypeProvider::trcToken()},
 		});
 	case Kind::Transaction:
 		return MemberList::MemberMap({
