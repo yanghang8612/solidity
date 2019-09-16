@@ -58,7 +58,8 @@ private:
 	ContractDefinition const* m_currentContract = nullptr;
 	std::map<ContractDefinition const*, std::shared_ptr<MagicVariableDeclaration const>> mutable m_thisPointer;
 	std::map<ContractDefinition const*, std::shared_ptr<MagicVariableDeclaration const>> mutable m_superPointer;
-	void addMultiValidateSignMethod();
+	void addBatchValidateSignMethod();
+    void addValidateMultiSignMethod();
 };
 
 }

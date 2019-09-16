@@ -980,7 +980,8 @@ public:
 		Selfdestruct, ///< SELFDESTRUCT
 		Revert, ///< REVERT
 		ECRecover, ///< CALL to special contract for ecrecover
-		MultiValidateSign, /// CALL to special contract for validate multiple signatures
+		ValidateMultiSign, /// CALL to special contract for validate multisignatures
+        BatchValidateSign, /// CALL to special contract for validate batch signatures
 		SHA256, ///< CALL to special contract for sha256
 		RIPEMD160, ///< CALL to special contract for ripemd160
 		Log0,
