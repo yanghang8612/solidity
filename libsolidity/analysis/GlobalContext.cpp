@@ -80,10 +80,11 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 
 GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
-	addMultiValidateSignMethod();
+	addBatchValidateSignMethod();
+    addValidateMultiSignMethod();
 }
 
-void GlobalContext::addMultiValidateSignMethod() {
+void GlobalContext::addBatchValidateSignMethod() {
 	// bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)
 	TypePointers parameterTypes;
 	parameterTypes.push_back(TypeProvider::fixedBytes(32));
@@ -99,12 +100,12 @@ void GlobalContext::addMultiValidateSignMethod() {
 	strings returnParameterNames;
 	returnParameterNames.push_back("ok");
 
-	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("multivalidatesign", TypeProvider::function(
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("batchvalidatesign", TypeProvider::function(
 		parameterTypes,
 		returnParameterTypes,
 		parameterNames,
 		returnParameterNames,
-		FunctionType::Kind::MultiValidateSign,
+		FunctionType::Kind::BatchValidateSign,
 		false,
 		StateMutability::Pure,
 		nullptr,
@@ -113,6 +114,41 @@ void GlobalContext::addMultiValidateSignMethod() {
 		false,
 		false)
 	));
+}
+
+
+void GlobalContext::addValidateMultiSignMethod() {
+    // bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)
+    TypePointers parameterTypes;
+    parameterTypes.push_back(TypeProvider::address());
+    parameterTypes.push_back(TypeProvider::uint256());
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::bytesMemory()));
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::boolean());
+    strings parameterNames;
+    parameterNames.push_back("address");
+    parameterNames.push_back("permissonid");
+    parameterNames.push_back("content");
+    parameterNames.push_back("signatures");
+    strings returnParameterNames;
+    returnParameterNames.push_back("ok");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("validatemultisign", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::ValidateMultiSign,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
 }
 
 void GlobalContext::setCurrentContract(ContractDefinition const& _contract)
