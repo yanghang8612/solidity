@@ -629,7 +629,7 @@ Global Variables
 - ``gasleft() returns (uint256)``: remaining gas
 - ``msg.data`` (``bytes``): complete calldata
 - ``msg.sender`` (``address payable``): sender of the message (current call)
-- ``msg.value`` (``uint``): number of wei sent with the message
+- ``msg.value`` (``uint``): number of sun sent with the message
 - ``now`` (``uint``): current block timestamp (alias for ``block.timestamp``)
 - ``tx.gasprice`` (``uint``): gas price of the transaction
 - ``tx.origin`` (``address payable``): sender of the transaction (full call chain)
@@ -701,7 +701,7 @@ Modifiers
 
 - ``pure`` for functions: Disallows modification or access of state.
 - ``view`` for functions: Disallows modification of state.
-- ``payable`` for functions: Allows them to receive Ether together with a call.
+- ``payable`` for functions: Allows them to receive Trx together with a call.
 - ``constant`` for state variables: Disallows assignment (except initialisation), does not occupy storage slot.
 - ``anonymous`` for events: Does not store event signature as topic.
 - ``indexed`` for event parameters: Stores the parameter as topic.

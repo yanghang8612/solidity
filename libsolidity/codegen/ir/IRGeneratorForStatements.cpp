@@ -698,6 +698,11 @@ void IRGeneratorForStatements::endVisit(MemberAccess const& _memberAccess)
 				"balance(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
+		else if (member == "isContract")
+			defineExpression(_memberAccess) <<
+				"isContract(" <<
+				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
+				")\n";
 		else if (set<string>{"send", "transfer"}.count(member))
 		{
 			solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");

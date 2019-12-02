@@ -670,8 +670,8 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::Send:
 		case FunctionType::Kind::Transfer:
 			_functionCall.expression().accept(*this);
-			// Provide the gas stipend manually at first because we may send zero ether.
-			// Will be zeroed if we send more than zero ether.
+			// Provide the gas stipend manually at first because we may send zero trx.
+			// Will be zeroed if we send more than zero trx.
 			m_context << u256(eth::GasCosts::callStipend);
 			acceptAndConvert(*arguments.front(), *function.parameterTypes().front(), true);
 			// gas <- gas * !value
@@ -699,6 +699,72 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context << Instruction::ISZERO;
 				m_context.appendConditionalRevert(true);
 			}
+			break;
+		case FunctionType::Kind::TransferToken :
+			_functionCall.expression().accept(*this);
+			// Provide the gas stipend manually at first because we may send zero trx.
+			// Will be zeroed if we send more than zero trx.
+			m_context << u256(eth::GasCosts::callStipend);
+			arguments.front()->accept(*this);
+			utils().convertType(
+				*arguments.front()->annotation().type,
+				*function.parameterTypes().front(), true
+			);
+			// gas <- gas * !value
+			m_context << Instruction::SWAP1 << Instruction::DUP2;
+			m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
+			arguments[1]->accept(*this);
+
+			// will be removed in next release
+			m_context << Instruction::DUP1 << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
+			m_context << Instruction::GT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << (u256(0xF4240));
+			m_context << Instruction::LT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+
+			// now on Stack:
+			// tokenId
+			// value
+			// !value * gas
+			appendExternalFunctionCall(
+				FunctionType(
+					TypePointers{},
+					TypePointers{},
+					strings(),
+					strings(),
+					FunctionType::Kind::BareCall,
+					false,
+					StateMutability::NonPayable,
+					nullptr,
+					true,
+					true,
+					true
+				),
+				{}
+			);
+
+			m_context << Instruction::ISZERO;
+			m_context.appendConditionalRevert(true);
+			break;
+		case FunctionType::Kind::TokenBalance:
+			// stack layout: address token_id
+			_functionCall.expression().accept(*this);
+			arguments[0]->accept(*this);
+			utils().convertType(*arguments[0]->annotation().type, *function.parameterTypes()[0], true);
+			// will be removed in next release
+			m_context << Instruction::DUP1 << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << ((u256(1) << 64) / 2);
+			m_context << Instruction::GT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+			m_context << Instruction::DUP1 << (u256(0xF4240));
+			m_context << Instruction::LT << Instruction::ISZERO;
+			m_context.appendConditionalRevert(false);
+
+			m_context << Instruction::TOKENBALANCE;
 			break;
 		case FunctionType::Kind::Selfdestruct:
 			acceptAndConvert(*arguments.front(), *function.parameterTypes().front(), true);
@@ -840,12 +906,16 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::ECRecover:
 		case FunctionType::Kind::SHA256:
 		case FunctionType::Kind::RIPEMD160:
+		case FunctionType::Kind::ValidateMultiSign:
+        case FunctionType::Kind::BatchValidateSign:
 		{
 			_functionCall.expression().accept(*this);
 			static map<FunctionType::Kind, u256> const contractAddresses{
 				{FunctionType::Kind::ECRecover, 1},
 				{FunctionType::Kind::SHA256, 2},
-				{FunctionType::Kind::RIPEMD160, 3}
+				{FunctionType::Kind::RIPEMD160, 3},
+				{FunctionType::Kind::BatchValidateSign, 9},
+                {FunctionType::Kind::ValidateMultiSign, 10}
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
@@ -1192,12 +1262,16 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::BareDelegateCall:
 				case FunctionType::Kind::BareStaticCall:
 				case FunctionType::Kind::Transfer:
+				case FunctionType::Kind::TransferToken:
+				case FunctionType::Kind::TokenBalance:
 				case FunctionType::Kind::Log0:
 				case FunctionType::Kind::Log1:
 				case FunctionType::Kind::Log2:
 				case FunctionType::Kind::Log3:
 				case FunctionType::Kind::Log4:
 				case FunctionType::Kind::ECRecover:
+				case FunctionType::Kind::ValidateMultiSign:
+                case FunctionType::Kind::BatchValidateSign:
 				case FunctionType::Kind::SHA256:
 				case FunctionType::Kind::RIPEMD160:
 				default:
@@ -1314,7 +1388,16 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::BALANCE;
 		}
-		else if ((set<string>{"send", "transfer"}).count(member))
+		else if (member == "isContract")
+		{
+			utils().convertType(
+				*_memberAccess.expression().annotation().type,
+				*TypeProvider::address(),
+				true
+			);
+			m_context << Instruction::ISCONTRACT;
+		}
+		else if ((set<string>{"send", "transfer", "transferToken"}).count(member))
 		{
 			solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
 			utils().convertType(
@@ -1323,7 +1406,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 		}
-		else if ((set<string>{"call", "callcode", "delegatecall", "staticcall"}).count(member))
+		else if ((set<string>{"tokenBalance", "call", "callcode", "delegatecall", "staticcall"}).count(member))
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
 				*TypeProvider::address(),
@@ -1362,6 +1445,10 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			m_context << Instruction::CALLER;
 		else if (member == "value")
 			m_context << Instruction::CALLVALUE;
+		else if (member == "tokenvalue")
+			m_context << Instruction::CALLTOKENVALUE;
+		else if (member == "tokenid")
+			m_context << Instruction::CALLTOKENID;
 		else if (member == "origin")
 			m_context << Instruction::ORIGIN;
 		else if (member == "gasprice")
@@ -1916,6 +2003,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	// Assumed stack content here:
 	// <stack top>
+	// trcToken [if _functionType.tokenSet()]
 	// value [if _functionType.valueSet()]
 	// gas [if _functionType.gasSet()]
 	// self object [if bound - moved to top right away]
@@ -1923,10 +2011,13 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// contract address
 
 	unsigned selfSize = _functionType.bound() ? _functionType.selfType()->sizeOnStack() : 0;
-	unsigned gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0);
+	unsigned tokenSize = _functionType.tokenSet() ? 1: 0;
+	unsigned gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0) + tokenSize;
+
 	unsigned contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize + (_functionType.isBareCall() ? 0 : 1));
 	unsigned gasStackPos = m_context.currentToBaseStackOffset(gasValueSize);
-	unsigned valueStackPos = m_context.currentToBaseStackOffset(1);
+	unsigned valueStackPos = m_context.currentToBaseStackOffset(1 + tokenSize);
+	unsigned tokenStackPos = m_context.currentToBaseStackOffset(1);
 
 	// move self object to top
 	if (_functionType.bound())
@@ -1939,6 +2030,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	solAssert(funKind != FunctionType::Kind::BareCallCode, "Callcode has been removed.");
 
 	bool returnSuccessConditionAndReturndata = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::BareStaticCall;
+	bool isTokenCall = _functionType.tokenSet();
 	bool isDelegateCall = funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::DelegateCall;
 	bool useStaticCall = funKind == FunctionType::Kind::BareStaticCall || (_functionType.stateMutability() <= StateMutability::View && m_context.evmVersion().hasStaticCall());
 
@@ -1981,7 +2073,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		argumentTypes.push_back(_arguments[i]->annotation().type);
 	}
 
-	if (funKind == FunctionType::Kind::ECRecover)
+	if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign
+	)
 	{
 		// Clears 32 bytes of currently free memory and advances free memory pointer.
 		// Output area will be "start of input area" - 32.
@@ -2021,7 +2116,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// Move arguments to memory, will not update the free memory pointer (but will update the memory
 	// pointer on the stack).
 	bool encodeInPlace = _functionType.takesArbitraryParameters() || _functionType.isBareCall();
-	if (_functionType.kind() == FunctionType::Kind::ECRecover)
+	if (_functionType.kind() == FunctionType::Kind::ECRecover
+	|| _functionType.kind() == FunctionType::Kind::ValidateMultiSign
+	|| _functionType.kind() == FunctionType::Kind::BatchValidateSign
+	)
 		// This would be the only combination of padding and in-place encoding,
 		// but all parameters of ecrecover are value types anyway.
 		encodeInPlace = false;
@@ -2037,6 +2135,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// Stack now:
 	// <stack top>
 	// input_memory_end
+	// trcToken [if _functionType.tokenSet()]
 	// value [if _functionType.valueSet()]
 	// gas [if _functionType.gasSet()]
 	// function identifier [unless bare]
@@ -2047,7 +2146,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// put on stack: <size of output> <memory pos of output> <size of input> <memory pos of input>
 	m_context << u256(retSize);
 	utils().fetchFreeMemoryPointer(); // This is the start of input
-	if (funKind == FunctionType::Kind::ECRecover)
+
+	if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign)
 	{
 		// In this case, output is 32 bytes before input and has already been cleared.
 		m_context << u256(32) << Instruction::DUP2 << Instruction::SUB << Instruction::SWAP1;
@@ -2062,13 +2164,16 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	}
 
 	// CALL arguments: outSize, outOff, inSize, inOff (already present up to here)
-	// [value,] addr, gas (stack top)
+	// [value,] addr, gas, trcToken (stack top)
 	if (isDelegateCall)
 		solAssert(!_functionType.valueSet(), "Value set for delegatecall");
 	else if (useStaticCall)
 		solAssert(!_functionType.valueSet(), "Value set for staticcall");
-	else if (_functionType.valueSet())
+	else if (_functionType.valueSet()){
+		if (_functionType.tokenSet())
+			m_context << dupInstruction(m_context.baseToCurrentStackOffset(tokenStackPos));
 		m_context << dupInstruction(m_context.baseToCurrentStackOffset(valueStackPos));
+	}
 	else
 		m_context << u256(0);
 	m_context << dupInstruction(m_context.baseToCurrentStackOffset(contractStackPos));
@@ -2100,7 +2205,9 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << gasNeededByCaller << Instruction::GAS << Instruction::SUB;
 	}
 	// Order is important here, STATICCALL might overlap with DELEGATECALL.
-	if (isDelegateCall)
+	if (isTokenCall)
+		m_context << Instruction::CALLTOKEN;
+	else if (isDelegateCall)
 		m_context << Instruction::DELEGATECALL;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
@@ -2109,6 +2216,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	unsigned remainsSize =
 		2 + // contract address, input_memory_end
+		(_functionType.tokenSet() ? 1 : 0) +
 		(_functionType.valueSet() ? 1 : 0) +
 		(_functionType.gasSet() ? 1 : 0) +
 		(!_functionType.isBareCall() ? 1 : 0);
@@ -2157,7 +2265,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		utils().loadFromMemoryDynamic(IntegerType(160), false, true, false);
 		utils().convertType(IntegerType(160), FixedBytesType(20));
 	}
-	else if (funKind == FunctionType::Kind::ECRecover)
+	else if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign
+	)
 	{
 		// Output is 32 bytes before input / free mem pointer.
 		// Failing ecrecover cannot be detected, so we clear output before the call.

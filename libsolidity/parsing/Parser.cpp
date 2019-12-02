@@ -1593,6 +1593,9 @@ ASTPointer<Expression> Parser::parsePrimaryExpression()
 	case Token::Number:
 		if (TokenTraits::isEtherSubdenomination(m_scanner->peekNextToken()))
 		{
+			fatalParserError(string("Ether unit denomination is not supported by the compiler"));
+		}
+		else if (TokenTraits::isTronSubdenomination(m_scanner->peekNextToken())) {
 			ASTPointer<ASTString> literal = getLiteralAndAdvance();
 			nodeFactory.markEndPosition();
 			Literal::SubDenomination subdenomination = static_cast<Literal::SubDenomination>(m_scanner->currentToken());

@@ -23,6 +23,7 @@
 #pragma once
 
 #include <test/Options.h>
+#include <test/RPCSession.h>
 
 #include <libsolidity/interface/OptimiserSettings.h>
 
@@ -44,12 +45,9 @@ using rational = boost::rational<dev::bigint>;
 /// @NOTE This is not endian-specific; it's just a bunch of bytes.
 using Address = h160;
 
-// The various denominations; here for ease of use where needed within code.
-static const u256 wei = 1;
-static const u256 shannon = u256("1000000000");
-static const u256 szabo = shannon * 1000;
-static const u256 finney = szabo * 1000;
-static const u256 ether = finney * 1000;
+	// The various denominations; here for ease of use where needed within code.
+	static const u256 sun = 1;
+	static const u256 trx = sun * 1000000;
 
 class ExecutionFramework
 {

@@ -465,7 +465,7 @@ Constructor and fallback function never have ``name`` or ``outputs``. Fallback f
     The fields ``constant`` and ``payable`` are deprecated and will be removed in the future. Instead, the ``stateMutability`` field can be used to determine the same properties.
 
 .. note::
-    Sending non-zero Ether to non-payable function will revert the transaction.
+    Sending non-zero Trx to non-payable function will revert the transaction.
 
 An event description is a JSON object with fairly similar fields:
 

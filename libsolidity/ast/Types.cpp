@@ -465,15 +465,18 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", TypeProvider::uint256()},
+		{"isContract", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
-		{"staticcall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareStaticCall, false, StateMutability::View)}
+		{"staticcall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareStaticCall, false, StateMutability::View)},
+		{"tokenBalance", TypeProvider::function(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
 	};
 	if (m_stateMutability == StateMutability::Payable)
 	{
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
+		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
 	}
 	return members;
 }
@@ -507,7 +510,10 @@ IntegerType::IntegerType(unsigned _bits, IntegerType::Modifier _modifier):
 
 string IntegerType::richIdentifier() const
 {
-	return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
+	if (isTrcToken())
+		return "t_trcToken";
+	else
+		return "t_" + string(isSigned() ? "" : "u") + "int" + to_string(numBits());
 }
 
 BoolResult IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
@@ -517,6 +523,8 @@ BoolResult IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 		IntegerType const& convertTo = dynamic_cast<IntegerType const&>(_convertTo);
 		if (convertTo.m_bits < m_bits)
 			return false;
+		if (isTrcToken())
+			return !convertTo.isSigned() && convertTo.m_bits == 256;
 		else if (isSigned())
 			return convertTo.isSigned();
 		else
@@ -525,7 +533,11 @@ BoolResult IntegerType::isImplicitlyConvertibleTo(Type const& _convertTo) const
 	else if (_convertTo.category() == Category::FixedPoint)
 	{
 		FixedPointType const& convertTo = dynamic_cast<FixedPointType const&>(_convertTo);
-		return maxValue() <= convertTo.maxIntegerValue() && minValue() >= convertTo.minIntegerValue();
+
+		if (isTrcToken())
+			return false;
+		else
+			return maxValue() <= convertTo.maxIntegerValue() && minValue() >= convertTo.minIntegerValue();
 	}
 	else
 		return false;
@@ -546,6 +558,10 @@ TypeResult IntegerType::unaryOperatorResult(Token _operator) const
 	// "delete" is ok for all integer types
 	if (_operator == Token::Delete)
 		return TypeResult{TypeProvider::emptyTuple()};
+	// no further unary operators for trcToken
+	else if (isTrcToken())
+		return TypeResult::err("");
+	// for non-trctoken integers
 	// we allow -, ++ and --
 	else if (_operator == Token::Sub || _operator == Token::Inc ||
 		_operator == Token::Dec || _operator == Token::BitNot)
@@ -564,6 +580,8 @@ bool IntegerType::operator==(Type const& _other) const
 
 string IntegerType::toString(bool) const
 {
+	if (isTrcToken())
+		return "trcToken";
 	string prefix = isSigned() ? "int" : "uint";
 	return prefix + dev::toString(m_bits);
 }
@@ -595,6 +613,8 @@ TypeResult IntegerType::binaryOperatorResult(Token _operator, Type const* _other
 	if (TokenTraits::isShiftOp(_operator))
 	{
 		// Shifts are not symmetric with respect to the type
+		if (isTrcToken())
+			return TypePointer();
 		if (isValidShiftAndAmountType(_operator, *_other))
 			return this;
 		else
@@ -612,6 +632,10 @@ TypeResult IntegerType::binaryOperatorResult(Token _operator, Type const* _other
 		return nullptr;
 	if (auto intType = dynamic_cast<IntegerType const*>(commonType))
 	{
+		// Nothing else can be done with addresses
+		if (intType->isTrcToken())
+			return TypePointer();
+		// Signed EXP is not allowed
 		if (Token::Exp == _operator && intType->isSigned())
 			return TypeResult::err("Exponentiation is not allowed for signed integer types.");
 	}
@@ -840,6 +864,7 @@ tuple<bool, rational> RationalNumberType::isValidLiteral(Literal const& _literal
 	{
 		case Literal::SubDenomination::None:
 		case Literal::SubDenomination::Wei:
+		case Literal::SubDenomination::Sun:
 		case Literal::SubDenomination::Second:
 			break;
 		case Literal::SubDenomination::Szabo:
@@ -850,6 +875,9 @@ tuple<bool, rational> RationalNumberType::isValidLiteral(Literal const& _literal
 			break;
 		case Literal::SubDenomination::Ether:
 			value *= bigint("1000000000000000000");
+			break;
+		case Literal::SubDenomination::Trx:
+			value *= bigint("1000000");
 			break;
 		case Literal::SubDenomination::Minute:
 			value *= bigint("60");
@@ -2672,10 +2700,14 @@ string FunctionType::richIdentifier() const
 	case Kind::Creation: id += "creation"; break;
 	case Kind::Send: id += "send"; break;
 	case Kind::Transfer: id += "transfer"; break;
+	case Kind::TransferToken: id += "transferToken"; break;
+	case Kind::TokenBalance: id += "tokenBalance"; break;
 	case Kind::KECCAK256: id += "keccak256"; break;
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
 	case Kind::ECRecover: id += "ecrecover"; break;
+	case Kind::ValidateMultiSign: id += "validatemultisign"; break;
+	case Kind::BatchValidateSign: id += "batchvalidatesign"; break;
 	case Kind::SHA256: id += "sha256"; break;
 	case Kind::RIPEMD160: id += "ripemd160"; break;
 	case Kind::Log0: id += "log0"; break;
@@ -2932,7 +2964,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 					"value",
 					TypeProvider::function(
 						parseElementaryTypeVector({"uint"}),
-						TypePointers{copyAndSetGasOrValue(false, true)},
+						TypePointers{copyAndSetGasOrValue(false, true, false)},
 						strings(1, ""),
 						strings(1, ""),
 						Kind::SetValue,
@@ -2940,7 +2972,8 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 						StateMutability::Pure,
 						nullptr,
 						m_gasSet,
-						m_valueSet
+						m_valueSet,
+						m_tokenSet
 					)
 				);
 		}
@@ -2949,7 +2982,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 				"gas",
 				TypeProvider::function(
 					parseElementaryTypeVector({"uint"}),
-					TypePointers{copyAndSetGasOrValue(true, false)},
+					TypePointers{copyAndSetGasOrValue(true, false, false)},
 					strings(1, ""),
 					strings(1, ""),
 					Kind::SetGas,
@@ -2957,7 +2990,8 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 					StateMutability::Pure,
 					nullptr,
 					m_gasSet,
-					m_valueSet
+					m_valueSet,
+					m_tokenSet
 				)
 			);
 		return members;
@@ -3086,6 +3120,8 @@ bool FunctionType::isBareCall() const
 	case Kind::BareDelegateCall:
 	case Kind::BareStaticCall:
 	case Kind::ECRecover:
+	case Kind::ValidateMultiSign:
+	case Kind::BatchValidateSign:
 	case Kind::SHA256:
 	case Kind::RIPEMD160:
 		return true;
@@ -3139,6 +3175,8 @@ bool FunctionType::isPure() const
 	return
 		m_kind == Kind::KECCAK256 ||
 		m_kind == Kind::ECRecover ||
+		m_kind == Kind::ValidateMultiSign ||
+		m_kind == Kind::BatchValidateSign ||
 		m_kind == Kind::SHA256 ||
 		m_kind == Kind::RIPEMD160 ||
 		m_kind == Kind::AddMod ||
@@ -3161,7 +3199,7 @@ TypePointers FunctionType::parseElementaryTypeVector(strings const& _types)
 	return pointers;
 }
 
-TypePointer FunctionType::copyAndSetGasOrValue(bool _setGas, bool _setValue) const
+TypePointer FunctionType::copyAndSetGasOrValue(bool _setGas, bool _setValue, bool _setToken) const
 {
 	return TypeProvider::function(
 		m_parameterTypes,
@@ -3174,6 +3212,7 @@ TypePointer FunctionType::copyAndSetGasOrValue(bool _setGas, bool _setValue) con
 		m_declaration,
 		m_gasSet || _setGas,
 		m_valueSet || _setValue,
+		m_tokenSet || _setToken,
 		m_bound
 	);
 }
@@ -3214,6 +3253,7 @@ FunctionTypePointer FunctionType::asCallableFunction(bool _inLibrary, bool _boun
 		m_declaration,
 		m_gasSet,
 		m_valueSet,
+		m_tokenSet,
 		_bound
 	);
 }
@@ -3501,7 +3541,9 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"gas", TypeProvider::uint256()},
 			{"value", TypeProvider::uint256()},
 			{"data", TypeProvider::array(DataLocation::CallData)},
-			{"sig", TypeProvider::fixedBytes(4)}
+			{"sig", TypeProvider::fixedBytes(4)},
+			{"tokenvalue", TypeProvider::uint256()},
+			{"tokenid", TypeProvider::trcToken()},
 		});
 	case Kind::Transaction:
 		return MemberList::MemberMap({

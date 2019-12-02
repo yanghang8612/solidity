@@ -390,7 +390,8 @@ class IntegerType: public Type
 public:
 	enum class Modifier
 	{
-		Unsigned, Signed
+	    // TODO, check this for deleting Address
+		Unsigned, Signed, TrcToken
 	};
 
 	explicit IntegerType(unsigned _bits, Modifier _modifier = Modifier::Unsigned);
@@ -417,6 +418,7 @@ public:
 
 	unsigned numBits() const { return m_bits; }
 	bool isSigned() const { return m_modifier == Modifier::Signed; }
+	bool isTrcToken() const { return m_modifier == Modifier::TrcToken; }
 
 	bigint minValue() const;
 	bigint maxValue() const;
@@ -994,10 +996,14 @@ public:
 		Creation, ///< external call using CREATE
 		Send, ///< CALL, but without data and gas
 		Transfer, ///< CALL, but without data and throws on error
+		TransferToken, ///< CALL, but without data and throws an error
+		TokenBalance, ///< TOKENBALANCE
 		KECCAK256, ///< KECCAK256
 		Selfdestruct, ///< SELFDESTRUCT
 		Revert, ///< REVERT
 		ECRecover, ///< CALL to special contract for ecrecover
+		ValidateMultiSign, /// CALL to special contract for validate multisignatures
+        BatchValidateSign, /// CALL to special contract for validate batch signatures
 		SHA256, ///< CALL to special contract for sha256
 		RIPEMD160, ///< CALL to special contract for ripemd160
 		Log0,
@@ -1065,6 +1071,7 @@ public:
 		Declaration const* _declaration = nullptr,
 		bool _gasSet = false,
 		bool _valueSet = false,
+		bool _tokenSet = false,
 		bool _bound = false
 	):
 		m_parameterTypes(_parameterTypes),
@@ -1076,6 +1083,7 @@ public:
 		m_arbitraryParameters(_arbitraryParameters),
 		m_gasSet(_gasSet),
 		m_valueSet(_valueSet),
+		m_tokenSet(_tokenSet),
 		m_bound(_bound),
 		m_declaration(_declaration)
 	{
@@ -1200,11 +1208,12 @@ public:
 
 	bool gasSet() const { return m_gasSet; }
 	bool valueSet() const { return m_valueSet; }
+	bool tokenSet() const {return m_tokenSet;}
 	bool bound() const { return m_bound; }
 
 	/// @returns a copy of this type, where gas or value are set manually. This will never set one
 	/// of the parameters to false.
-	TypePointer copyAndSetGasOrValue(bool _setGas, bool _setValue) const;
+	TypePointer copyAndSetGasOrValue(bool _setGas, bool _setValue, bool _setToken) const;
 
 	/// @returns a copy of this function type where the location of reference types is changed
 	/// from CallData to Memory. This is the type that would be used when the function is
@@ -1227,6 +1236,7 @@ private:
 	bool const m_arbitraryParameters = false;
 	bool const m_gasSet = false; ///< true iff the gas value to be used is on the stack
 	bool const m_valueSet = false; ///< true iff the value to be sent is on the stack
+	bool const m_tokenSet = false;
 	bool const m_bound = false; ///< true iff the function is called as arg1.fun(arg2, ..., argn)
 	Declaration const* m_declaration = nullptr;
 };

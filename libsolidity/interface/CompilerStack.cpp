@@ -1296,7 +1296,7 @@ private:
 bytes CompilerStack::createCBORMetadata(string const& _metadata, bool _experimentalMode)
 {
 	MetadataCBOREncoder encoder;
-	encoder.pushBytes("bzzr1", dev::bzzr1Hash(_metadata).asBytes());
+	encoder.pushBytes("tron", dev::bzzr1Hash(_metadata).asBytes());
 	if (_experimentalMode)
 		encoder.pushBool("experimental", true);
 	if (m_release)

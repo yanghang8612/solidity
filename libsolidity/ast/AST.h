@@ -1683,6 +1683,8 @@ public:
 		Szabo = static_cast<int>(Token::SubSzabo),
 		Finney = static_cast<int>(Token::SubFinney),
 		Ether = static_cast<int>(Token::SubEther),
+		Sun = static_cast<int>(Token::SubSun),
+		Trx = static_cast<int>(Token::SubTrx),
 		Second = static_cast<int>(Token::SubSecond),
 		Minute = static_cast<int>(Token::SubMinute),
 		Hour = static_cast<int>(Token::SubHour),

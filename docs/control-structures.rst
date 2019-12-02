@@ -185,13 +185,13 @@ is compiled so recursive creation-dependencies are not possible.
         }
 
         function createAndEndowD(uint arg, uint amount) public payable {
-            // Send ether along with the creation
+            // Send trx along with the creation
             D newD = (new D).value(amount)(arg);
             newD.x();
         }
     }
 
-As seen in the example, it is possible to send Ether while creating
+As seen in the example, it is possible to send Trx while creating
 an instance of ``D`` using the ``.value()`` option, but it is not possible
 to limit the amount of gas.
 If the creation fails (due to out-of-stack, not enough balance or other problems),
@@ -412,8 +412,8 @@ A ``require``-style exception is generated in the following situations:
 #. If you call a function via a message call but it does not finish properly (i.e., it runs out of gas, has no matching function, or throws an exception itself), except when a low level operation ``call``, ``send``, ``delegatecall``, ``callcode`` or ``staticcall`` is used. The low level operations never throw exceptions but indicate failures by returning ``false``.
 #. If you create a contract using the ``new`` keyword but the contract creation :ref:`does not finish properly<creating-contracts>`.
 #. If you perform an external function call targeting a contract that contains no code.
-#. If your contract receives Ether via a public function without ``payable`` modifier (including the constructor and the fallback function).
-#. If your contract receives Ether via a public getter function.
+#. If your contract receives Trx via a public function without ``payable`` modifier (including the constructor and the fallback function).
+#. If your contract receives Trx via a public getter function.
 #. If a ``.transfer()`` fails.
 
 You can optionally provide a message string for ``require``, but not for ``assert``.
@@ -462,12 +462,12 @@ The following example shows how to use an error string together with ``revert`` 
 
     contract VendingMachine {
         function buy(uint amount) public payable {
-            if (amount > msg.value / 2 ether)
-                revert("Not enough Ether provided.");
+            if (amount > msg.value / 2 trx)
+                revert("Not enough Trx provided.");
             // Alternative way to do it:
             require(
-                amount <= msg.value / 2 ether,
-                "Not enough Ether provided."
+                amount <= msg.value / 2 trx,
+                "Not enough Trx provided."
             );
             // Perform the purchase.
         }
@@ -476,7 +476,7 @@ The following example shows how to use an error string together with ``revert`` 
 The two syntax options are equivalent, it's developer preference which to use.
 
 The provided string is :ref:`abi-encoded <ABI>` as if it were a call to a function ``Error(string)``.
-In the above example, ``revert("Not enough Ether provided.");`` returns the following hexadecimal as error return data:
+In the above example, ``revert("Not enough Trx provided.");`` returns the following hexadecimal as error return data:
 
 .. code::
 

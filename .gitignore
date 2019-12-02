@@ -58,5 +58,12 @@ CMakeLists.txt.user
 /.cproject
 /.project
 
-# place to put local temporary files
-tmp
+boost_*/
+cmake-build-debug/
+deps/
+output/
+contracts/
+
+
+upload/
+soljson.js

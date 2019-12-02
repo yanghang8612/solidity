@@ -974,7 +974,7 @@ BOOST_AUTO_TEST_CASE(wei_szabo_finney_ether)
 {
 	char const* sourceCode = R"(
 		(returnlll
-			(return (+ wei (+ szabo (+ finney ether)))))
+			(return (+ sun trx)))
 	)";
 	compileAndRun(sourceCode);
 	BOOST_CHECK(callFallback() == encodeArgs(u256(1001001000000000001)));

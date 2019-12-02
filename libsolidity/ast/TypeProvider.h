@@ -87,7 +87,9 @@ public:
 	static IntegerType const* integer(unsigned _bits, IntegerType::Modifier _modifier)
 	{
 		solAssert((_bits % 8) == 0, "");
-		if (_modifier == IntegerType::Modifier::Unsigned)
+		if (_modifier == IntegerType::Modifier::TrcToken)
+			return &m_trcToken;
+		else if (_modifier == IntegerType::Modifier::Unsigned)
 			return m_uintM.at(_bits / 8 - 1).get();
 		else
 			return m_intM.at(_bits / 8 - 1).get();
@@ -95,6 +97,8 @@ public:
 	static IntegerType const* uint(unsigned _bits) { return integer(_bits, IntegerType::Modifier::Unsigned); }
 
 	static IntegerType const* uint256() { return uint(256); }
+
+	static IntegerType const* trcToken() { return integer(256, IntegerType::Modifier::TrcToken); }
 
 	static FixedPointType const* fixedPoint(unsigned m, unsigned n, FixedPointType::Modifier _modifier);
 
@@ -152,6 +156,7 @@ public:
 		Declaration const* _declaration = nullptr,
 		bool _gasSet = false,
 		bool _valueSet = false,
+		bool _tokenSet = false,
 		bool _bound = false
 	);
 
@@ -210,6 +215,7 @@ private:
 	static TupleType const m_emptyTuple;
 	static AddressType const m_payableAddress;
 	static AddressType const m_address;
+	static IntegerType const m_trcToken;
 	static std::array<std::unique_ptr<IntegerType>, 32> const m_intM;
 	static std::array<std::unique_ptr<IntegerType>, 32> const m_uintM;
 	static std::array<std::unique_ptr<FixedBytesType>, 32> const m_bytesM;

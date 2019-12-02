@@ -345,6 +345,8 @@ void ViewPureChecker::endVisit(MemberAccess const& _memberAccess)
 	case Type::Category::Address:
 		if (member == "balance")
 			mutability = StateMutability::View;
+		else if (member == "isContract")
+			mutability = StateMutability::View;
 		break;
 	case Type::Category::Magic:
 	{
@@ -363,7 +365,9 @@ void ViewPureChecker::endVisit(MemberAccess const& _memberAccess)
 			{MagicType::Kind::MetaType, "name"},
 		};
 		set<MagicMember> static const payableMembers{
-			{MagicType::Kind::Message, "value"}
+			{MagicType::Kind::Message, "value"},
+			{MagicType::Kind::Message, "tokenvalue"},
+			{MagicType::Kind::Message, "tokenid"}
 		};
 
 		auto const& type = dynamic_cast<MagicType const&>(*_memberAccess.expression().annotation().type);
