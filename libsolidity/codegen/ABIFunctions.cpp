@@ -1086,21 +1086,38 @@ string ABIFunctions::abiDecodingFunctionValueType(Type const& _type, bool _fromM
 		"abi_decode_" +
 		_type.identifier() +
 		(_fromMemory ? "_fromMemory" : "");
-	return createFunction(functionName, [&]() {
-		Whiskers templ(R"(
-			function <functionName>(offset, end) -> value {
-				value := <load>(offset)
-				<validator>(value)
-			}
-		)");
-		templ("functionName", functionName);
-		templ("load", _fromMemory ? "mload" : "calldataload");
-		// Validation should use the type and not decodingType, because e.g.
-		// the decoding type of an enum is a plain int.
-		templ("validator", m_utils.validatorFunction(_type, true));
-		return templ.render();
-	});
-
+	if (_type.category() == Type::Category::Address)
+		return createFunction(functionName, [&]() {
+			Whiskers templ(R"(
+				function <functionName>(offset, end) -> value {
+					value := <load>(offset)
+					<validator>(value)
+					value := <cleanup>(value)
+				}
+			)");
+			templ("functionName", functionName);
+			templ("load", _fromMemory ? "mload" : "calldataload");
+			// Validation should use the type and not decodingType, because e.g.
+			// the decoding type of an enum is a plain int.
+			templ("validator", m_utils.validatorFunction(_type, true));
+			templ("cleanup", m_utils.cleanupFunction(_type));
+			return templ.render();
+		});
+	else
+		return createFunction(functionName, [&]() {
+			Whiskers templ(R"(
+				function <functionName>(offset, end) -> value {
+					value := <load>(offset)
+					<validator>(value)
+				}
+			)");
+			templ("functionName", functionName);
+			templ("load", _fromMemory ? "mload" : "calldataload");
+			// Validation should use the type and not decodingType, because e.g.
+			// the decoding type of an enum is a plain int.
+			templ("validator", m_utils.validatorFunction(_type, true));
+			return templ.render();
+		});
 }
 
 string ABIFunctions::abiDecodingFunctionArray(ArrayType const& _type, bool _fromMemory)

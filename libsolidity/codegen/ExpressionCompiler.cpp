@@ -919,14 +919,16 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::ECRecover:
 		case FunctionType::Kind::SHA256:
 		case FunctionType::Kind::RIPEMD160:
-		case FunctionType::Kind::MultiValidateSign:
+		case FunctionType::Kind::ValidateMultiSign:
+        case FunctionType::Kind::BatchValidateSign:
 		{
 			_functionCall.expression().accept(*this);
 			static map<FunctionType::Kind, u256> const contractAddresses{
 				{FunctionType::Kind::ECRecover, 1},
 				{FunctionType::Kind::SHA256, 2},
 				{FunctionType::Kind::RIPEMD160, 3},
-				{FunctionType::Kind::MultiValidateSign, 9}
+				{FunctionType::Kind::BatchValidateSign, 9},
+                {FunctionType::Kind::ValidateMultiSign, 10}
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
@@ -1288,7 +1290,8 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::Log3:
 				case FunctionType::Kind::Log4:
 				case FunctionType::Kind::ECRecover:
-				case FunctionType::Kind::MultiValidateSign:
+				case FunctionType::Kind::ValidateMultiSign:
+                case FunctionType::Kind::BatchValidateSign:
 				case FunctionType::Kind::SHA256:
 				case FunctionType::Kind::RIPEMD160:
 				default:
@@ -2070,7 +2073,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		argumentTypes.push_back(_arguments[i]->annotation().type);
 	}
 
-	if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::MultiValidateSign)
+	if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign
+	)
 	{
 		// Clears 32 bytes of currently free memory and advances free memory pointer.
 		// Output area will be "start of input area" - 32.
@@ -2110,7 +2116,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	// Move arguments to memory, will not update the free memory pointer (but will update the memory
 	// pointer on the stack).
 	bool encodeInPlace = _functionType.takesArbitraryParameters() || _functionType.isBareCall();
-	if (_functionType.kind() == FunctionType::Kind::ECRecover || _functionType.kind() == FunctionType::Kind::MultiValidateSign)
+	if (_functionType.kind() == FunctionType::Kind::ECRecover
+	|| _functionType.kind() == FunctionType::Kind::ValidateMultiSign
+	|| _functionType.kind() == FunctionType::Kind::BatchValidateSign
+	)
 		// This would be the only combination of padding and in-place encoding,
 		// but all parameters of ecrecover are value types anyway.
 		encodeInPlace = false;
@@ -2138,7 +2147,9 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	m_context << u256(retSize);
 	utils().fetchFreeMemoryPointer(); // This is the start of input
 
-	if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::MultiValidateSign)
+	if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign)
 	{
 		// In this case, output is 32 bytes before input and has already been cleared.
 		m_context << u256(32) << Instruction::DUP2 << Instruction::SUB << Instruction::SWAP1;
@@ -2254,7 +2265,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		utils().loadFromMemoryDynamic(IntegerType(160), false, true, false);
 		utils().convertType(IntegerType(160), FixedBytesType(20));
 	}
-	else if (funKind == FunctionType::Kind::ECRecover || funKind == FunctionType::Kind::MultiValidateSign)
+	else if (funKind == FunctionType::Kind::ECRecover
+	|| funKind == FunctionType::Kind::ValidateMultiSign
+	|| funKind == FunctionType::Kind::BatchValidateSign
+	)
 	{
 		// Output is 32 bytes before input / free mem pointer.
 		// Failing ecrecover cannot be detected, so we clear output before the call.
