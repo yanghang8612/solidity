@@ -62,7 +62,7 @@ const std::map<std::string, Instruction> dev::solidity::c_instructions =
 	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
 	{ "ORIGIN", Instruction::ORIGIN },
 	{ "CALLER", Instruction::CALLER },
-	{ "CALLVALUE", Instruction::CALLTOKEN },
+	{ "CALLVALUE", Instruction::CALLVALUE },
 	{ "CALLTOKENVALUE", Instruction::CALLTOKENVALUE },
 	{ "CALLTOKENID", Instruction::CALLTOKENID },
 	{ "CALLDATALOAD", Instruction::CALLDATALOAD },
