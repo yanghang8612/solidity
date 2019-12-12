@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.7
 MAINTAINER chriseth <chris@ethereum.org>
 #Official solidity docker image
 
