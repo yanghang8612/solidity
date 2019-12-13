@@ -48,7 +48,7 @@ if ! type wget &>/dev/null; then
     apt-get -y install wget
 fi
 
-WORKSPACE=/root/solidity
+WORKSPACE=/root/project
 
 # Increase nodejs stack size
 if ! [ -e /emsdk_portable/node/bin/node_orig ]
