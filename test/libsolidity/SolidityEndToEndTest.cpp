@@ -3516,6 +3516,209 @@ BOOST_AUTO_TEST_CASE(event_really_really_lots_of_data_from_storage)
 	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("Deposit(uint256,bytes,uint256)")));
 }
 
+BOOST_AUTO_TEST_CASE(event_struct_memory_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			struct S { uint a; }
+			event E(S);
+			function createEvent(uint x) public {
+				emit E(S(x));
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(x));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E((uint256))")));
+}
+
+BOOST_AUTO_TEST_CASE(event_struct_storage_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			struct S { uint a; }
+			event E(S);
+			S s;
+			function createEvent(uint x) public {
+				s.a = x;
+				emit E(s);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(x));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E((uint256))")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_array_memory)
+{
+	char const* sourceCode = R"(
+		contract C {
+			event E(uint[]);
+			function createEvent(uint x) public {
+				uint[] memory arr = new uint[](3);
+				arr[0] = x;
+				arr[1] = x + 1;
+				arr[2] = x + 2;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 3, x, x + 1, x + 2));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[])")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_array_memory_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			event E(uint[]);
+			function createEvent(uint x) public {
+				uint[] memory arr = new uint[](3);
+				arr[0] = x;
+				arr[1] = x + 1;
+				arr[2] = x + 2;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 3, x, x + 1, x + 2));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[])")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_nested_array_memory_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			event E(uint[][]);
+			function createEvent(uint x) public {
+				uint[][] memory arr = new uint[][](2);
+				arr[0] = new uint[](2);
+				arr[1] = new uint[](2);
+				arr[0][0] = x;
+				arr[0][1] = x + 1;
+				arr[1][0] = x + 2;
+				arr[1][1] = x + 3;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 2, 0x40, 0xa0, 2, x, x + 1, 2, x + 2, x + 3));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[][])")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_array_storage)
+{
+	char const* sourceCode = R"(
+		contract C {
+			event E(uint[]);
+			uint[] arr;
+			function createEvent(uint x) public {
+				arr.length = 3;
+				arr[0] = x;
+				arr[1] = x + 1;
+				arr[2] = x + 2;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 3, x, x + 1, x + 2));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[])")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_array_storage_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			event E(uint[]);
+			uint[] arr;
+			function createEvent(uint x) public {
+				arr.length = 3;
+				arr[0] = x;
+				arr[1] = x + 1;
+				arr[2] = x + 2;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 3, x, x + 1, x + 2));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[])")));
+}
+
+BOOST_AUTO_TEST_CASE(event_dynamic_nested_array_storage_v2)
+{
+	char const* sourceCode = R"(
+		pragma experimental ABIEncoderV2;
+		contract C {
+			event E(uint[][]);
+			uint[][] arr;
+			function createEvent(uint x) public {
+				arr.length = 2;
+				arr[0].length = 2;
+				arr[1].length = 2;
+				arr[0][0] = x;
+				arr[0][1] = x + 1;
+				arr[1][0] = x + 2;
+				arr[1][1] = x + 3;
+				emit E(arr);
+			}
+		}
+	)";
+	compileAndRun(sourceCode);
+	u256 x(42);
+	callContractFunction("createEvent(uint256)", x);
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_CHECK(m_logs[0].data == encodeArgs(0x20, 2, 0x40, 0xa0, 2, x, x + 1, 2, x + 2, x + 3));
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("E(uint256[][])")));
+}
+
 BOOST_AUTO_TEST_CASE(event_indexed_string)
 {
 	char const* sourceCode = R"(
@@ -10540,6 +10743,46 @@ BOOST_AUTO_TEST_CASE(shift_bytes_cleanup)
 	ABI_CHECK(callContractFunction("right(uint8)", 8 * 8), encodeArgs(string(8, 0) + "123456789012"));
 }
 
+BOOST_AUTO_TEST_CASE(exp_cleanup)
+{
+	char const* sourceCode = R"(
+		contract C {
+			function f() public pure returns (uint8 x) {
+				uint8 y = uint8(2) ** uint8(8);
+				return 0 ** y;
+			}
+		}
+	)";
+	compileAndRun(sourceCode, 0, "C");
+	ABI_CHECK(callContractFunction("f()"), encodeArgs(u256(0x1)));
+}
+
+BOOST_AUTO_TEST_CASE(exp_cleanup_direct)
+{
+	char const* sourceCode = R"(
+		contract C {
+			function f() public pure returns (uint8 x) {
+				return uint8(0) ** uint8(uint8(2) ** uint8(8));
+			}
+		}
+	)";
+	compileAndRun(sourceCode, 0, "C");
+	ABI_CHECK(callContractFunction("f()"), encodeArgs(u256(0x1)));
+}
+
+BOOST_AUTO_TEST_CASE(exp_cleanup_nonzero_base)
+{
+	char const* sourceCode = R"(
+		contract C {
+			function f() public pure returns (uint8 x) {
+				return uint8(0x166) ** uint8(uint8(2) ** uint8(8));
+			}
+		}
+	)";
+	compileAndRun(sourceCode, 0, "C");
+	ABI_CHECK(callContractFunction("f()"), encodeArgs(u256(0x1)));
+}
+
 BOOST_AUTO_TEST_CASE(cleanup_in_compound_assign)
 {
 	char const* sourceCode = R"(
@@ -12168,6 +12411,34 @@ BOOST_AUTO_TEST_CASE(senders_balance)
 	)";
 	compileAndRun(sourceCode, 27, "D");
 	BOOST_CHECK(callContractFunction("f()") == encodeArgs(u256(27)));
+}
+
+BOOST_AUTO_TEST_CASE(event_wrong_abi_name)
+{
+	char const* sourceCode = R"(
+		library ClientReceipt {
+			event Deposit(Test indexed _from, bytes32 indexed _id, uint _value);
+			function deposit(bytes32 _id) public {
+				Test a;
+				emit Deposit(a, _id, msg.value);
+			}
+		}
+		contract Test {
+			function f() public {
+				ClientReceipt.deposit("123");
+			}
+		}
+	)";
+	compileAndRun(sourceCode, 0, "ClientReceipt", bytes());
+	compileAndRun(sourceCode, 0, "Test", bytes(), map<string, Address>{{"ClientReceipt", m_contractAddress}});
+	u256 value(18);
+	u256 id(0x1234);
+
+	callContractFunction("f()");
+	BOOST_REQUIRE_EQUAL(m_logs.size(), 1);
+	BOOST_CHECK_EQUAL(m_logs[0].address, m_contractAddress);
+	BOOST_REQUIRE_EQUAL(m_logs[0].topics.size(), 3);
+	BOOST_CHECK_EQUAL(m_logs[0].topics[0], dev::keccak256(string("Deposit(address,bytes32,uint256)")));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
