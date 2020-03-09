@@ -11,13 +11,15 @@ Layout of State Variables in Storage
 Statically-sized variables (everything except mapping and dynamically-sized array types) are laid out contiguously in storage starting from position ``0``. Multiple, contiguous items that need less than 32 bytes are packed into a single storage slot if possible, according to the following rules:
 
 - The first item in a storage slot is stored lower-order aligned.
-- Elementary types use only that many bytes that are necessary to store them.
+- Elementary types use only as many bytes as are necessary to store them.
 - If an elementary type does not fit the remaining part of a storage slot, it is moved to the next storage slot.
 - Structs and array data always start a new slot and occupy whole slots (but items inside a struct or array are packed tightly according to these rules).
 
 For contracts that use inheritance, the ordering of state variables is determined by the
 C3-linearized order of contracts starting with the most base-ward contract. If allowed
 by the above rules, state variables from different contracts do share the same storage slot.
+
+The elements of structs and arrays are stored after each other, just as if they were given explicitly.
 
 .. warning::
     When using elements that are smaller than 32 bytes, your contract's gas usage may be higher.
@@ -36,15 +38,13 @@ by the above rules, state variables from different contracts do share the same s
     ``uint128, uint256, uint128``, as the former will only take up two slots of storage whereas the
     latter will take up three.
 
- .. note::
+.. note::
      The layout of state variables in storage is considered to be part of the external interface
      of Solidity due to the fact that storage pointers can be passed to libraries. This means that
      any change to the rules outlined in this section is considered a breaking change
      of the language and due to its critical nature should be considered very carefully before
      being executed.
 
-
-The elements of structs and arrays are stored after each other, just as if they were given explicitly.
 
 Mappings and Dynamic Arrays
 ===========================
@@ -62,12 +62,13 @@ non-elementary type, the positions are found by adding an offset of ``keccak256(
 
 So for the following contract snippet::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
+
 
     contract C {
-      struct s { uint a; uint b; }
-      uint x;
-      mapping(uint => mapping(uint => s)) data;
+        struct S { uint a; uint b; }
+        uint x;
+        mapping(uint => mapping(uint => S)) data;
     }
 
 The position of ``data[4][9].b`` is at ``keccak256(uint256(9) . keccak256(uint256(4) . uint256(1))) + 1``.
@@ -268,7 +269,7 @@ Tips and Tricks
 
 * Use ``delete`` on arrays to delete all its elements.
 * Use shorter types for struct elements and sort them such that short types are grouped together. This can lower the gas costs as multiple ``SSTORE`` operations might be combined into a single (``SSTORE`` costs 5000 or 20000 gas, so this is what you want to optimise). Use the gas price estimator (with optimiser enabled) to check!
-* Make your state variables public - the compiler will create :ref:`getters <visibility-and-getters>` for you automatically.
+* Make your state variables public - the compiler creates :ref:`getters <visibility-and-getters>` for you automatically.
 * If you end up checking conditions on input or state a lot at the beginning of your functions, try using :ref:`modifiers`.
 * Initialize storage structs with a single assignment: ``x = MyStruct({a: 1, b: 2});``
 
@@ -336,12 +337,12 @@ The following is the order of precedence for operators, listed in order of evalu
 | *13*       | Logical OR                          | ``||``                                     |
 +------------+-------------------------------------+--------------------------------------------+
 | *14*       | Ternary operator                    | ``<conditional> ? <if-true> : <if-false>`` |
-+------------+-------------------------------------+--------------------------------------------+
-| *15*       | Assignment operators                | ``=``, ``|=``, ``^=``, ``&=``, ``<<=``,    |
++            +-------------------------------------+--------------------------------------------+
+|            | Assignment operators                | ``=``, ``|=``, ``^=``, ``&=``, ``<<=``,    |
 |            |                                     | ``>>=``, ``+=``, ``-=``, ``*=``, ``/=``,   |
 |            |                                     | ``%=``                                     |
 +------------+-------------------------------------+--------------------------------------------+
-| *16*       | Comma operator                      | ``,``                                      |
+| *15*       | Comma operator                      | ``,``                                      |
 +------------+-------------------------------------+--------------------------------------------+
 
 .. index:: assert, block, coinbase, difficulty, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin, revert, require, keccak256, ripemd160, sha256, ecrecover, addmod, mulmod, cryptography, this, super, selfdestruct, balance, send
@@ -385,6 +386,7 @@ Global Variables
 - ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Wei
 - ``<address payable>.send(uint256 amount) returns (bool)``: send given amount of Wei to :ref:`address`, returns ``false`` on failure
 - ``<address payable>.transfer(uint256 amount)``: send given amount of Wei to :ref:`address`, throws on failure
+- ``type(C).name`` (``string``): the name of the contract
 - ``type(C).creationCode`` (``bytes memory``): creation bytecode of the given contract, see :ref:`Type Information<meta-type>`.
 - ``type(C).runtimeCode`` (``bytes memory``): runtime bytecode of the given contract, see :ref:`Type Information<meta-type>`.
 

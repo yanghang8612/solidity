@@ -25,6 +25,7 @@
 #include <boost/noncopyable.hpp>
 
 #include <vector>
+#include <set>
 
 namespace yul
 {
@@ -49,7 +50,20 @@ struct BuiltinFunction
 	/// This means the function cannot depend on storage or memory, cannot have any side-effects,
 	/// but it can depend on state that is constant across an EVM-call.
 	bool movable = false;
-	/// If true, can only accept literals as arguments and they cannot be moved to voriables.
+	/// If true, a call to this function can be omitted without changing semantics.
+	bool sideEffectFree = false;
+	/// If true, a call to this function can be omitted without changing semantics if the
+	/// program does not contain the msize instruction.
+	bool sideEffectFreeIfNoMSize = false;
+	/// If true, this is the msize instruction.
+	bool isMSize = false;
+	/// If false, storage of the current contract before and after the function is the same
+	/// under every circumstance. If the function does not return, this can be false.
+	bool invalidatesStorage = true;
+	/// If false, memory before and after the function is the same under every circumstance.
+	/// If the function does not return, this can be false.
+	bool invalidatesMemory = true;
+	/// If true, can only accept literals as arguments and they cannot be moved to variables.
 	bool literalArguments = false;
 };
 
@@ -59,13 +73,18 @@ struct Dialect: boost::noncopyable
 	/// @returns the builtin function of the given name or a nullptr if it is not a builtin function.
 	virtual BuiltinFunction const* builtin(YulString /*_name*/) const { return nullptr; }
 
+	virtual BuiltinFunction const* discardFunction() const { return nullptr; }
+	virtual BuiltinFunction const* equalityFunction() const { return nullptr; }
+
+	virtual std::set<YulString> fixedFunctionNames() const { return {}; }
+
 	Dialect(AsmFlavour _flavour): flavour(_flavour) {}
 	virtual ~Dialect() = default;
 
-	static std::shared_ptr<Dialect> yul()
+	static Dialect const& yul()
 	{
-		// Will have to add builtins later.
-		return std::make_shared<Dialect>(AsmFlavour::Yul);
+		static Dialect yulDialect(AsmFlavour::Yul);
+		return yulDialect;
 	}
 };
 

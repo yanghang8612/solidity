@@ -33,19 +33,19 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 	add_compile_options(-Werror)
 
 	# Configuration-specific compiler settings.
-	set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -DETH_DEBUG")
+	set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g3 -DETH_DEBUG")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g3")
 
 	# Additional GCC-specific compiler settings.
 	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-		# Check that we've got GCC 4.7 or newer.
+		# Check that we've got GCC 5.0 or newer.
 		execute_process(
 			COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater.")
+		if (NOT (GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0))
+			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 5.0 or greater.")
 		endif ()
 
 	# Additional Clang-specific compiler settings.
@@ -54,6 +54,12 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 			# Set stack size to 32MB - by default Apple's clang defines a stack size of 8MB.
 			# Normally 16MB is enough to run all tests, but it will exceed the stack, if -DSANITIZE=address is used.
 			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-stack_size -Wl,0x2000000")
+
+			# Boost libraries use visibility=hidden to reduce unnecessary DWARF entries.
+			# Unless we match visibility, ld will give a warning message like:
+			#   ld: warning: direct access in function 'boost::filesystem... from file ...
+			#   means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 		endif()
 
 		# Some Linux-specific Clang settings.  We don't want these for OS X.
@@ -138,7 +144,13 @@ else ()
 endif ()
 
 if (SANITIZE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZE}")
+	# Perform case-insensitive string compare
+	string(TOLOWER "${SANITIZE}" san)
+	# -fno-omit-frame-pointer gives more informative stack trace in case of an error
+	# -fsanitize-address-use-after-scope throws an error when a variable is used beyond its scope
+	if (san STREQUAL "address")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope")
+	endif()
 endif()
 
 # Code coverage support.

@@ -19,17 +19,18 @@
  * @date 2014
  */
 
-#include "./Instruction.h"
+#include <libevmasm/Instruction.h>
 
-#include <algorithm>
-#include <functional>
 #include <libdevcore/Common.h>
 #include <libdevcore/CommonIO.h>
+#include <algorithm>
+#include <functional>
+
 using namespace std;
 using namespace dev;
-using namespace dev::solidity;
+using namespace dev::eth;
 
-const std::map<std::string, Instruction> dev::solidity::c_instructions =
+std::map<std::string, Instruction> const dev::eth::c_instructions =
 {
 	{ "STOP", Instruction::STOP },
 	{ "ADD", Instruction::ADD },
@@ -61,9 +62,10 @@ const std::map<std::string, Instruction> dev::solidity::c_instructions =
 	{ "ADDRESS", Instruction::ADDRESS },
 	{ "BALANCE", Instruction::BALANCE },
 	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
+	{ "ISCONTRACT", Instruction::ISCONTRACT },
 	{ "ORIGIN", Instruction::ORIGIN },
 	{ "CALLER", Instruction::CALLER },
-	{ "CALLVALUE", Instruction::CALLTOKEN },
+	{ "CALLVALUE", Instruction::CALLVALUE },
 	{ "CALLTOKENVALUE", Instruction::CALLTOKENVALUE },
 	{ "CALLTOKENID", Instruction::CALLTOKENID },
 	{ "CALLDATALOAD", Instruction::CALLDATALOAD },
@@ -177,7 +179,7 @@ const std::map<std::string, Instruction> dev::solidity::c_instructions =
 	{ "SELFDESTRUCT", Instruction::SELFDESTRUCT }
 };
 
-static const std::map<Instruction, InstructionInfo> c_instructionInfo =
+static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 { //												Add, Args, Ret, SideEffects, GasPriceTier
 	{ Instruction::STOP,		{ "STOP",			0, 0, 0, true,  Tier::Zero } },
 	{ Instruction::ADD,			{ "ADD",			0, 2, 1, false, Tier::VeryLow } },
@@ -209,6 +211,7 @@ static const std::map<Instruction, InstructionInfo> c_instructionInfo =
 	{ Instruction::ADDRESS,		{ "ADDRESS",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::BALANCE,		{ "BALANCE",		0, 1, 1, false, Tier::Balance } },
 	{ Instruction::TOKENBALANCE,{ "TOKENBALANCE",	0, 2, 1, false, Tier::Balance } },
+	{ Instruction::ISCONTRACT,{ "ISCONTRACT",	0, 1, 1, false, Tier::Balance } },
 	{ Instruction::ORIGIN,		{ "ORIGIN",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLER,		{ "CALLER",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLVALUE,	{ "CALLVALUE",		0, 0, 1, false, Tier::Base } },
@@ -325,7 +328,7 @@ static const std::map<Instruction, InstructionInfo> c_instructionInfo =
 	{ Instruction::SELFDESTRUCT,	{ "SELFDESTRUCT",		0, 1, 0, true, Tier::Special } }
 };
 
-void dev::solidity::eachInstruction(
+void dev::eth::eachInstruction(
 	bytes const& _mem,
 	function<void(Instruction,u256 const&)> const& _onInstruction
 )
@@ -354,7 +357,7 @@ void dev::solidity::eachInstruction(
 	}
 }
 
-string dev::solidity::disassemble(bytes const& _mem)
+string dev::eth::disassemble(bytes const& _mem)
 {
 	stringstream ret;
 	eachInstruction(_mem, [&](Instruction _instr, u256 const& _data) {
@@ -371,7 +374,7 @@ string dev::solidity::disassemble(bytes const& _mem)
 	return ret.str();
 }
 
-InstructionInfo dev::solidity::instructionInfo(Instruction _inst)
+InstructionInfo dev::eth::instructionInfo(Instruction _inst)
 {
 	try
 	{
@@ -383,7 +386,7 @@ InstructionInfo dev::solidity::instructionInfo(Instruction _inst)
 	}
 }
 
-bool dev::solidity::isValidInstruction(Instruction _inst)
+bool dev::eth::isValidInstruction(Instruction _inst)
 {
 	return !!c_instructionInfo.count(_inst);
 }

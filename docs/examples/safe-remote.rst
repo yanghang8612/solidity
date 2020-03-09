@@ -6,13 +6,14 @@ Safe Remote Purchase
 
 ::
 
-    pragma solidity >=0.4.22 <0.6.0;
+    pragma solidity >=0.4.22 <0.7.0;
 
     contract Purchase {
         uint public value;
         address payable public seller;
         address payable public buyer;
         enum State { Created, Locked, Inactive }
+        // The state variable has a default value of the first member, `State.created`
         State public state;
 
         // Ensure that `msg.value` is an even number.

@@ -49,7 +49,7 @@ Data locations are not only relevant for persistency of data, but also for the s
 
 ::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
 
     contract C {
         uint[] x; // the data location of x is storage
@@ -146,7 +146,7 @@ or create a new memory array and copy every element.
 
 ::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
 
     contract C {
         function f(uint len) public pure {
@@ -175,7 +175,7 @@ In the example below, the type of ``[1, 2, 3]`` is
 
 ::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
 
     contract C {
         function f() public pure {
@@ -190,7 +190,7 @@ Fixed size memory arrays cannot be assigned to dynamically-sized memory arrays, 
 
 ::
 
-    pragma solidity >=0.4.0 <0.6.0;
+    pragma solidity >=0.4.0 <0.7.0;
 
     // This will not compile.
     contract C {
@@ -217,13 +217,13 @@ Array Members
     For dynamically-sized arrays (only available for storage), this member can be assigned to resize the array.
     Accessing elements outside the current length does not automatically resize the array and instead causes a failing assertion.
     Increasing the length adds new zero-initialised elements to the array.
-    Reducing the length performs an implicit :ref:``delete`` on each of the
+    Reducing the length performs an implicit :ref:`delete<delete>` on each of the
     removed elements. If you try to resize a non-dynamic array that isn't in
     storage, you receive a ``Value must be an lvalue`` error.
 **push**:
      Dynamic storage arrays and ``bytes`` (not ``string``) have a member function called ``push`` that you can use to append an element at the end of the array. The element will be zero-initialised. The function returns the new length.
 **pop**:
-     Dynamic storage arrays and ``bytes`` (not ``string``) have a member function called ``pop`` that you can use to remove an element from the end of the array. This also implicitly calls :ref:``delete`` on the removed element.
+     Dynamic storage arrays and ``bytes`` (not ``string``) have a member function called ``pop`` that you can use to remove an element from the end of the array. This also implicitly calls :ref:`delete<delete>` on the removed element.
 
 .. warning::
     If you use ``.length--`` on an empty array, it causes an underflow and
@@ -234,7 +234,7 @@ Array Members
     storage is assumed to be zero-initialised, while decreasing
     the length has at least linear cost (but in most cases worse than linear),
     because it includes explicitly clearing the removed
-    elements similar to calling :ref:``delete`` on them.
+    elements similar to calling :ref:`delete<delete>` on them.
 
 .. note::
     It is not yet possible to use arrays of arrays in external functions
@@ -248,7 +248,7 @@ Array Members
 
 ::
 
-    pragma solidity >=0.4.16 <0.6.0;
+    pragma solidity >=0.4.16 <0.7.0;
 
     contract ArrayContract {
         uint[2**20] m_aLotOfIntegers;
@@ -347,7 +347,7 @@ shown in the following example:
 
 ::
 
-    pragma solidity >=0.4.11 <0.6.0;
+    pragma solidity >=0.4.11 <0.7.0;
 
     contract CrowdFunding {
         // Defines a new type with two fields.
@@ -371,7 +371,8 @@ shown in the following example:
             campaignID = numCampaigns++; // campaignID is return variable
             // Creates new struct in memory and copies it to storage.
             // We leave out the mapping type, because it is not valid in memory.
-            // If structs are copied (even from storage to storage), mapping types
+            // If structs are copied (even from storage to storage),
+            // types that are not valid outside of storage (ex. mappings and array of mappings)
             // are always omitted, because they cannot be enumerated.
             campaigns[campaignID] = Campaign(beneficiary, goal, 0, 0);
         }

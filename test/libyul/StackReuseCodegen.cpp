@@ -20,13 +20,11 @@
 
 #include <test/Options.h>
 
-#include <libsolidity/interface/AssemblyStack.h>
+#include <libyul/AssemblyStack.h>
 #include <libevmasm/Instruction.h>
 
 using namespace std;
 
-namespace dev
-{
 namespace yul
 {
 namespace test
@@ -36,9 +34,12 @@ namespace
 {
 string assemble(string const& _input)
 {
-	solidity::AssemblyStack asmStack;
+	dev::solidity::OptimiserSettings settings = dev::solidity::OptimiserSettings::full();
+	settings.runYulOptimiser = false;
+	settings.optimizeStackAllocation = true;
+	AssemblyStack asmStack(langutil::EVMVersion{}, AssemblyStack::Language::StrictAssembly, settings);
 	BOOST_REQUIRE_MESSAGE(asmStack.parseAndAnalyze("", _input), "Source did not parse: " + _input);
-	return solidity::disassemble(asmStack.assemble(solidity::AssemblyStack::Machine::EVM, true).bytecode->bytecode);
+	return dev::eth::disassemble(asmStack.assemble(AssemblyStack::Machine::EVM).bytecode->bytecode);
 }
 }
 
@@ -276,16 +277,15 @@ BOOST_AUTO_TEST_CASE(functions_multi_return)
 		let unused := 7
 	})";
 	BOOST_CHECK_EQUAL(assemble(in),
-		"PUSH1 0xB JUMP "
+		"PUSH1 0x13 JUMP "
 		"JUMPDEST PUSH1 0x0 SWAP3 SWAP2 POP POP JUMP " // f
-		"JUMPDEST PUSH1 0x17 JUMP "
 		"JUMPDEST PUSH1 0x0 PUSH1 0x0 SWAP1 SWAP2 JUMP " // g
-		"JUMPDEST PUSH1 0x21 PUSH1 0x2 PUSH1 0x1 PUSH1 0x3 JUMP " // f(1, 2)
-		"JUMPDEST PUSH1 0x2B PUSH1 0x4 PUSH1 0x3 PUSH1 0x3 JUMP " // f(3, 4)
+		"JUMPDEST PUSH1 0x1D PUSH1 0x2 PUSH1 0x1 PUSH1 0x3 JUMP " // f(1, 2)
+		"JUMPDEST PUSH1 0x27 PUSH1 0x4 PUSH1 0x3 PUSH1 0x3 JUMP " // f(3, 4)
 		"JUMPDEST SWAP1 POP " // assignment to x
 		"POP " // remove x
-		"PUSH1 0x34 PUSH1 0xF JUMP " // g()
-		"JUMPDEST PUSH1 0x3A PUSH1 0xF JUMP " // g()
+		"PUSH1 0x30 PUSH1 0xB JUMP " // g()
+		"JUMPDEST PUSH1 0x36 PUSH1 0xB JUMP " // g()
 		"JUMPDEST SWAP2 POP SWAP2 POP " // assignments
 		"POP POP " // removal of y and z
 		"PUSH1 0x7 POP "
@@ -348,6 +348,5 @@ BOOST_AUTO_TEST_CASE(reuse_slots_function_with_gaps)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-}
 }
 }

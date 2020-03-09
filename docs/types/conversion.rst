@@ -8,29 +8,32 @@ Conversions between Elementary Types
 Implicit Conversions
 --------------------
 
-If an operator is applied to different types, the compiler tries to
-implicitly convert one of the operands to the type of the other (the same is
-true for assignments). In general, an implicit conversion between value-types
-is possible if it
-makes sense semantically and no information is lost: ``uint8`` is convertible to
-``uint16`` and ``int128`` to ``int256``, but ``int8`` is not convertible to ``uint256``
-(because ``uint256`` cannot hold e.g. ``-1``).
+If an operator is applied to different types, the compiler tries to implicitly
+convert one of the operands to the type of the other (the same is true for assignments).
+This means that operations are always performed in the type of one of the operands.
+In general, an implicit conversion between value-types is possible if it makes
+sense semantically and no information is lost.
+
+For example, ``uint8`` is convertible to
+``uint16`` and ``int128`` to ``int256``, but ``int8`` is not convertible to ``uint256``,
+because ``uint256`` cannot hold values such as ``-1``.
 
 For more details, please consult the sections about the types themselves.
 
 Explicit Conversions
 --------------------
 
-If the compiler does not allow implicit conversion but you know what you are
-doing, an explicit type conversion is sometimes possible. Note that this may
-give you some unexpected behaviour and allows you to bypass some security
+If the compiler does not allow implicit conversion but you are confident a conversion will work,
+an explicit type conversion is sometimes possible. This may
+result in unexpected behaviour and allows you to bypass some security
 features of the compiler, so be sure to test that the
-result is what you want! Take the following example where you are converting
-a negative ``int8`` to a ``uint``:
+result is what you want and expect!
+
+Take the following example that converts a negative ``int`` to a ``uint``:
 
 ::
 
-    int8 y = -3;
+    int  y = -3;
     uint x = uint(y);
 
 At the end of this code snippet, ``x`` will have the value ``0xfffff..fd`` (64 hex
@@ -42,7 +45,7 @@ cut off::
     uint32 a = 0x12345678;
     uint16 b = uint16(a); // b will be 0x5678 now
 
-If an integer is explicitly converted to a larger type, it is padded on the left (i.e. at the higher order end).
+If an integer is explicitly converted to a larger type, it is padded on the left (i.e., at the higher order end).
 The result of the conversion will compare equal to the original integer::
 
     uint16 a = 0x1234;

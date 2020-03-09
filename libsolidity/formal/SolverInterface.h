@@ -118,6 +118,7 @@ public:
 	explicit Expression(bool _v): Expression(_v ? "true" : "false", Kind::Bool) {}
 	Expression(size_t _number): Expression(std::to_string(_number), Kind::Int) {}
 	Expression(u256 const& _number): Expression(_number.str(), Kind::Int) {}
+	Expression(s256 const& _number): Expression(_number.str(), Kind::Int) {}
 	Expression(bigint const& _number): Expression(_number.str(), Kind::Int) {}
 
 	Expression(Expression const&) = default;
@@ -132,6 +133,7 @@ public:
 			{"not", 1},
 			{"and", 2},
 			{"or", 2},
+			{"implies", 2},
 			{"=", 2},
 			{"<", 2},
 			{"<=", 2},
@@ -159,7 +161,12 @@ public:
 
 	static Expression implies(Expression _a, Expression _b)
 	{
-		return !std::move(_a) || std::move(_b);
+		return Expression(
+			"implies",
+			std::move(_a),
+			std::move(_b),
+			Kind::Bool
+		);
 	}
 
 	/// select is the SMT representation of an array index access.
@@ -296,6 +303,7 @@ public:
 	Expression newVariable(std::string _name, SortPointer _sort)
 	{
 		// Subclasses should do something here
+		solAssert(_sort, "");
 		declareVariable(_name, *_sort);
 		return Expression(std::move(_name), {}, std::move(_sort));
 	}

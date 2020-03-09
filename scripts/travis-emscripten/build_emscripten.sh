@@ -34,7 +34,11 @@
 
 set -ev
 
-OS=`uname -s`
+if test -z "$1"; then
+	BUILD_DIR="emscripten_build"
+else
+	BUILD_DIR="$1"
+fi
 
 if ! type git &>/dev/null; then
     # We need git for extracting the commit hash
@@ -48,7 +52,7 @@ if ! type wget &>/dev/null; then
     apt-get -y install wget
 fi
 
-WORKSPACE=/root/solidity
+WORKSPACE=/root/project
 
 # Increase nodejs stack size
 if ! [ -e /emsdk_portable/node/bin/node_orig ]
@@ -60,52 +64,30 @@ fi
 
 # Boost
 echo -en 'travis_fold:start:compiling_boost\\r'
-cd "$WORKSPACE"/boost_1_68_0
-# if b2 exists, it is a fresh checkout, otherwise it comes from the cache
-# and is already compiled
-test -e b2 && (
+test -e "$WORKSPACE"/boost_1_70_0_install/include/boost/version.hpp || (
+cd "$WORKSPACE"/boost_1_70_0
 ./b2 toolset=emscripten link=static variant=release threading=single runtime-link=static \
-       system regex filesystem unit_test_framework program_options cxxflags="-Wno-unused-local-typedef -Wno-variadic-macros -Wno-c99-extensions -Wno-all"
-
-if [ $OS == "Darwin" ];then
-    # MacOS
-    sed -i '' 's|using gcc ;|using gcc : : em++ ;|g' ./project-config.jam
-    sed -i '' 's|$(archiver\[1\])|emar|g' ./tools/build/src/tools/gcc.jam
-    sed -i '' 's|$(ranlib\[1\])|emranlib|g' ./tools/build/src/tools/gcc.jam
-else
-    # Linux and Other OS
-    sed -i 's|using gcc ;|using gcc : : em++ ;|g' ./project-config.jam
-    sed -i 's|$(archiver\[1\])|emar|g' ./tools/build/src/tools/gcc.jam
-    sed -i 's|$(ranlib\[1\])|emranlib|g' ./tools/build/src/tools/gcc.jam
-fi
-./b2 link=static variant=release threading=single runtime-link=static \
-       system regex filesystem unit_test_framework program_options
-find . -name 'libboost*.a' -exec cp {} . \;
-rm -rf b2 libs doc tools more bin.v2 status
+       --with-system --with-regex --with-filesystem --with-test --with-program_options cxxflags="-Wno-unused-local-typedef -Wno-variadic-macros -Wno-c99-extensions -Wno-all" \
+       --prefix="$WORKSPACE"/boost_1_70_0_install install
 )
-echo -en 'travis_fold:end:compiling_boost\r\n'
+ln -sf "$WORKSPACE"/boost_1_70_0_install/lib/* /emsdk_portable/sdk/system/lib
+ln -sf "$WORKSPACE"/boost_1_70_0_install/include/* /emsdk_portable/sdk/system/include
+echo -en 'travis_fold:end:compiling_boost\\r'
 
-echo -en 'travis_fold:start:install_cmake.sh\r\n'
+echo -en 'travis_fold:start:install_cmake.sh\\r'
 source $WORKSPACE/scripts/install_cmake.sh
-echo -en 'travis_fold:end:install_cmake.sh\r\n'
+echo -en 'travis_fold:end:install_cmake.sh\\r'
 
 # Build dependent components and solidity itself
-echo -en 'travis_fold:start:compiling_solidity\r\n'
+echo -en 'travis_fold:start:compiling_solidity\\r'
 cd $WORKSPACE
-mkdir -p build
-cd build
+mkdir -p $BUILD_DIR
+cd $BUILD_DIR
 cmake \
   -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/emscripten.cmake \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBoost_FOUND=1 \
   -DBoost_USE_STATIC_LIBS=1 \
   -DBoost_USE_STATIC_RUNTIME=1 \
-  -DBoost_INCLUDE_DIR="$WORKSPACE"/boost_1_68_0/ \
-  -DBoost_FILESYSTEM_LIBRARY_RELEASE="$WORKSPACE"/boost_1_68_0/libboost_filesystem.a \
-  -DBoost_PROGRAM_OPTIONS_LIBRARY_RELEASE="$WORKSPACE"/boost_1_68_0/libboost_program_options.a \
-  -DBoost_REGEX_LIBRARY_RELEASE="$WORKSPACE"/boost_1_68_0/libboost_regex.a \
-  -DBoost_SYSTEM_LIBRARY_RELEASE="$WORKSPACE"/boost_1_68_0/libboost_system.a \
-  -DBoost_UNIT_TEST_FRAMEWORK_LIBRARY_RELEASE="$WORKSPACE"/boost_1_68_0/libboost_unit_test_framework.a \
   -DTESTS=0 \
   ..
 make -j 4
@@ -113,12 +95,12 @@ make -j 4
 cd ..
 mkdir -p upload
 # Patch soljson.js to provide backwards-compatibility with older emscripten versions
-echo ";/* backwards compatibility */ Module['Runtime'] = Module;" >> build/libsolc/soljson.js
-cp build/libsolc/soljson.js upload/
-cp build/libsolc/soljson.js ./
+echo ";/* backwards compatibility */ Module['Runtime'] = Module;" >> $BUILD_DIR/libsolc/soljson.js
+cp $BUILD_DIR/libsolc/soljson.js upload/
+cp $BUILD_DIR/libsolc/soljson.js ./
 
 OUTPUT_SIZE=`ls -la soljson.js`
 
 echo "Emscripten output size: $OUTPUT_SIZE"
 
-echo -en 'travis_fold:end:compiling_solidity\r\n'
+echo -en 'travis_fold:end:compiling_solidity\\r'

@@ -17,10 +17,15 @@ Using ``solc --help`` provides you with an explanation of all options. The compi
 If you only want to compile a single file, you run it as ``solc --bin sourceFile.sol`` and it will print the binary. If you want to get some of the more advanced output variants of ``solc``, it is probably better to tell it to output everything to separate files using ``solc -o outputDirectory --bin --ast --asm sourceFile.sol``.
 
 Before you deploy your contract, activate the optimizer when compiling using ``solc --optimize --bin sourceFile.sol``.
-By default, the optimizer will optimize the contract assuming it is called 200 times across its lifetime.
+By default, the optimizer will optimize the contract assuming it is called 200 times across its lifetime
+(more specifically, it assumes each opcode is executed around 200 times).
 If you want the initial contract deployment to be cheaper and the later function executions to be more expensive,
 set it to ``--optimize-runs=1``. If you expect many transactions and do not care for higher deployment cost and
 output size, set ``--optimize-runs`` to a high number.
+This parameter has effects on the following (this might change in the future):
+
+ - the size of the binary search in the function dispatch routine
+ - the way constants like large numbers or strings are stored
 
 The commandline compiler will automatically read imported files from the filesystem, but
 it is also possible to provide path redirects using ``prefix=path`` in the following way:
@@ -103,18 +108,21 @@ at each version. Backward compatibility is not guaranteed between each version.
 
 - ``homestead`` (oldest version)
 - ``tangerineWhistle``
-   - gas cost for access to other accounts increased, relevant for gas estimation and the optimizer.
-   - all gas sent by default for external calls, previously a certain amount had to be retained.
+   - Gas cost for access to other accounts increased, relevant for gas estimation and the optimizer.
+   - All gas sent by default for external calls, previously a certain amount had to be retained.
 - ``spuriousDragon``
-   - gas cost for the ``exp`` opcode increased, relevant for gas estimation and the optimizer.
-- ``byzantium`` (**default**)
-   - opcodes ``returndatacopy``, ``returndatasize`` and ``staticcall`` are available in assembly.
-   - the ``staticcall`` opcode is used when calling non-library view or pure functions, which prevents the functions from modifying state at the EVM level, i.e., even applies when you use invalid type conversions.
-   - it is possible to access dynamic data returned from function calls.
+   - Gas cost for the ``exp`` opcode increased, relevant for gas estimation and the optimizer.
+- ``byzantium``
+   - Opcodes ``returndatacopy``, ``returndatasize`` and ``staticcall`` are available in assembly.
+   - The ``staticcall`` opcode is used when calling non-library view or pure functions, which prevents the functions from modifying state at the EVM level, i.e., even applies when you use invalid type conversions.
+   - It is possible to access dynamic data returned from function calls.
    - ``revert`` opcode introduced, which means that ``revert()`` will not waste gas.
-- ``constantinople`` (still in progress)
-   - opcodes ``shl``, ``shr`` and ``sar`` are available in assembly.
-   - shifting operators use shifting opcodes and thus need less gas.
+- ``constantinople``
+   - Opcodes ``create2`, ``extcodehash``, ``shl``, ``shr`` and ``sar`` are available in assembly.
+   - Shifting operators use shifting opcodes and thus need less gas.
+- ``petersburg`` (**default**)
+   - The compiler behaves the same way as with constantinople.
+
 
 .. _compiler-api:
 
@@ -139,7 +147,7 @@ Input Description
 .. code-block:: none
 
     {
-      // Required: Source code language, such as "Solidity", "Vyper", "lll", "assembly", etc.
+      // Required: Source code language. Currently supported are "Solidity" and "Yul".
       "language": "Solidity",
       // Required
       "sources":
@@ -179,16 +187,44 @@ Input Description
       "settings":
       {
         // Optional: Sorted list of remappings
-        "remappings": [ ":g/dir" ],
+        "remappings": [ ":g=/dir" ],
         // Optional: Optimizer settings
         "optimizer": {
           // disabled by default
           "enabled": true,
           // Optimize for how many times you intend to run the code.
           // Lower values will optimize more for initial deployment cost, higher values will optimize more for high-frequency usage.
-          "runs": 200
+          "runs": 200,
+          // Switch optimizer components on or off in detail.
+          // The "enabled" switch above provides two defaults which can be
+          // tweaked here. If "details" is given, "enabled" can be omitted.
+          "details": {
+            // The peephole optimizer is always on if no details are given, use details to switch it off.
+            "peephole": true,
+            // The unused jumpdest remover is always on if no details are given, use details to switch it off.
+            "jumpdestRemover": true,
+            // Sometimes re-orders literals in commutative operations.
+            "orderLiterals": false,
+            // Removes duplicate code blocks
+            "deduplicate": false,
+            // Common subexpression elimination, this is the most complicated step but
+            // can also provide the largest gain.
+            "cse": false,
+            // Optimize representation of literal numbers and strings in code.
+            "constantOptimizer": false,
+            // The new Yul optimizer. Mostly operates on the code of ABIEncoderV2.
+            // It can only be activated through the details here.
+            // This feature is still considered experimental.
+            "yul": false,
+            // Tuning options for the Yul optimizer.
+            "yulDetails": {
+              // Improve allocation of stack slots for variables, can free up stack slots early.
+              // Activated by default if the Yul optimizer is activated.
+              "stackAllocation": true
+            }
+          }
         },
-        "evmVersion": "byzantium", // Version of the EVM to compile for. Affects type checking and code generation. Can be homestead, tangerineWhistle, spuriousDragon, byzantium or constantinople
+        "evmVersion": "byzantium", // Version of the EVM to compile for. Affects type checking and code generation. Can be homestead, tangerineWhistle, spuriousDragon, byzantium, constantinople or petersburg
         // Metadata settings (optional)
         "metadata": {
           // Use only literal content and not URLs (false by default)
@@ -227,8 +263,9 @@ Input Description
         //   devdoc - Developer documentation (natspec)
         //   userdoc - User documentation (natspec)
         //   metadata - Metadata
-        //   ir - New assembly format before desugaring
-        //   evm.assembly - New assembly format after desugaring
+        //   ir - Yul intermediate representation of the code before optimization
+        //   irOptimized - Intermediate representation after optimization
+        //   evm.assembly - New assembly format
         //   evm.legacyAssembly - Old-style assembly format in JSON
         //   evm.bytecode.object - Bytecode object
         //   evm.bytecode.opcodes - Opcodes list
@@ -237,8 +274,8 @@ Input Description
         //   evm.deployedBytecode* - Deployed bytecode (has the same options as evm.bytecode)
         //   evm.methodIdentifiers - The list of function hashes
         //   evm.gasEstimates - Function gas estimates
-        //   ewasm.wast - eWASM S-expressions format (not supported atm)
-        //   ewasm.wasm - eWASM binary format (not supported atm)
+        //   ewasm.wast - eWASM S-expressions format (not supported at the moment)
+        //   ewasm.wasm - eWASM binary format (not supported at the moment)
         //
         // Note that using a using `evm`, `evm.bytecode`, `ewasm`, etc. will select every
         // target part of that output. Additionally, `*` can be used as a wildcard to request everything.
