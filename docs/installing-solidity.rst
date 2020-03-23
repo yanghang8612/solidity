@@ -184,7 +184,7 @@ The following are dependencies for all builds of Solidity:
 +-----------------------------------+-------------------------------------------------------+
 | Software                          | Notes                                                 |
 +===================================+=======================================================+
-| `CMake`_ (version 3.5+)           | Cross-platform build file generator.                  |
+| `CMake`_ (version 3.9+)           | Cross-platform build file generator.                  |
 +-----------------------------------+-------------------------------------------------------+
 | `Boost`_  (version 1.65+)         | C++ libraries.                                        |
 +-----------------------------------+-------------------------------------------------------+
@@ -207,6 +207,15 @@ The following are dependencies for all builds of Solidity:
     prior to running the cmake command to configure solidity.
 
     Starting from 0.5.10 linking against Boost 1.70+ should work without manual intervention.
+
+Minimum compiler versions
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following C++ compilers and their minimum versions can build the Solidity codebase:
+
+- `GCC <https://gcc.gnu.org>`_, version 5+
+- `Clang <https://clang.llvm.org/>`_, version 3.4+
+- `MSVC <https://docs.microsoft.com/en-us/cpp/?view=vs-2019>`_, version 2017+
 
 Prerequisites - macOS
 ---------------------
