@@ -629,16 +629,17 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			break;
 		}
 		case FunctionType::Kind::SetTokenId:
-			// stack layout: contract_address function_id [gas] [value] [tokenid]
-			_functionCall.expression().accept(*this);
-			// Note that function is not the original function, but the ".value" function.
-			// Its values of gasSet and valueSet is equal to the original function's though.
-			if (function.tokenSet())
-				m_context << Instruction::POP;
-			arguments.front()->accept(*this);
-			break;
-		break;
-		case FunctionType::Kind::SetGas:
+        {
+            // stack layout: contract_address function_id [gas] [value] [tokenid]
+            _functionCall.expression().accept(*this);
+            // Note that function is not the original function, but the ".value" function.
+            // Its values of gasSet and valueSet is equal to the original function's though.
+            if (function.tokenSet())
+                m_context << Instruction::POP;
+            arguments.front()->accept(*this);
+            break;
+        }
+        case FunctionType::Kind::SetGas:
 		{
 			// stack layout: contract_address function_id [gas] [value] [tokenid]
 			_functionCall.expression().accept(*this);
