@@ -667,6 +667,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			break;
 		}
 		case FunctionType::Kind::SetValue:
+		{
 			// stack layout: contract_address function_id [gas] [value] [tokenid]
 			_functionCall.expression().accept(*this);
 			// Note that function is not the original function, but the ".value" function.
@@ -688,6 +689,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			}
 		
 			break;
+		}
 		case FunctionType::Kind::Send:
 		case FunctionType::Kind::Transfer:
 			_functionCall.expression().accept(*this);
