@@ -677,13 +677,13 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 
             arguments.front()->accept(*this);
 
-			unsigned stackDepth = (function.valueSet() ? 1 : 0) + (function.tokenSet() ? 1 : 0);
+			unsigned stackDepthExceptGas = (function.valueSet() ? 1 : 0) + (function.tokenSet() ? 1 : 0);
 			if(function.valueSet()){
-			    m_context << swapInstruction(stackDepth);
+			    m_context << swapInstruction(stackDepthExceptGas);
 				m_context << Instruction::POP;
 			}else if(function.tokenSet())
 			{
-				m_context << swapInstruction(stackDepth);
+				m_context << swapInstruction(stackDepthExceptGas);
 
 			}
 		
