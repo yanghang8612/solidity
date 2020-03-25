@@ -2962,7 +2962,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 			members.emplace_back("selector", TypeProvider::fixedBytes(4));
 		if (m_kind != Kind::BareDelegateCall)
 		{
-			if (isPayable())
+			if (isPayable()){
 				members.emplace_back(
 					"value",
 					TypeProvider::function(
@@ -2995,6 +2995,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 						m_tokenSet
 					)
 				);
+			}
 		}
 		if (m_kind != Kind::Creation)
 			members.emplace_back(
