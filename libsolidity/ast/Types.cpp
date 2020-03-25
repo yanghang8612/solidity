@@ -2719,6 +2719,7 @@ string FunctionType::richIdentifier() const
 	case Kind::Event: id += "event"; break;
 	case Kind::SetGas: id += "setgas"; break;
 	case Kind::SetValue: id += "setvalue"; break;
+	case Kind::SetTokenId: id += "settokenid"; break;
 	case Kind::BlockHash: id += "blockhash"; break;
 	case Kind::AddMod: id += "addmod"; break;
 	case Kind::MulMod: id += "mulmod"; break;
@@ -2741,6 +2742,8 @@ string FunctionType::richIdentifier() const
 		id += "gas";
 	if (m_valueSet)
 		id += "value";
+	if (m_tokenSet)
+		id += "token";
 	if (bound())
 		id += "bound_to" + identifierList(selfType());
 	return id;
@@ -2968,6 +2971,22 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 						strings(1, ""),
 						strings(1, ""),
 						Kind::SetValue,
+						false,
+						StateMutability::Pure,
+						nullptr,
+						m_gasSet,
+						m_valueSet,
+						m_tokenSet
+					)
+				);
+				members.emplace_back(
+					"tokenid",
+					TypeProvider::function(
+						parseElementaryTypeVector({"uint"}),
+						TypePointers{copyAndSetGasOrValue(false, false, true)},
+						strings(1, ""),
+						strings(1, ""),
+						Kind::SetTokenId,
 						false,
 						StateMutability::Pure,
 						nullptr,

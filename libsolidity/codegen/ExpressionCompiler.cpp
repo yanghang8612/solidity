@@ -628,29 +628,65 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context << swapInstruction(1) << Instruction::POP;
 			break;
 		}
-		case FunctionType::Kind::SetGas:
-		{
-			// stack layout: contract_address function_id [gas] [value]
-			_functionCall.expression().accept(*this);
-
-			acceptAndConvert(*arguments.front(), *TypeProvider::uint256(), true);
-			// Note that function is not the original function, but the ".gas" function.
-			// Its values of gasSet and valueSet is equal to the original function's though.
-			unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0);
-			if (stackDepth > 0)
-				m_context << swapInstruction(stackDepth);
-			if (function.gasSet())
-				m_context << Instruction::POP;
-			break;
-		}
-		case FunctionType::Kind::SetValue:
-			// stack layout: contract_address function_id [gas] [value]
+		case FunctionType::Kind::SetTokenId:
+			// stack layout: contract_address function_id [gas] [value] [tokenid]
 			_functionCall.expression().accept(*this);
 			// Note that function is not the original function, but the ".value" function.
 			// Its values of gasSet and valueSet is equal to the original function's though.
-			if (function.valueSet())
+			if (function.tokenSet())
 				m_context << Instruction::POP;
 			arguments.front()->accept(*this);
+			break;
+		break;
+		case FunctionType::Kind::SetGas:
+		{
+			// stack layout: contract_address function_id [gas] [value] [tokenid]
+			_functionCall.expression().accept(*this);
+
+			acceptAndConvert(*arguments.front(), *TypeProvider::uint256(), true);
+
+			// Note that function is not the original function, but the ".gas" function.
+			// Its values of gasSet and valueSet is equal to the original function's though.
+			//unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0);
+			//if (stackDepth > 0)
+			//	m_context << swapInstruction(stackDepth);
+			//if (function.gasSet())
+			//	m_context << Instruction::POP;
+
+			unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0) + (function.tokenSet() ? 1 : 0);
+			if (function.gasSet()){
+				m_context << swapInstruction(stackDepth);
+				m_context << Instruction::POP;
+			}else{
+				if (stackDepth > 0)
+					m_context << swapInstruction(stackDepth);
+				if(function.tokenSet() && function.valueSet() && stackDepth ==2){
+					m_context << swapInstruction(1);
+				}
+			}
+			break;
+		}
+		case FunctionType::Kind::SetValue:
+			// stack layout: contract_address function_id [gas] [value] [tokenid]
+			_functionCall.expression().accept(*this);
+			// Note that function is not the original function, but the ".value" function.
+			// Its values of gasSet and valueSet is equal to the original function's though.
+			//if (function.valueSet())
+			//	m_context << Instruction::POP;
+			//arguments.front()->accept(*this);
+
+            arguments.front()->accept(*this);
+
+			unsigned stackDepth = (function.valueSet() ? 1 : 0) + (function.tokenSet() ? 1 : 0);
+			if(function.valueSet()){
+			    m_context << swapInstruction(stackDepth);
+				m_context << Instruction::POP;
+			}else if(function.tokenSet())
+			{
+				m_context << swapInstruction(stackDepth);
+
+			}
+		
 			break;
 		case FunctionType::Kind::Send:
 		case FunctionType::Kind::Transfer:
