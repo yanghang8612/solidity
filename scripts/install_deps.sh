@@ -90,9 +90,12 @@ case $(uname -s) in
             10.14)
                 echo "Installing solidity dependencies on macOS 10.14 Mojave."
                 ;;
+            10.15)
+                echo "Installing solidity dependencies on macOS 10.15 Catalina."
+                ;;
             *)
                 echo "Unsupported macOS version."
-                echo "We only support Mavericks, Yosemite, El Capitan, Sierra, High Sierra and Mojave."
+                echo "We only support Mavericks, Yosemite, El Capitan, Sierra, High Sierra, Mojave, and Catalina."
                 exit 1
                 ;;
         esac
@@ -104,9 +107,6 @@ case $(uname -s) in
         brew install cmake
         if [ "$CI" = true ]; then
             brew upgrade cmake
-            brew tap ethereum/ethereum
-            brew install cpp-ethereum
-            brew linkapps cpp-ethereum
         else
             brew upgrade
         fi
@@ -337,13 +337,6 @@ case $(uname -s) in
                         sudo apt-get -y update
                         sudo apt-get -y install libz3-dev
                     fi
-
-                    # Install 'eth', for use in the Solidity Tests-over-IPC.
-                    # We will not use this 'eth', but its dependencies
-                    sudo add-apt-repository -y ppa:ethereum/ethereum
-                    sudo add-apt-repository -y ppa:ethereum/ethereum-dev
-                    sudo apt-get -y update
-                    sudo apt-get -y install eth
                 fi
                 ;;
 

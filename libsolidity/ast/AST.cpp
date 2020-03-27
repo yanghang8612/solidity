@@ -109,6 +109,16 @@ TypePointer ImportDirective::type() const
 	return TypeProvider::module(*annotation().sourceUnit);
 }
 
+vector<VariableDeclaration const*> ContractDefinition::stateVariablesIncludingInherited() const
+{
+	vector<VariableDeclaration const*> stateVars;
+	for (auto const& contract: annotation().linearizedBaseContracts)
+		for (auto var: contract->stateVariables())
+			if (*contract == *this || var->isVisibleInDerivedContracts())
+				stateVars.push_back(var);
+	return stateVars;
+}
+
 map<FixedHash<4>, FunctionTypePointer> ContractDefinition::interfaceFunctions() const
 {
 	auto exportedFunctionList = interfaceFunctionList();
@@ -422,8 +432,13 @@ string Scopable::sourceUnitName() const
 
 bool VariableDeclaration::isLValue() const
 {
-	// External function parameters and constant declared variables are Read-Only
-	return !isExternalCallableParameter() && !m_isConstant;
+	// Constant declared variables are Read-Only
+	if (m_isConstant)
+		return false;
+	// External function arguments of reference type are Read-Only
+	if (isExternalCallableParameter() && dynamic_cast<ReferenceType const*>(type()))
+		return false;
+	return true;
 }
 
 bool VariableDeclaration::isLocalVariable() const

@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE(builtins_analysis)
 		{
 			return _name == "builtin"_yulstring ? &f : nullptr;
 		}
-		BuiltinFunction f{"builtin"_yulstring, vector<Type>(2), vector<Type>(3), false, false};
+		BuiltinFunction f{"builtin"_yulstring, vector<Type>(2), vector<Type>(3), {}};
 	};
 
 	SimpleDialect dialect;
@@ -573,6 +573,7 @@ BOOST_AUTO_TEST_CASE(builtins_analysis)
 	CHECK_ERROR_DIALECT("{ let a, b, c := builtin(1) }", TypeError, "Function expects 2 arguments but got 1", dialect);
 	CHECK_ERROR_DIALECT("{ let a, b := builtin(1, 2) }", DeclarationError, "Variable count mismatch: 2 variables and 3 values.", dialect);
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

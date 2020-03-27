@@ -631,10 +631,32 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 			solAssert(var->type(), "Expected variable type!");
 			if (var->isConstant())
 			{
-				m_errorReporter.typeError(_identifier.location, "Constant variables not supported by inline assembly.");
-				return size_t(-1);
+				if (!var->value())
+				{
+					m_errorReporter.typeError(_identifier.location, "Constant has no value.");
+					return size_t(-1);
+				}
+				else if (!type(*var)->isValueType() || (
+					dynamic_cast<Literal const*>(var->value().get()) == nullptr &&
+					type(*var->value())->category() != Type::Category::RationalNumber
+				))
+				{
+					m_errorReporter.typeError(_identifier.location, "Only direct number constants are supported by inline assembly.");
+					return size_t(-1);
+				}
+				else if (_context == yul::IdentifierContext::LValue)
+				{
+					m_errorReporter.typeError(_identifier.location, "Constant variables cannot be assigned to.");
+					return size_t(-1);
+				}
+				else if (requiresStorage)
+				{
+					m_errorReporter.typeError(_identifier.location, "The suffixes _offset and _slot can only be used on non-constant storage variables.");
+					return size_t(-1);
+				}
 			}
-			else if (requiresStorage)
+
+			if (requiresStorage)
 			{
 				if (!var->isStateVariable() && !var->type()->dataStoredIn(DataLocation::Storage))
 				{
@@ -647,7 +669,7 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 					return size_t(-1);
 				}
 			}
-			else if (!var->isLocalVariable())
+			else if (!var->isConstant() && var->isStateVariable())
 			{
 				m_errorReporter.typeError(_identifier.location, "Only local variables are supported. To access storage variables, use the _slot and _offset suffixes.");
 				return size_t(-1);
@@ -2493,8 +2515,47 @@ void TypeChecker::requireLValue(Expression const& _expression)
 	_expression.annotation().lValueRequested = true;
 	_expression.accept(*this);
 
-	if (_expression.annotation().isConstant)
-		m_errorReporter.typeError(_expression.location(), "Cannot assign to a constant variable.");
-	else if (!_expression.annotation().isLValue)
-		m_errorReporter.typeError(_expression.location(), "Expression has to be an lvalue.");
+	if (_expression.annotation().isLValue)
+		return;
+
+	return m_errorReporter.typeError(_expression.location(), [&]() {
+		if (_expression.annotation().isConstant)
+			return "Cannot assign to a constant variable.";
+
+		if (auto indexAccess = dynamic_cast<IndexAccess const*>(&_expression))
+		{
+			if (type(indexAccess->baseExpression())->category() == Type::Category::FixedBytes)
+				return "Single bytes in fixed bytes arrays cannot be modified.";
+			else if (auto arrayType = dynamic_cast<ArrayType const*>(type(indexAccess->baseExpression())))
+				if (arrayType->dataStoredIn(DataLocation::CallData))
+					return "Calldata arrays are read-only.";
+		}
+
+		if (auto memberAccess = dynamic_cast<MemberAccess const*>(&_expression))
+		{
+			if (auto structType = dynamic_cast<StructType const*>(type(memberAccess->expression())))
+			{
+				if (structType->dataStoredIn(DataLocation::CallData))
+					return "Calldata structs are read-only.";
+			}
+			else if (auto arrayType = dynamic_cast<ArrayType const*>(type(memberAccess->expression())))
+				if (memberAccess->memberName() == "length")
+					switch (arrayType->location())
+					{
+						case DataLocation::Memory:
+							return "Memory arrays cannot be resized.";
+						case DataLocation::CallData:
+							return "Calldata arrays cannot be resized.";
+						case DataLocation::Storage:
+							break;
+					}
+		}
+
+		if (auto identifier = dynamic_cast<Identifier const*>(&_expression))
+			if (auto varDecl = dynamic_cast<VariableDeclaration const*>(identifier->annotation().referencedDeclaration))
+				if (varDecl->isExternalCallableParameter() && dynamic_cast<ReferenceType const*>(identifier->annotation().type))
+					return "External function arguments of reference type are read-only.";
+
+		return "Expression has to be an lvalue.";
+	}());
 }

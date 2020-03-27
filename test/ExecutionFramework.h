@@ -23,7 +23,6 @@
 #pragma once
 
 #include <test/Options.h>
-#include <test/RPCSession.h>
 
 #include <libsolidity/interface/OptimiserSettings.h>
 
@@ -38,21 +37,23 @@ namespace dev
 {
 namespace test
 {
-	using rational = boost::rational<dev::bigint>;
-	/// An Ethereum address: 20 bytes.
-	/// @NOTE This is not endian-specific; it's just a bunch of bytes.
-	using Address = h160;
+class EVMHost;
+
+using rational = boost::rational<dev::bigint>;
+/// An Ethereum address: 20 bytes.
+/// @NOTE This is not endian-specific; it's just a bunch of bytes.
+using Address = h160;
 
 	// The various denominations; here for ease of use where needed within code.
-	static const u256 sun = 1;
-	static const u256 trx = sun * 1000000;
+    static const u256 sun = 1;
+    static const u256 trx = sun * 1000000;
 
 class ExecutionFramework
 {
 
 public:
 	ExecutionFramework();
-	explicit ExecutionFramework(std::string const& _ipcPath, langutil::EVMVersion _evmVersion);
+	explicit ExecutionFramework(langutil::EVMVersion _evmVersion);
 	virtual ~ExecutionFramework() = default;
 
 	virtual bytes const& compileAndRunWithoutCheck(
@@ -86,6 +87,12 @@ public:
 	bytes const & callFallback()
 	{
 		return callFallbackWithValue(0);
+	}
+
+	bytes const& callLowLevel(bytes const& _data, u256 const& _value)
+	{
+		sendMessage(_data, false, _value);
+		return m_output;
 	}
 
 	bytes const& callContractFunctionWithValueNoEncoding(std::string _sig, u256 const& _value, bytes const& _arguments)
@@ -197,9 +204,7 @@ public:
 	u256 gasLimit() const;
 	u256 gasPrice() const;
 	u256 blockHash(u256 const& _blockNumber) const;
-	u256 const& blockNumber() const {
-		return m_blockNumber;
-	}
+	u256 blockNumber() const;
 
 	template<typename Range>
 	static bytes encodeArray(bool _dynamicallySized, bool _dynamicallyEncoded, Range const& _elements)
@@ -254,26 +259,24 @@ protected:
 	bool storageEmpty(Address const& _addr);
 	bool addressHasCode(Address const& _addr);
 
-	RPCSession& m_rpc;
-
-	struct LogEntry
-	{
-		Address address;
-		std::vector<h256> topics;
-		bytes data;
-	};
+	size_t numLogs() const;
+	size_t numLogTopics(size_t _logIdx) const;
+	h256 logTopic(size_t _logIdx, size_t _topicIdx) const;
+	Address logAddress(size_t _logIdx) const;
+	bytes const& logData(size_t _logIdx) const;
 
 	langutil::EVMVersion m_evmVersion;
 	solidity::OptimiserSettings m_optimiserSettings = solidity::OptimiserSettings::minimal();
 	bool m_showMessages = false;
+	std::shared_ptr<EVMHost> m_evmHost;
+
 	bool m_transactionSuccessful = true;
-	Address m_sender;
+	Address m_sender = account(0);
 	Address m_contractAddress;
 	u256 m_blockNumber;
 	u256 const m_gasPrice = 10000 * sun;
 	u256 const m_gas = 100000000;
 	bytes m_output;
-	std::vector<LogEntry> m_logs;
 	u256 m_gasUsed;
 };
 
