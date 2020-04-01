@@ -1006,7 +1006,11 @@ public:
         BatchValidateSign, /// CALL to special contract for validate batch signatures
 		SHA256, ///< CALL to special contract for sha256
 		RIPEMD160, ///< CALL to special contract for ripemd160
-		Log0,
+        verifyBurnProof,///< CALL to special contract for verifyBurnProof which is used for shielded transaction for TRC-20
+        verifyTransferProof,///< CALL to special contract for verifyTransferProof which is used for shielded transaction for TRC-20
+        verifyMintProof,//< CALL to special contract for verifyMintProof which is used for shielded transaction for TRC-20
+        pedersenHash,//< CALL to special contract for verifyMintProof which is used for shielded transaction for TRC-20
+        Log0,
 		Log1,
 		Log2,
 		Log3,
