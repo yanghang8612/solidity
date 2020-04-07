@@ -905,10 +905,10 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				{FunctionType::Kind::RIPEMD160, 3},
 				{FunctionType::Kind::BatchValidateSign, 9},
                 {FunctionType::Kind::ValidateMultiSign, 10},
-                {FunctionType::Kind::verifyBurnProof, 11},
+                {FunctionType::Kind::verifyMintProof, 11},         
                 {FunctionType::Kind::verifyTransferProof, 12},
-                {FunctionType::Kind::verifyMintProof, 13},
-                {FunctionType::Kind::pedersenHash, 14},
+                {FunctionType::Kind::verifyBurnProof, 13},
+                {FunctionType::Kind::pedersenHash, 14}
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
