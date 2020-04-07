@@ -82,7 +82,193 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
 	addBatchValidateSignMethod();
     addValidateMultiSignMethod();
+    addVerifyMintProofMethod();
+    addVerifyBurnProofMethod();
+    addVerifyTransferProofMethod();
+    addPedersenHashMethod();
+
 }
+
+
+void GlobalContext::addVerifyMintProofMethod() {
+    TypePointers parameterTypes;
+    //output bytes32[9]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(9)));
+    //bindingSignature bytes32[2]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(2)));
+    //value uint64
+    parameterTypes.push_back(TypeProvider::uint(64));
+    //signHash bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //frontier bytes32[33]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(33)));
+    //leafCount uint256
+    parameterTypes.push_back(TypeProvider::uint256());
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    strings parameterNames;
+    parameterNames.push_back("output");
+    parameterNames.push_back("bindingSignature");
+    parameterNames.push_back("value");
+    parameterNames.push_back("signHash");
+    parameterNames.push_back("frontier");
+    parameterNames.push_back("leafCount");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("msg");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("verifyMintProof", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::verifyMintProof,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
+}
+
+
+void GlobalContext::addVerifyBurnProofMethod() {
+    TypePointers parameterTypes;
+    //input bytes32[10]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32), u256(10)));
+    //spend_auth_sig bytes32[2]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32), u256(2)));
+    //value uint64
+    parameterTypes.push_back(TypeProvider::uint(64));
+    //bindingSignature  bytes32[2]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32), u256(2)));
+    //signHash bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    strings parameterNames;
+    parameterNames.push_back("input");
+    parameterNames.push_back("spend_auth_sig");
+    parameterNames.push_back("value");
+    parameterNames.push_back("bindingSignature");
+    parameterNames.push_back("signHash");
+
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("msg");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("verifyBurnProof", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::verifyBurnProof,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)));
+
+}
+
+
+
+void GlobalContext::addVerifyTransferProofMethod() {
+    TypePointers parameterTypes;
+    //bytes32[10][] input
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory,
+            TypeProvider::array(DataLocation::Memory,TypeProvider::fixedBytes(32),u256(10))
+    ));
+    //spend_auth_sig bytes32[2][]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory,
+            TypeProvider::array(DataLocation::Memory,TypeProvider::fixedBytes(32),u256(2))
+    ));
+    //output bytes32[9][]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory,
+                                                 TypeProvider::array(DataLocation::Memory,TypeProvider::fixedBytes(32),u256(9))
+    ));
+    //bindingSignature bytes32[2]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(2)));
+    //signHash bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //frontier bytes32[33]
+    parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(33)));
+    //leafCount uint256
+    parameterTypes.push_back(TypeProvider::uint256());
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    strings parameterNames;
+    parameterNames.push_back("input");
+    parameterNames.push_back("spend_auth_sig");
+    parameterNames.push_back("output");
+    parameterNames.push_back("bindingSignature");
+    parameterNames.push_back("signHash");
+    parameterNames.push_back("frontier");
+    parameterNames.push_back("leafCount");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("msg");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("verifyTransferProof", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::verifyTransferProof,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
+}
+
+void GlobalContext::addPedersenHashMethod() {
+    TypePointers parameterTypes;
+    //i uint32
+    parameterTypes.push_back(TypeProvider::uint(32));
+    //left bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //right bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    strings parameterNames;
+    parameterNames.push_back("i");
+    parameterNames.push_back("left");
+    parameterNames.push_back("right");
+
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("msg");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("pedersenHash", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::pedersenHash,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)));
+
+}
+
 
 void GlobalContext::addBatchValidateSignMethod() {
 	// bool multivalidatesign(bytes32 hash, bytes[] memory signatures, address[] memory addresses)

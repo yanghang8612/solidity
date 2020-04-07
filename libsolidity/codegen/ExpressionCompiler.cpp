@@ -893,6 +893,10 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::RIPEMD160:
 		case FunctionType::Kind::ValidateMultiSign:
         case FunctionType::Kind::BatchValidateSign:
+        case FunctionType::Kind::verifyBurnProof:
+        case FunctionType::Kind::verifyTransferProof:
+        case FunctionType::Kind::verifyMintProof:
+        case FunctionType::Kind::pedersenHash:
 		{
 			_functionCall.expression().accept(*this);
 			static map<FunctionType::Kind, u256> const contractAddresses{
@@ -900,7 +904,11 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				{FunctionType::Kind::SHA256, 2},
 				{FunctionType::Kind::RIPEMD160, 3},
 				{FunctionType::Kind::BatchValidateSign, 9},
-                {FunctionType::Kind::ValidateMultiSign, 10}
+                {FunctionType::Kind::ValidateMultiSign, 10},
+                {FunctionType::Kind::verifyBurnProof, 11},
+                {FunctionType::Kind::verifyTransferProof, 12},
+                {FunctionType::Kind::verifyMintProof, 13},
+                {FunctionType::Kind::pedersenHash, 14},
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
@@ -1257,6 +1265,10 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::ECRecover:
 				case FunctionType::Kind::ValidateMultiSign:
                 case FunctionType::Kind::BatchValidateSign:
+                case FunctionType::Kind::verifyBurnProof:
+                case FunctionType::Kind::verifyTransferProof:
+                case FunctionType::Kind::verifyMintProof:
+                case FunctionType::Kind::pedersenHash:
 				case FunctionType::Kind::SHA256:
 				case FunctionType::Kind::RIPEMD160:
 				default:
@@ -2082,7 +2094,12 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	if (_functionType.kind() == FunctionType::Kind::ECRecover
 	|| _functionType.kind() == FunctionType::Kind::ValidateMultiSign
 	|| _functionType.kind() == FunctionType::Kind::BatchValidateSign
+	|| _functionType.kind() == FunctionType::Kind::verifyBurnProof
+	|| _functionType.kind() == FunctionType::Kind::verifyTransferProof
+	|| _functionType.kind() == FunctionType::Kind::verifyMintProof
+	|| _functionType.kind() == FunctionType::Kind::pedersenHash
 	)
+        //TODO: DISCUSS
 		// This would be the only combination of padding and in-place encoding,
 		// but all parameters of ecrecover are value types anyway.
 		encodeInPlace = false;
@@ -2114,6 +2131,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	|| funKind == FunctionType::Kind::ValidateMultiSign
 	|| funKind == FunctionType::Kind::BatchValidateSign)
 	{
+        //TODO: DISCUSS
 		// In this case, output is 32 bytes before input and has already been cleared.
 		m_context << u256(32) << Instruction::DUP2 << Instruction::SUB << Instruction::SWAP1;
 		// Here: <input end> <output size> <outpos> <input pos>
@@ -2233,6 +2251,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	|| funKind == FunctionType::Kind::BatchValidateSign
 	)
 	{
+	    //TODO: DISCUSS
 		// Output is 32 bytes before input / free mem pointer.
 		// Failing ecrecover cannot be detected, so we clear output before the call.
 		m_context << u256(32);
