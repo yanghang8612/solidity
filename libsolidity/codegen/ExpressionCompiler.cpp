@@ -2099,7 +2099,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	|| _functionType.kind() == FunctionType::Kind::verifyMintProof
 	|| _functionType.kind() == FunctionType::Kind::pedersenHash
 	)
-        //TODO: DISCUSS
 		// This would be the only combination of padding and in-place encoding,
 		// but all parameters of ecrecover are value types anyway.
 		encodeInPlace = false;
@@ -2131,7 +2130,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	|| funKind == FunctionType::Kind::ValidateMultiSign
 	|| funKind == FunctionType::Kind::BatchValidateSign)
 	{
-        //TODO: DISCUSS
 		// In this case, output is 32 bytes before input and has already been cleared.
 		m_context << u256(32) << Instruction::DUP2 << Instruction::SUB << Instruction::SWAP1;
 		// Here: <input end> <output size> <outpos> <input pos>
@@ -2213,11 +2211,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	utils().popStackSlots(remainsSize);
 
-	if (returnSuccessConditionAndReturndata
-        || _functionType.kind() == FunctionType::Kind::verifyBurnProof
-        || _functionType.kind() == FunctionType::Kind::verifyTransferProof
-        || _functionType.kind() == FunctionType::Kind::verifyMintProof
-        || _functionType.kind() == FunctionType::Kind::pedersenHash)
+	if (returnSuccessConditionAndReturndata)
 	{
 		// success condition is already there
 		// The return parameter types can be empty, when this function is used as
@@ -2243,6 +2237,24 @@ void ExpressionCompiler::appendExternalFunctionCall(
 				utils().pushZeroPointer();
 		}
 	}
+	else if (funKind == FunctionType::Kind::verifyTransferProof ||funKind == FunctionType::Kind::verifyMintProof){
+	    //in this kind of precompiled contracts , return type is dynamicType
+	    if (haveReturndatacopy)
+	    {
+	        m_context << Instruction::RETURNDATASIZE;
+	        m_context.appendInlineAssembly(R"({
+				switch v case 0 {
+					v := 0x60
+				} default {
+					v := mload(0x40)
+					mstore(0x40, add(v, and(add(returndatasize(), 0x3f), not(0x1f))))
+					mstore(v, returndatasize())
+					returndatacopy(add(v, 0x20), 0, returndatasize())
+				}
+	        })", {"v"});
+	    }
+
+	}
 	else if (funKind == FunctionType::Kind::RIPEMD160)
 	{
 		// fix: built-in contract returns right-aligned data
@@ -2255,7 +2267,6 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	|| funKind == FunctionType::Kind::BatchValidateSign
 	)
 	{
-	    //TODO: DISCUSS
 		// Output is 32 bytes before input / free mem pointer.
 		// Failing ecrecover cannot be detected, so we clear output before the call.
 		m_context << u256(32);
