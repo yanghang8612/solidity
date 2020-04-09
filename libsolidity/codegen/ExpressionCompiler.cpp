@@ -2213,7 +2213,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 
 	utils().popStackSlots(remainsSize);
 
-	if (returnSuccessConditionAndReturndata)
+	if (returnSuccessConditionAndReturndata
+        || _functionType.kind() == FunctionType::Kind::verifyBurnProof
+        || _functionType.kind() == FunctionType::Kind::verifyTransferProof
+        || _functionType.kind() == FunctionType::Kind::verifyMintProof)
 	{
 		// success condition is already there
 		// The return parameter types can be empty, when this function is used as
