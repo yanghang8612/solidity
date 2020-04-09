@@ -149,7 +149,7 @@ void GlobalContext::addVerifyBurnProofMethod() {
     parameterTypes.push_back(TypeProvider::fixedBytes(32));
 
     TypePointers returnParameterTypes;
-    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    returnParameterTypes.push_back(TypeProvider::boolean());
     strings parameterNames;
     parameterNames.push_back("input");
     parameterNames.push_back("spend_auth_sig");
@@ -243,7 +243,7 @@ void GlobalContext::addPedersenHashMethod() {
 
 
     TypePointers returnParameterTypes;
-    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    returnParameterTypes.push_back(TypeProvider::fixedBytes(32));
     strings parameterNames;
     parameterNames.push_back("i");
     parameterNames.push_back("left");
