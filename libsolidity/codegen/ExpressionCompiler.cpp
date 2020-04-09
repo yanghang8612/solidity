@@ -2216,7 +2216,8 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	if (returnSuccessConditionAndReturndata
         || _functionType.kind() == FunctionType::Kind::verifyBurnProof
         || _functionType.kind() == FunctionType::Kind::verifyTransferProof
-        || _functionType.kind() == FunctionType::Kind::verifyMintProof)
+        || _functionType.kind() == FunctionType::Kind::verifyMintProof
+        || _functionType.kind() == FunctionType::Kind::pedersenHash)
 	{
 		// success condition is already there
 		// The return parameter types can be empty, when this function is used as
