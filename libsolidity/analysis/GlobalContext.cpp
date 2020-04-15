@@ -106,7 +106,7 @@ void GlobalContext::addVerifyMintProofMethod() {
     parameterTypes.push_back(TypeProvider::uint256());
 
     TypePointers returnParameterTypes;
-    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    returnParameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32)));
     strings parameterNames;
     parameterNames.push_back("output");
     parameterNames.push_back("bindingSignature");
@@ -203,7 +203,7 @@ void GlobalContext::addVerifyTransferProofMethod() {
     parameterTypes.push_back(TypeProvider::uint256());
 
     TypePointers returnParameterTypes;
-    returnParameterTypes.push_back(TypeProvider::bytesMemory());
+    returnParameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32)));
     strings parameterNames;
     parameterNames.push_back("input");
     parameterNames.push_back("spend_auth_sig");
