@@ -1170,6 +1170,12 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::MetaType:
 			// No code to generate.
 			break;
+		case FunctionType::Kind::assetTokenissue:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::TOKENISSUE;
+            break;
 		}
 	}
 	return false;
