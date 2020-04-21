@@ -82,6 +82,45 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
 	addBatchValidateSignMethod();
     addValidateMultiSignMethod();
+    addAssetTokenissueMethod();
+}
+void GlobalContext::addAssetTokenissueMethod() {
+    TypePointers parameterTypes;
+    //name bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //abbr bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //totalSupply uint64
+    parameterTypes.push_back(TypeProvider::uint(64));
+    //precision uint32
+    parameterTypes.push_back(TypeProvider::uint(32));
+
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::boolean());
+    strings parameterNames;
+    parameterNames.push_back("name");
+    parameterNames.push_back("abbr");
+    parameterNames.push_back("totalSupply");
+    parameterNames.push_back("precision");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("result");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetTokenissue", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::assetTokenissue,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
 }
 
 void GlobalContext::addBatchValidateSignMethod() {
