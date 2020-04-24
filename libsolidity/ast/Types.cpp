@@ -2735,6 +2735,7 @@ string FunctionType::richIdentifier() const
 	case Kind::ABIDecode: id += "abidecode"; break;
 	case Kind::MetaType: id += "metatype"; break;
 	case Kind::assetTokenissue: id += "assetTokenissue"; break;
+	case Kind::UpdateAsset: id += "updateAsset"; break;
 	}
 	id += "_" + stateMutabilityToString(m_stateMutability);
 	id += identifierList(m_parameterTypes) + "returns" + identifierList(m_returnParameterTypes);

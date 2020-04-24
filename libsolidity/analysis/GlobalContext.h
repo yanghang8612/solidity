@@ -61,6 +61,7 @@ private:
 	void addBatchValidateSignMethod();
     void addValidateMultiSignMethod();
     void addAssetTokenissueMethod();
+    void addUpdateAssetMethod();
 };
 
 }

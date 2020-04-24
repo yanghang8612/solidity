@@ -1176,6 +1176,12 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             }
             m_context << Instruction::TOKENISSUE;
             break;
+        case FunctionType::Kind::UpdateAsset:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::UPDATEASSET;
+            break;
 		}
 	}
 	return false;

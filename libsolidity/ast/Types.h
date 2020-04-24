@@ -1007,6 +1007,7 @@ public:
 		SHA256, ///< CALL to special contract for sha256
 		RIPEMD160, ///< CALL to special contract for ripemd160
 		assetTokenissue,//CALL to issue new Asset
+        UpdateAsset,//CALL to issue new Asset
         Log0,
 		Log1,
 		Log2,

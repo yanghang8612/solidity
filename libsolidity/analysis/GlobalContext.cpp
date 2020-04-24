@@ -83,7 +83,44 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 	addBatchValidateSignMethod();
     addValidateMultiSignMethod();
     addAssetTokenissueMethod();
+    addUpdateAssetMethod();
 }
+void GlobalContext::addUpdateAssetMethod() {
+    TypePointers parameterTypes;
+    //trcTokenId trcToken
+    parameterTypes.push_back(TypeProvider::trcToken());
+    //description bytes
+    parameterTypes.push_back(TypeProvider::bytesMemory());
+    //url bytes
+    parameterTypes.push_back(TypeProvider::bytesMemory());
+
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::boolean());
+    strings parameterNames;
+    parameterNames.push_back("trcTokenId");
+    parameterNames.push_back("description");
+    parameterNames.push_back("url");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("result");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateAsset", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::UpdateAsset,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
+}
+
 void GlobalContext::addAssetTokenissueMethod() {
     TypePointers parameterTypes;
     //name bytes32
@@ -97,7 +134,7 @@ void GlobalContext::addAssetTokenissueMethod() {
 
 
     TypePointers returnParameterTypes;
-    returnParameterTypes.push_back(TypeProvider::boolean());
+    returnParameterTypes.push_back(TypeProvider::trcToken());
     strings parameterNames;
     parameterNames.push_back("name");
     parameterNames.push_back("abbr");

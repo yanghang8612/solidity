@@ -421,6 +421,7 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::CALLTOKENID:
 	case Instruction::ISCONTRACT:
     case Instruction::TOKENISSUE:
+    case Instruction::UPDATEASSET:
 	{
 		yulAssert(false, "");
 		return 0;

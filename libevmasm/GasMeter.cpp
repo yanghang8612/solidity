@@ -195,6 +195,10 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		    //TODO:ADDGAS
             gas = GasCosts::createGas;
             break;
+        case Instruction::UPDATEASSET:
+            //TODO:ADDGAS
+            gas = GasCosts::createGas;
+            break;
 		case Instruction::CHAINID:
 			gas = runGas(Instruction::CHAINID);
 			break;

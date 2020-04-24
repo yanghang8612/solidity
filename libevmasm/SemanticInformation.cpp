@@ -176,6 +176,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
     case Instruction::TOKENISSUE:
+    case Instruction::UPDATEASSET:
 	case Instruction::SELFBALANCE: // depends on previous calls
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -298,6 +299,7 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::STATICCALL:
 	case Instruction::SLOAD:
     case Instruction::TOKENISSUE:
+    case Instruction::UPDATEASSET:
 		return true;
 	default:
 		break;
@@ -325,6 +327,7 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
     case Instruction::TOKENISSUE:
+    case Instruction::UPDATEASSET:
         return true;
 	default:
 		break;
