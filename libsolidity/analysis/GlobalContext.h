@@ -60,6 +60,10 @@ private:
 	std::map<ContractDefinition const*, std::shared_ptr<MagicVariableDeclaration const>> mutable m_superPointer;
 	void addBatchValidateSignMethod();
     void addValidateMultiSignMethod();
+    void addVerifyBurnProofMethod();
+    void addVerifyTransferProofMethod();
+    void addVerifyMintProofMethod();
+    void addPedersenHashMethod();
 };
 
 }

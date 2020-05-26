@@ -2708,6 +2708,10 @@ string FunctionType::richIdentifier() const
 	case Kind::ECRecover: id += "ecrecover"; break;
 	case Kind::ValidateMultiSign: id += "validatemultisign"; break;
 	case Kind::BatchValidateSign: id += "batchvalidatesign"; break;
+	case Kind::verifyBurnProof: id += "verifyBurnProof";break;
+	case Kind::verifyTransferProof: id += "verifyTransferProof";break;
+	case Kind::verifyMintProof: id += "verifyMintProof";break;
+	case Kind::pedersenHash: id += "pedersenHash";break;
 	case Kind::SHA256: id += "sha256"; break;
 	case Kind::RIPEMD160: id += "ripemd160"; break;
 	case Kind::Log0: id += "log0"; break;
@@ -3122,6 +3126,10 @@ bool FunctionType::isBareCall() const
 	case Kind::ECRecover:
 	case Kind::ValidateMultiSign:
 	case Kind::BatchValidateSign:
+	case Kind::verifyBurnProof:
+	case Kind::verifyTransferProof:
+	case Kind::verifyMintProof:
+	case Kind::pedersenHash:
 	case Kind::SHA256:
 	case Kind::RIPEMD160:
 		return true;
@@ -3177,6 +3185,10 @@ bool FunctionType::isPure() const
 		m_kind == Kind::ECRecover ||
 		m_kind == Kind::ValidateMultiSign ||
 		m_kind == Kind::BatchValidateSign ||
+		m_kind == Kind::verifyBurnProof ||
+		m_kind == Kind::verifyTransferProof ||
+		m_kind == Kind::verifyMintProof ||
+		m_kind == Kind::pedersenHash ||
 		m_kind == Kind::SHA256 ||
 		m_kind == Kind::RIPEMD160 ||
 		m_kind == Kind::AddMod ||
