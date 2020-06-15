@@ -197,6 +197,8 @@ void GlobalContext::addVerifyTransferProofMethod() {
     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(2)));
     //signHash bytes32
     parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //value uint256
+    parameterTypes.push_back(TypeProvider::uint(64));
     //frontier bytes32[33]
     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::fixedBytes(32),u256(33)));
     //leafCount uint256
@@ -210,6 +212,7 @@ void GlobalContext::addVerifyTransferProofMethod() {
     parameterNames.push_back("output");
     parameterNames.push_back("bindingSignature");
     parameterNames.push_back("signHash");
+    parameterNames.push_back("value");
     parameterNames.push_back("frontier");
     parameterNames.push_back("leafCount");
 
