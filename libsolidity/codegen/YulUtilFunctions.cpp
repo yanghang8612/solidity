@@ -1489,6 +1489,7 @@ string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertOnFail
 		switch (_type.category())
 		{
 		case Type::Category::Address:
+        case Type::Category::Contract:
 		{
 			templ("condition", "eq(value, " + cleanupFunction(IntegerType(168)) + "(value))");
 			break;
@@ -1502,7 +1503,6 @@ string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertOnFail
 		case Type::Category::Struct:
 		case Type::Category::Mapping:
 		case Type::Category::FixedBytes:
-		case Type::Category::Contract:
 		{
 			templ("condition", "eq(value, " + cleanupFunction(_type) + "(value))");
 			break;
