@@ -1086,7 +1086,7 @@ string ABIFunctions::abiDecodingFunctionValueType(Type const& _type, bool _fromM
 		"abi_decode_" +
 		_type.identifier() +
 		(_fromMemory ? "_fromMemory" : "");
-	if (_type.category() == Type::Category::Address)
+	if (_type.category() == Type::Category::Address||_type.category() == Type::Category::Contract)
 		return createFunction(functionName, [&]() {
 			Whiskers templ(R"(
 				function <functionName>(offset, end) -> value {
