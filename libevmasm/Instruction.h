@@ -195,6 +195,7 @@ enum class Instruction: uint8_t
 	CALLTOKENVALUE,
 	CALLTOKENID,
 	ISCONTRACT,
+	ISWITNESS = 0xdc,
 
 	CREATE = 0xf0,		///< create a new account with associated code
 	CALL,				///< message-call into an account
@@ -206,7 +207,7 @@ enum class Instruction: uint8_t
 
 	REVERT = 0xfd,		///< halt execution, revert state and return output data
 	INVALID = 0xfe,		///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
-	SELFDESTRUCT = 0xff	///< halt execution and register account for later deletion
+	SELFDESTRUCT = 0xff///< halt execution and register account for later deletion
 };
 
 /// @returns true if the instruction is a PUSH
