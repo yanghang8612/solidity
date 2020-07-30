@@ -1400,6 +1400,15 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::BALANCE;
 		}
+		else if (member == "rewardBalance")
+		{
+			utils().convertType(
+				*_memberAccess.expression().annotation().type,
+				*TypeProvider::address(),
+				true
+			);
+			m_context << Instruction::REWARDBALANCE;
+		}
 		else if (member == "isContract")
 		{
 			utils().convertType(

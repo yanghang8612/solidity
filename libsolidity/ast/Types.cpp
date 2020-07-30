@@ -465,6 +465,7 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", TypeProvider::uint256()},
+		{"rewardBalance", TypeProvider::uint256()},
 		{"isContract", TypeProvider::boolean()},
 		{"isWitness", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},

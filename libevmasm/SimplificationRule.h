@@ -87,6 +87,7 @@ struct EVMBuiltins
 	static auto constexpr KECCAK256 = Instruction::KECCAK256;
 	static auto constexpr ADDRESS = Instruction::ADDRESS;
 	static auto constexpr BALANCE = Instruction::BALANCE;
+	static auto constexpr REWARDBALANCE = Instruction::REWARDBALANCE;
 	static auto constexpr ORIGIN = Instruction::ORIGIN;
 	static auto constexpr CALLER = Instruction::CALLER;
 	static auto constexpr CALLVALUE = Instruction::CALLVALUE;

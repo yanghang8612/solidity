@@ -345,6 +345,8 @@ void ViewPureChecker::endVisit(MemberAccess const& _memberAccess)
 	case Type::Category::Address:
 		if (member == "balance")
 			mutability = StateMutability::View;
+		else if (member == "rewardBalance")
+			mutability = StateMutability::View;
 		else if (member == "isContract")
 			mutability = StateMutability::View;
 		else if (member == "isWitness")

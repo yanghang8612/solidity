@@ -698,6 +698,11 @@ void IRGeneratorForStatements::endVisit(MemberAccess const& _memberAccess)
 				"balance(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
+		else if (member == "rewardBalance")
+			defineExpression(_memberAccess) <<
+				"rewardBalance(" <<
+				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
+				")\n";
 		else if (member == "isContract")
 			defineExpression(_memberAccess) <<
 				"isContract(" <<

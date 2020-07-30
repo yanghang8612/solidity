@@ -180,6 +180,8 @@ u256 EVMInstructionInterpreter::eval(
 		return m_state.address;
 	case Instruction::BALANCE:
 		return m_state.balance;
+	case Instruction::REWARDBALANCE:
+		return m_state.rewardbalance;
 	case Instruction::SELFBALANCE:
 		return m_state.selfbalance;
 	case Instruction::ORIGIN:
