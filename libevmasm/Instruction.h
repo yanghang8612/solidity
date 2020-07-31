@@ -195,8 +195,13 @@ enum class Instruction: uint8_t
 	CALLTOKENVALUE,
 	CALLTOKENID,
 	ISCONTRACT,
-	REWARDBALANCE = 0xdb,
-	ISWITNESS = 0xdc,
+	NATIVEFREEZE,
+	NATIVEUNFREEZE,
+
+	NATIVEVOTE = 0xd9,
+	NATIVEWITHDRAWREWARD,
+	REWARDBALANCE,
+    ISWITNESS,
 
 	CREATE = 0xf0,		///< create a new account with associated code
 	CALL,				///< message-call into an account

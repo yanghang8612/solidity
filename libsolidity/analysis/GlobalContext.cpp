@@ -80,15 +80,145 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 
 GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
 {
-	addBatchValidateSignMethod();
+    addBatchValidateSignMethod();
     addValidateMultiSignMethod();
     addVerifyMintProofMethod();
     addVerifyBurnProofMethod();
     addVerifyTransferProofMethod();
     addPedersenHashMethod();
+    addFreezeMethod();
+    addUnfreezeMethod();
+    addVoteMethod();
+    addWithdrawRewardMethod();
 
 }
 
+void GlobalContext::addFreezeMethod() {
+        // bool freeze(address delegateAddress, unit256 freezeAmount, unit8 day, unit8 resourceType)
+	TypePointers parameterTypes;
+	parameterTypes.push_back(TypeProvider::address());
+	parameterTypes.push_back(TypeProvider::uint256());
+	parameterTypes.push_back(TypeProvider::uint(8));
+        parameterTypes.push_back(TypeProvider::uint(8));
+
+	TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(TypeProvider::boolean());
+	strings parameterNames;
+	parameterNames.push_back("delegateAddress");
+	parameterNames.push_back("freezeAmount");
+	parameterNames.push_back("day");
+        parameterNames.push_back("resourceType");
+	strings returnParameterNames;
+	returnParameterNames.push_back("ok");
+
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("Freeze", TypeProvider::function(
+		parameterTypes,
+		returnParameterTypes,
+		parameterNames,
+		returnParameterNames,
+		FunctionType::Kind::Freeze,
+		false,
+		StateMutability::Pure,
+		nullptr,
+		false,
+		false,
+		false,
+		false)
+	));
+}
+
+void GlobalContext::addUnfreezeMethod() {
+        // bool unfreeze(address delegateAddress, unit8 resourceType)
+	TypePointers parameterTypes;
+	parameterTypes.push_back(TypeProvider::address());
+        parameterTypes.push_back(TypeProvider::uint(8));
+
+	TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(TypeProvider::boolean());
+	strings parameterNames;
+	parameterNames.push_back("delegateAddress");
+        parameterNames.push_back("resourceType");
+	strings returnParameterNames;
+	returnParameterNames.push_back("ok");
+
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("Unfreeze", TypeProvider::function(
+		parameterTypes,
+		returnParameterTypes,
+		parameterNames,
+		returnParameterNames,
+		FunctionType::Kind::Unfreeze,
+		false,
+		StateMutability::Pure,
+		nullptr,
+		false,
+		false,
+		false,
+		false)
+	));
+}
+
+void GlobalContext::addVoteMethod() {
+        // bool vote(address[] memory addresses, unit256[] tronpowerlist)
+	TypePointers parameterTypes;
+        parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+	parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
+	//parameterTypes.push_back(TypeProvider::uint256());
+	//parameterTypes.push_back(TypeProvider::uint256());
+        //parameterTypes.push_back(TypeProvider::uint256());
+
+	TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(TypeProvider::boolean());
+	strings parameterNames;
+	parameterNames.push_back("srList");
+	parameterNames.push_back("tronpowerList");
+	//parameterNames.push_back("datronPowerOffsety");
+        //parameterNames.push_back("tronPowerSize");
+	strings returnParameterNames;
+	returnParameterNames.push_back("ok");
+
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("Vote", TypeProvider::function(
+		parameterTypes,
+		returnParameterTypes,
+		parameterNames,
+		returnParameterNames,
+		FunctionType::Kind::Vote,
+		false,
+		StateMutability::Pure,
+		nullptr,
+		false,
+		false,
+		false,
+		false)
+	));
+}
+
+void GlobalContext::addWithdrawRewardToAddrMethod() {
+        // bool withdrawReward(address toAddress)
+	TypePointers parameterTypes;
+	parameterTypes.push_back(TypeProvider::address());
+
+	TypePointers returnParameterTypes;
+	returnParameterTypes.push_back(TypeProvider::boolean());
+	strings parameterNames;
+	parameterNames.push_back("toAddress");
+	strings returnParameterNames;
+	returnParameterNames.push_back("ok");
+
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("WithdrawReward", TypeProvider::function(
+		parameterTypes,
+		returnParameterTypes,
+		parameterNames,
+		returnParameterNames,
+		FunctionType::Kind::WithdrawReward,
+		false,
+		StateMutability::Pure,
+		nullptr,
+		false,
+		false,
+		false,
+		false)
+	));
+}
 
 void GlobalContext::addVerifyMintProofMethod() {
     TypePointers parameterTypes;

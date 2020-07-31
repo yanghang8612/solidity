@@ -64,6 +64,10 @@ private:
     void addVerifyTransferProofMethod();
     void addVerifyMintProofMethod();
     void addPedersenHashMethod();
+	void addFreezeMethod();
+	void addUnfreezeMethod();
+	void addVoteMethod();
+	void addWithdrawRewardMethod();
 };
 
 }
