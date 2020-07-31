@@ -473,12 +473,16 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
 		{"staticcall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareStaticCall, false, StateMutability::View)},
 		{"tokenBalance", TypeProvider::function(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
+       //{"vote", TypeProvider::function(strings{"bytes memory"}, strings{"bytes memory"}, FunctionType::Kind::Vote, false, StateMutability::Payable)},
 	};
 	if (m_stateMutability == StateMutability::Payable)
 	{
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
+        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings(), FunctionType::Kind::Freeze)});
+        members.emplace_back(MemberList::Member{"unFreeze", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Unfreeze)});
+        members.emplace_back(MemberList::Member{"withdrawReward", TypeProvider::function(strings{}, strings(), FunctionType::Kind::WithdrawReward)});
 	}
 	return members;
 }
