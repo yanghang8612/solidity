@@ -2741,7 +2741,7 @@ string FunctionType::richIdentifier() const
 	case Kind::ABIDecode: id += "abidecode"; break;
 	case Kind::MetaType: id += "metatype"; break;
 	case Kind::Freeze: id += "freeze"; break;
-	case Kind::Unfreze: id += "unfreeze"; break;
+	case Kind::Unfreeze: id += "unfreeze"; break;
 	case Kind::Vote: id += "vote"; break;
 	case Kind::WithdrawReward: id += "withdrawReward"; break;
 	}

@@ -1194,6 +1194,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			// No code to generate.
 			break;
 		case FunctionType::Kind::Freeze:
+		{
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
@@ -1201,6 +1202,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             break;
 		}
 		case FunctionType::Kind::Unfreeze:
+        {
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
@@ -1208,6 +1210,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             break;
 		}
 		case FunctionType::Kind::Vote:
+        {
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
@@ -1215,12 +1218,16 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             break;
 		}
 		case FunctionType::Kind::WithdrawReward:
+        {
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
             m_context << Instruction::NATIVEWITHDRAWREWARD;
             break;
 		}
+		default:
+		    solAssert(false, "unsupported member function of Kind");
+        }
 	}
 	return false;
 }

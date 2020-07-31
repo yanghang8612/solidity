@@ -90,7 +90,6 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
     addUnfreezeMethod();
     addVoteMethod();
     addWithdrawRewardMethod();
-
 }
 
 void GlobalContext::addFreezeMethod() {
@@ -158,13 +157,14 @@ void GlobalContext::addUnfreezeMethod() {
 }
 
 void GlobalContext::addVoteMethod() {
-        // bool vote(address[] memory addresses, unit256[] tronpowerlist)
+    // bool vote(address[] memory addresses, unit256[] tronpowerlist)
 	TypePointers parameterTypes;
-        parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+
+	parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
 	parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
 	//parameterTypes.push_back(TypeProvider::uint256());
 	//parameterTypes.push_back(TypeProvider::uint256());
-        //parameterTypes.push_back(TypeProvider::uint256());
+	//parameterTypes.push_back(TypeProvider::uint256());
 
 	TypePointers returnParameterTypes;
 	returnParameterTypes.push_back(TypeProvider::boolean());
@@ -172,7 +172,7 @@ void GlobalContext::addVoteMethod() {
 	parameterNames.push_back("srList");
 	parameterNames.push_back("tronpowerList");
 	//parameterNames.push_back("datronPowerOffsety");
-        //parameterNames.push_back("tronPowerSize");
+	//parameterNames.push_back("tronPowerSize");
 	strings returnParameterNames;
 	returnParameterNames.push_back("ok");
 
@@ -192,32 +192,31 @@ void GlobalContext::addVoteMethod() {
 	));
 }
 
-void GlobalContext::addWithdrawRewardToAddrMethod() {
-        // bool withdrawReward(address toAddress)
-	TypePointers parameterTypes;
-	parameterTypes.push_back(TypeProvider::address());
+void GlobalContext::addWithdrawRewardMethod(){
+    TypePointers parameterTypes;
+    parameterTypes.push_back(TypeProvider::address());
 
-	TypePointers returnParameterTypes;
-	returnParameterTypes.push_back(TypeProvider::boolean());
-	strings parameterNames;
-	parameterNames.push_back("toAddress");
-	strings returnParameterNames;
-	returnParameterNames.push_back("ok");
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::boolean());
+    strings parameterNames;
+    parameterNames.push_back("toAddress");
+    strings returnParameterNames;
+    returnParameterNames.push_back("ok");
 
-	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("WithdrawReward", TypeProvider::function(
-		parameterTypes,
-		returnParameterTypes,
-		parameterNames,
-		returnParameterNames,
-		FunctionType::Kind::WithdrawReward,
-		false,
-		StateMutability::Pure,
-		nullptr,
-		false,
-		false,
-		false,
-		false)
-	));
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("WithdrawReward", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::WithdrawReward,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
 }
 
 void GlobalContext::addVerifyMintProofMethod() {
