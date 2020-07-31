@@ -700,7 +700,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context.appendConditionalRevert(true);
 			}
 			break;
-		case FunctionType::Kind::TransferToken :
+		case FunctionType::Kind::TransferToken:
 			_functionCall.expression().accept(*this);
 			// Provide the gas stipend manually at first because we may send zero trx.
 			// Will be zeroed if we send more than zero trx.
@@ -1193,6 +1193,33 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::MetaType:
 			// No code to generate.
 			break;
+		case FunctionType::Kind::Freeze:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::NATIVEFREEZE;
+            break;
+		}
+		case FunctionType::Kind::Unfreeze:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::NATIVEUNFREEZE;
+            break;
+		}
+		case FunctionType::Kind::Vote:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::NATIVEVOTE;
+            break;
+		}
+		case FunctionType::Kind::WithdrawReward:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::NATIVEWITHDRAWREWARD;
+            break;
 		}
 	}
 	return false;
@@ -1410,6 +1437,15 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			m_context << Instruction::ISCONTRACT;
 		}
 		else if ((set<string>{"send", "transfer", "transferToken"}).count(member))
+		{
+			solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
+			utils().convertType(
+				*_memberAccess.expression().annotation().type,
+				AddressType(StateMutability::Payable),
+				true
+			);
+		}
+		else if ((set<string>{"freeze", "unfreeze", "withdrawReward"}).count(member))
 		{
 			solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
 			utils().convertType(
