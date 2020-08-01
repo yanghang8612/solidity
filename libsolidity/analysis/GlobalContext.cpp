@@ -48,6 +48,7 @@ inline vector<shared_ptr<MagicVariableDeclaration const>> constructMagicVariable
 		magicVarDecl("block", TypeProvider::magic(MagicType::Kind::Block)),
 		magicVarDecl("blockhash", TypeProvider::function(strings{"uint256"}, strings{"bytes32"}, FunctionType::Kind::BlockHash, false, StateMutability::View)),
 		magicVarDecl("ecrecover", TypeProvider::function(strings{"bytes32", "uint8", "bytes32", "bytes32"}, strings{"address"}, FunctionType::Kind::ECRecover, false, StateMutability::Pure)),
+        //magicVarDecl("vote", TypeProvider::function(strings{"address", "uint256"}, strings{"bool"}, FunctionType::Kind::Vote, false, StateMutability::Payable)),
 		magicVarDecl("gasleft", TypeProvider::function(strings(), strings{"uint256"}, FunctionType::Kind::GasLeft, false, StateMutability::View)),
 		magicVarDecl("keccak256", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
 		magicVarDecl("log0", TypeProvider::function(strings{"bytes32"}, strings{}, FunctionType::Kind::Log0)),
@@ -106,7 +107,7 @@ void GlobalContext::addFreezeMethod() {
 	parameterNames.push_back("delegateAddress");
 	parameterNames.push_back("freezeAmount");
 	parameterNames.push_back("day");
-        parameterNames.push_back("resourceType");
+	parameterNames.push_back("resourceType");
 	strings returnParameterNames;
 	returnParameterNames.push_back("ok");
 
@@ -176,14 +177,14 @@ void GlobalContext::addVoteMethod() {
 	strings returnParameterNames;
 	returnParameterNames.push_back("ok");
 
-	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("Vote", TypeProvider::function(
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("vote", TypeProvider::function(
 		parameterTypes,
 		returnParameterTypes,
 		parameterNames,
 		returnParameterNames,
 		FunctionType::Kind::Vote,
 		false,
-		StateMutability::Pure,
+		StateMutability::Payable,
 		nullptr,
 		false,
 		false,
