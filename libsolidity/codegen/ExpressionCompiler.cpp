@@ -1199,6 +1199,8 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
             m_context << Instruction::NATIVEFREEZE;
+            m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
+
             break;
 		}
 		case FunctionType::Kind::Unfreeze:

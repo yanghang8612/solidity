@@ -480,7 +480,7 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
-        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings(), FunctionType::Kind::Freeze, false, StateMutability::Payable)});
+        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings{"bool"}, FunctionType::Kind::Freeze, false, StateMutability::Payable)});
         members.emplace_back(MemberList::Member{"unFreeze", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Unfreeze, false, StateMutability::Payable)});
         members.emplace_back(MemberList::Member{"withdrawReward", TypeProvider::function(strings{}, strings(), FunctionType::Kind::WithdrawReward, false, StateMutability::Payable)});
 	}

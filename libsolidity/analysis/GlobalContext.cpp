@@ -111,7 +111,7 @@ void GlobalContext::addFreezeMethod() {
 	strings returnParameterNames;
 	returnParameterNames.push_back("ok");
 
-	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("Freeze", TypeProvider::function(
+	m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("freeze", TypeProvider::function(
 		parameterTypes,
 		returnParameterTypes,
 		parameterNames,
