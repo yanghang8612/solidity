@@ -1195,6 +1195,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			break;
 		case FunctionType::Kind::Freeze:
 		{
+            _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
@@ -1203,6 +1204,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::Unfreeze:
         {
+            _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
@@ -1240,6 +1242,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
         }
 		case FunctionType::Kind::WithdrawReward:
         {
+            _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
