@@ -1200,8 +1200,6 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
             m_context << Instruction::NATIVEFREEZE;
-            m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
-
             break;
 		}
 		case FunctionType::Kind::Unfreeze:
@@ -1227,6 +1225,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             //solAssert(!function.padArguments(), "");
             // Optimization: If type is bytes or string, then do not encode,
             // but directly compute vote on memory.
+            _functionCall.expression().accept(*this);
             for(unsigned i = 0; i < arguments.size(); ++i) {
                 TypePointer const& argType = arguments[i]->annotation().type;
                 solAssert(argType, "");
