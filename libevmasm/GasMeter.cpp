@@ -193,24 +193,31 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::ISWITNESS:
 			gas = GasCosts::balanceGas(m_evmVersion);
 			break;
+		// todo freeze unfreeze vote
 //		case Instruction::NATIVEFREEZE:
 //			gas = runGas(Instruction::NATIVEFREEZE);
 //			break;
 //		case Instruction::NATIVEUNFREEZE:
 //			gas = runGas(Instruction::NATIVEUNFREEZE);
-//			break;
+//			break;		
+		// case Instruction::NATIVEVOTE:
+		// 	gas = runGas(Instruction::NATIVEVOTE);
+		// 	break;
 		case Instruction::NATIVESTAKE:
 			gas = runGas(Instruction::NATIVESTAKE);
 			break;
 		case Instruction::NATIVEUNSTAKE:
 			gas = runGas(Instruction::NATIVEUNSTAKE);
 			break;
-		case Instruction::NATIVEVOTE:
-			gas = runGas(Instruction::NATIVEVOTE);
-			break;
 		case Instruction::NATIVEWITHDRAWREWARD:
 			gas = runGas(Instruction::NATIVEWITHDRAWREWARD);
 			break;
+		case Instruction::TOKENISSUE:
+            gas = runGas(Instruction::TOKENISSUE);
+            break;
+		case Instruction::UPDATEASSET:
+			gas = runGas(Instruction::UPDATEASSET);
+		break;
 		case Instruction::CHAINID:
 			gas = runGas(Instruction::CHAINID);
 			break;

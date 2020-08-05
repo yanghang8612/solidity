@@ -2745,10 +2745,12 @@ string FunctionType::richIdentifier() const
 	case Kind::MetaType: id += "metatype"; break;
 //	case Kind::Freeze: id += "freeze"; break;
 //	case Kind::Unfreeze: id += "unfreeze"; break;
+//  case Kind::Vote: id += "vote"; break;
     case Kind::Stake: id += "stake"; break;
     case Kind::Unstake: id += "unstake"; break;
-	case Kind::Vote: id += "vote"; break;
 	case Kind::WithdrawReward: id += "withdrawreward"; break;
+	case Kind::assetTokenissue: id += "assetTokenissue"; break;
+	case Kind::UpdateAsset: id += "updateAsset"; break;
 	}
 	id += "_" + stateMutabilityToString(m_stateMutability);
 	id += identifierList(m_parameterTypes) + "returns" + identifierList(m_returnParameterTypes);

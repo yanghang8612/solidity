@@ -68,8 +68,10 @@ private:
 //	void addUnfreezeMethod();
     void addStakeMethod();
 //  void addUnStakeMethod();
-	void addVoteMethod();
+//	void addVoteMethod();
 //	void addWithdrawRewardMethod();
+	void addAssetTokenissueMethod();
+	void addUpdateAssetMethod();
 };
 
 }

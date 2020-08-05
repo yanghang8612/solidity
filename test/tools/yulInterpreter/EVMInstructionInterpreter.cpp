@@ -425,10 +425,12 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::ISWITNESS:
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
+//  case Instruction::NATIVEVOTE:
     case Instruction::NATIVESTAKE:
-    case Instruction::NATIVEUNSTAKE:
-	case Instruction::NATIVEVOTE:
+    case Instruction::NATIVEUNSTAKE:	
 	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 	{
 		yulAssert(false, "");
 		return 0;

@@ -1012,10 +1012,12 @@ public:
         pedersenHash,//< CALL to special contract for verifyMintProof which is used for shielded transaction for TRC-20
 //      Freeze,//< CALL to freeze balance
 //		Unfreeze,//< CALL to unfreeze balance
+//      Vote,//< CALL to vote witness
         Stake,
-        Unstake,
-		Vote,//< CALL to vote witness
+        Unstake,		
 		WithdrawReward,//< CALL to withdrawReward to address
+		assetTokenissue,//CALL to issue new Asset
+		UpdateAsset,//CALL to issue new Asset
 		Log0,
 		Log1,
 		Log2,

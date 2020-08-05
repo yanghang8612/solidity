@@ -89,7 +89,45 @@ GlobalContext::GlobalContext(): m_magicVariables{constructMagicVariables()}
     addPedersenHashMethod();
     addStakeMethod();
     //addUnStakeMethod();
-    addVoteMethod();
+    //addVoteMethod();
+    addAssetTokenissueMethod();
+    addUpdateAssetMethod();
+}
+
+void GlobalContext::addUpdateAssetMethod() {
+    TypePointers parameterTypes;
+    //trcTokenId trcToken
+    parameterTypes.push_back(TypeProvider::trcToken());
+    //description bytes
+    parameterTypes.push_back(TypeProvider::bytesMemory());
+    //url bytes
+    parameterTypes.push_back(TypeProvider::bytesMemory());
+
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::boolean());
+    strings parameterNames;
+    parameterNames.push_back("trcTokenId");
+    parameterNames.push_back("description");
+    parameterNames.push_back("url");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("result");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateAsset", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::UpdateAsset,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
 }
 
 void GlobalContext::addStakeMethod() {
@@ -210,9 +248,47 @@ void GlobalContext::addVoteMnamespace solidity
             addPedersenHashMethod();
             addStakeMethod();
             //addUnStakeMethod();
-            addVoteMethod();
+            //addVoteMethod();
         }
 
+    void GlobalContext::addAssetTokenissueMethod() {
+    TypePointers parameterTypes;
+    //name bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //abbr bytes32
+    parameterTypes.push_back(TypeProvider::fixedBytes(32));
+    //totalSupply uint64
+    parameterTypes.push_back(TypeProvider::uint(64));
+    //precision uint32
+    parameterTypes.push_back(TypeProvider::uint(32));
+
+
+    TypePointers returnParameterTypes;
+    returnParameterTypes.push_back(TypeProvider::trcToken());
+    strings parameterNames;
+    parameterNames.push_back("name");
+    parameterNames.push_back("abbr");
+    parameterNames.push_back("totalSupply");
+    parameterNames.push_back("precision");
+
+    strings returnParameterNames;
+    returnParameterNames.push_back("result");
+
+    m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetTokenissue", TypeProvider::function(
+            parameterTypes,
+            returnParameterTypes,
+            parameterNames,
+            returnParameterNames,
+            FunctionType::Kind::assetTokenissue,
+            false,
+            StateMutability::Pure,
+            nullptr,
+            false,
+            false,
+            false,
+            false)
+    ));
+}
         void GlobalContext::addStakeMethod() {
             TypePointers parameterTypes;
 
@@ -274,41 +350,41 @@ void GlobalContext::addVoteMnamespace solidity
 //}
 
 
-        void GlobalContext::addVoteMethod() {
-            // bool vote(address[] memory addresses, unit256[] tronpowerlist)
-            TypePointers parameterTypes;
+        // void GlobalContext::addVoteMethod() {
+        //     // bool vote(address[] memory addresses, unit256[] tronpowerlist)
+        //     TypePointers parameterTypes;
 
-            parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
-            parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
-            //parameterTypes.push_back(TypeProvider::uint256());
-            //parameterTypes.push_back(TypeProvider::uint256());
-            //parameterTypes.push_back(TypeProvider::uint256());
+        //     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+        //     parameterTypes.push_back(TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
+        //     //parameterTypes.push_back(TypeProvider::uint256());
+        //     //parameterTypes.push_back(TypeProvider::uint256());
+        //     //parameterTypes.push_back(TypeProvider::uint256());
 
-            TypePointers returnParameterTypes;
-            returnParameterTypes.push_back(TypeProvider::boolean());
-            strings parameterNames;
-            parameterNames.push_back("srList");
-            parameterNames.push_back("tronpowerList");
-            //parameterNames.push_back("datronPowerOffsety");
-            //parameterNames.push_back("tronPowerSize");
-            strings returnParameterNames;
-            returnParameterNames.push_back("ok");
+        //     TypePointers returnParameterTypes;
+        //     returnParameterTypes.push_back(TypeProvider::boolean());
+        //     strings parameterNames;
+        //     parameterNames.push_back("srList");
+        //     parameterNames.push_back("tronpowerList");
+        //     //parameterNames.push_back("datronPowerOffsety");
+        //     //parameterNames.push_back("tronPowerSize");
+        //     strings returnParameterNames;
+        //     returnParameterNames.push_back("ok");
 
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("vote", TypeProvider::function(
-                    parameterTypes,
-                    returnParameterTypes,
-                    parameterNames,
-                    returnParameterNames,
-                    FunctionType::Kind::Vote,
-                    false,
-                    StateMutability::Payable,
-                    nullptr,
-                    false,
-                    false,
-                    false,
-                    false)
-            ));
-        }
+        //     m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("vote", TypeProvider::function(
+        //             parameterTypes,
+        //             returnParameterTypes,
+        //             parameterNames,
+        //             returnParameterNames,
+        //             FunctionType::Kind::Vote,
+        //             false,
+        //             StateMutability::Payable,
+        //             nullptr,
+        //             false,
+        //             false,
+        //             false,
+        //             false)
+        //     ));
+        // }
 
         void GlobalContext::addVerifyMintProofMethod() {
             TypePointers parameterTypes;

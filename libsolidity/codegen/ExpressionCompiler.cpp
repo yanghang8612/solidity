@@ -1219,6 +1219,28 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //            m_context << Instruction::NATIVEVOTE;
 //            break;
 //		}
+// case FunctionType::Kind::Vote:
+//         {
+//             solAssert(arguments.size() == 2, "");
+//             //solAssert(!function.padArguments(), "");
+//             // Optimization: If type is bytes or string, then do not encode,
+//             // but directly compute vote on memory.
+//             _functionCall.expression().accept(*this);
+//             for(unsigned i = 0; i < arguments.size(); ++i) {
+//                 TypePointer const& argType = arguments[i]->annotation().type;
+//                 solAssert(argType, "");
+//                 arguments[i]->accept(*this);
+//                 if (*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::address())) {
+//                     ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+//                     m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
+//                 } else if(*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::uint256())){
+//                     ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
+//                     m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
+//                 }
+//             }
+//             m_context << Instruction::NATIVEVOTE;
+//             break;
+//         }
 		case FunctionType::Kind::Stake:
 		{
             _functionCall.expression().accept(*this);
@@ -1235,37 +1257,25 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             m_context << u256(0) << Instruction::NATIVEUNSTAKE;
             break;
 		}
-        case FunctionType::Kind::Vote:
-        {
-            solAssert(arguments.size() == 2, "");
-            //solAssert(!function.padArguments(), "");
-            // Optimization: If type is bytes or string, then do not encode,
-            // but directly compute vote on memory.
-            _functionCall.expression().accept(*this);
-            for(unsigned i = 0; i < arguments.size(); ++i) {
-                TypePointer const& argType = arguments[i]->annotation().type;
-                solAssert(argType, "");
-                arguments[i]->accept(*this);
-                if (*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::address())) {
-                    ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
-                    m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
-                } else if(*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::uint256())){
-                    ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
-                    m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
-                }
-            }
-            m_context << Instruction::NATIVEVOTE;
-            break;
-        }
 		case FunctionType::Kind::WithdrawReward:
-        {
             _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
             m_context << Instruction::NATIVEWITHDRAWREWARD;
             break;
-		}
+		case FunctionType::Kind::assetTokenissue:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::TOKENISSUE;
+            break;
+		case FunctionType::Kind::UpdateAsset:
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            }
+            m_context << Instruction::UPDATEASSET;
+            break;
 		default:
 		    solAssert(false, "unsupported member function of Kind");
         }

@@ -179,10 +179,12 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::ISWITNESS:
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
+//  case Instruction::NATIVEVOTE:
     case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
-	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 	case Instruction::SELFBALANCE: // depends on previous calls
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -292,10 +294,12 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::ISWITNESS:
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
+//  case Instruction::NATIVEVOTE:
     case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
-	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 	case Instruction::ORIGIN:
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
@@ -340,12 +344,15 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::DELEGATECALL:
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
+// todo freeze unfreeze vote
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
+//  case Instruction::NATIVEVOTE:
     case Instruction::NATIVESTAKE:
-    case Instruction::NATIVEUNSTAKE:
-	case Instruction::NATIVEVOTE:
+    case Instruction::NATIVEUNSTAKE:	
 	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 		return true;
 	default:
 		break;

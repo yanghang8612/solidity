@@ -197,12 +197,17 @@ enum class Instruction: uint8_t
 	ISCONTRACT,
 	NATIVESTAKE,
 	NATIVEUNSTAKE,
-//	NATIVEFREEZE,
-//	NATIVEUNFREEZE,
-
-	NATIVEVOTE = 0xd9,
 	NATIVEWITHDRAWREWARD,
 	REWARDBALANCE,
+	ISWITNESS,
+	TOKENISSUE,
+	UPDATEASSET,
+// todo freeze unfreeze vote
+//	NATIVEFREEZE,
+//	NATIVEUNFREEZE,
+//  NATIVEVOTE,
+	
+	
     ISWITNESS,
 
 	CREATE = 0xf0,		///< create a new account with associated code
