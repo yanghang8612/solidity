@@ -67,7 +67,9 @@ namespace dev
                     magicVarDecl("sha256", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::SHA256, false, StateMutability::Pure)),
                     magicVarDecl("sha3", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
                     magicVarDecl("suicide", TypeProvider::function(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
-                    magicVarDecl("unstake", TypeProvider::function(strings(), strings{}, FunctionType::Kind::Unstake, false, StateMutability::Payable)),
+
+                    //magicVarDecl("stake", TypeProvider::function(strings{"uint256", "uint256"}, strings(), FunctionType::Kind::Stake, false, StateMutability::Pure)),
+                    magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake, false, StateMutability::Pure)),
                     magicVarDecl("tx", TypeProvider::magic(MagicType::Kind::Transaction)),
                     magicVarDecl("type", TypeProvider::function(
                             strings{"address"} /* accepts any contract type, handled by the type checker */,

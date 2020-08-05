@@ -426,7 +426,8 @@ u256 EVMInstructionInterpreter::eval(
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
 //  case Instruction::NATIVEVOTE:
-    case Instruction::NATIVESTAKE:
+//    case Instruction::NATIVESTAKE:
+    case Instruction::STAKE:
     case Instruction::NATIVEUNSTAKE:	
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::TOKENISSUE:

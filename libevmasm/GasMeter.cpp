@@ -203,9 +203,12 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		// case Instruction::NATIVEVOTE:
 		// 	gas = runGas(Instruction::NATIVEVOTE);
 		// 	break;
-		case Instruction::NATIVESTAKE:
-			gas = runGas(Instruction::NATIVESTAKE);
-			break;
+//		case Instruction::NATIVESTAKE:
+//			gas = runGas(Instruction::NATIVESTAKE);
+//			break;
+        case Instruction::STAKE:
+            gas = runGas(Instruction::STAKE);
+            break;
 		case Instruction::NATIVEUNSTAKE:
 			gas = runGas(Instruction::NATIVEUNSTAKE);
 			break;

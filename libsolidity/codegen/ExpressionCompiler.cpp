@@ -1241,20 +1241,22 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //             m_context << Instruction::NATIVEVOTE;
 //             break;
 //         }
-		case FunctionType::Kind::Stake:
-		{
+//		case FunctionType::Kind::stake:
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVESTAKE;
+//            break;
+        case FunctionType::Kind::Stake:
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
-            m_context << Instruction::NATIVESTAKE;
+            m_context << Instruction::STAKE;
             break;
-		}
 		case FunctionType::Kind::Unstake:
-        {
             //revert: *this << u256(0) << u256(0) << Instruction::REVERT;
-            m_context << u256(0) << Instruction::NATIVEUNSTAKE;
+            m_context << Instruction::NATIVEUNSTAKE;
             break;
-		}
 		case FunctionType::Kind::WithdrawReward:
             _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
