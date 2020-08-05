@@ -90,37 +90,114 @@ namespace dev
             addStakeMethod();
             //addUnStakeMethod();
             //addVoteMethod();
+            addAssetTokenissueMethod();
+            addUpdateAssetMethod();
         }
 
-        void GlobalContext::addStakeMethod() {
+        void GlobalContext::addUpdateAssetMethod() {
             TypePointers parameterTypes;
+            //trcTokenId trcToken
+            parameterTypes.push_back(TypeProvider::trcToken());
+            //description bytes
+            parameterTypes.push_back(TypeProvider::bytesMemory());
+            //url bytes
+            parameterTypes.push_back(TypeProvider::bytesMemory());
 
-            parameterTypes.push_back(TypeProvider::address());
-            parameterTypes.push_back(TypeProvider::uint256());
 
             TypePointers returnParameterTypes;
             returnParameterTypes.push_back(TypeProvider::boolean());
             strings parameterNames;
-            parameterNames.push_back("srAddress");
-            parameterNames.push_back("amount");//trx
+            parameterNames.push_back("trcTokenId");
+            parameterNames.push_back("description");
+            parameterNames.push_back("url");
 
             strings returnParameterNames;
-            returnParameterNames.push_back("ok");
+            returnParameterNames.push_back("result");
 
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
+            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateAsset", TypeProvider::function(
                     parameterTypes,
                     returnParameterTypes,
                     parameterNames,
                     returnParameterNames,
-                    FunctionType::Kind::Stake,
+                    FunctionType::Kind::UpdateAsset,
                     false,
-                    StateMutability::Payable,
+                    StateMutability::Pure,
                     nullptr,
                     false,
                     false,
                     false,
                     false)
             ));
+        }
+
+        void GlobalContext::addAssetTokenissueMethod() {
+            TypePointers parameterTypes;
+            //name bytes32
+            parameterTypes.push_back(TypeProvider::fixedBytes(32));
+            //abbr bytes32
+            parameterTypes.push_back(TypeProvider::fixedBytes(32));
+            //totalSupply uint64
+            parameterTypes.push_back(TypeProvider::uint(64));
+            //precision uint32
+            parameterTypes.push_back(TypeProvider::uint(32));
+
+
+            TypePointers returnParameterTypes;
+            returnParameterTypes.push_back(TypeProvider::trcToken());
+            strings parameterNames;
+            parameterNames.push_back("name");
+            parameterNames.push_back("abbr");
+            parameterNames.push_back("totalSupply");
+            parameterNames.push_back("precision");
+
+            strings returnParameterNames;
+            returnParameterNames.push_back("result");
+
+            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetTokenissue", TypeProvider::function(
+                    parameterTypes,
+                    returnParameterTypes,
+                    parameterNames,
+                    returnParameterNames,
+                    FunctionType::Kind::assetTokenissue,
+                    false,
+                    StateMutability::Pure,
+                    nullptr,
+                    false,
+                    false,
+                    false,
+                    false)
+            ));
+        }
+
+            void GlobalContext::addStakeMethod() {
+                TypePointers parameterTypes;
+
+                parameterTypes.push_back(TypeProvider::address());
+                parameterTypes.push_back(TypeProvider::uint256());
+
+                TypePointers returnParameterTypes;
+                returnParameterTypes.push_back(TypeProvider::boolean());
+                strings parameterNames;
+                parameterNames.push_back("srAddress");
+                parameterNames.push_back("amount");//trx
+
+                strings returnParameterNames;
+                returnParameterNames.push_back("ok");
+
+                m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
+                        parameterTypes,
+                        returnParameterTypes,
+                        parameterNames,
+                        returnParameterNames,
+                        FunctionType::Kind::Stake,
+                        false,
+                        StateMutability::Payable,
+                        nullptr,
+                        false,
+                        false,
+                        false,
+                        false)
+                ));
         }
 
 //void GlobalContext::addUnStakeMethod() {
