@@ -1243,10 +1243,8 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //         }
 		case FunctionType::Kind::Stake:
 		{
-            _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
-                //m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
             }
             m_context << Instruction::NATIVESTAKE;
             break;
@@ -1521,7 +1519,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 		}
-        else if ((set<string>{"stake", "unstake", "withdrawreward"}).count(member))
+        else if ((set<string>{"withdrawreward"}).count(member))
         {
             solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
             utils().convertType(

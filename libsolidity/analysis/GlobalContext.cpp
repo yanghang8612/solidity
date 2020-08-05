@@ -169,36 +169,39 @@ namespace dev
             ));
         }
 
-            void GlobalContext::addStakeMethod() {
-                TypePointers parameterTypes;
+    void GlobalContext::addStakeMethod() {
+            TypePointers parameterTypes;
 
-                parameterTypes.push_back(TypeProvider::address());
-                parameterTypes.push_back(TypeProvider::uint256());
+            parameterTypes.push_back(TypeProvider::address());
 
-                TypePointers returnParameterTypes;
-                returnParameterTypes.push_back(TypeProvider::boolean());
-                strings parameterNames;
-                parameterNames.push_back("srAddress");
-                parameterNames.push_back("amount");//trx
+            parameterTypes.push_back(TypeProvider::uint256());
 
-                strings returnParameterNames;
-                returnParameterNames.push_back("ok");
 
-                m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
-                        parameterTypes,
-                        returnParameterTypes,
-                        parameterNames,
-                        returnParameterNames,
-                        FunctionType::Kind::Stake,
-                        false,
-                        StateMutability::Payable,
-                        nullptr,
-                        false,
-                        false,
-                        false,
-                        false)
-                ));
-        }
+            TypePointers returnParameterTypes;
+            returnParameterTypes.push_back(TypeProvider::trcToken());
+            strings parameterNames;
+            parameterNames.push_back("address");
+            parameterNames.push_back("amount");
+
+
+            strings returnParameterNames;
+            returnParameterNames.push_back("result");
+
+            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
+                    parameterTypes,
+                    returnParameterTypes,
+                    parameterNames,
+                    returnParameterNames,
+                    FunctionType::Kind::Stake,
+                    false,
+                    StateMutability::Pure,
+                    nullptr,
+                    false,
+                    false,
+                    false,
+                    false)
+            ));
+    }
 
 //void GlobalContext::addUnStakeMethod() {
 //    TypePointers parameterTypes;
