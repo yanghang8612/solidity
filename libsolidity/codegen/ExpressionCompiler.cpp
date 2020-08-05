@@ -1193,24 +1193,24 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::MetaType:
 			// No code to generate.
 			break;
-		case FunctionType::Kind::Freeze:
-		{
-            _functionCall.expression().accept(*this);
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
-            }
-            m_context << Instruction::NATIVEFREEZE;
-            break;
-		}
-		case FunctionType::Kind::Unfreeze:
-        {
-            _functionCall.expression().accept(*this);
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
-            }
-            m_context << Instruction::NATIVEUNFREEZE;
-            break;
-		}
+//		case FunctionType::Kind::Freeze:
+//		{
+//            _functionCall.expression().accept(*this);
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVEFREEZE;
+//            break;
+//		}
+//		case FunctionType::Kind::Unfreeze:
+//        {
+//            _functionCall.expression().accept(*this);
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVEUNFREEZE;
+//            break;
+//		}
 //		case FunctionType::Kind::Vote:
 //        {
 //            for (unsigned i = 0; i < arguments.size(); ++i){
@@ -1219,6 +1219,22 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //            m_context << Instruction::NATIVEVOTE;
 //            break;
 //		}
+		case FunctionType::Kind::Stake:
+		{
+            _functionCall.expression().accept(*this);
+            for (unsigned i = 0; i < arguments.size(); ++i){
+                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+                //m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
+            }
+            m_context << Instruction::NATIVESTAKE;
+            break;
+		}
+		case FunctionType::Kind::Unstake:
+        {
+            //revert: *this << u256(0) << u256(0) << Instruction::REVERT;
+            m_context << u256(0) << Instruction::NATIVEUNSTAKE;
+            break;
+		}
         case FunctionType::Kind::Vote:
         {
             solAssert(arguments.size() == 2, "");
@@ -1459,7 +1475,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::BALANCE;
 		}
-		else if (member == "rewardBalance")
+		else if (member == "rewardbalance")
 		{
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
@@ -1477,7 +1493,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::ISCONTRACT;
 		}
-		else if (member == "isWitness")
+		else if (member == "iswitness")
 		{
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
@@ -1495,15 +1511,24 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 		}
-		else if ((set<string>{"freeze", "unfreeze", "withdrawReward"}).count(member))
-		{
+        else if ((set<string>{"stake", "unstake", "withdrawreward"}).count(member))
+        {
             solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
             utils().convertType(
                     *_memberAccess.expression().annotation().type,
                     AddressType(StateMutability::Payable),
                     true
             );
-		}
+        }
+//		else if ((set<string>{"freeze", "unfreeze", "withdrawreward"}).count(member))
+//		{
+//            solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
+//            utils().convertType(
+//                    *_memberAccess.expression().annotation().type,
+//                    AddressType(StateMutability::Payable),
+//                    true
+//            );
+//		}
 		else if ((set<string>{"tokenBalance", "call", "callcode", "delegatecall", "staticcall"}).count(member))
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,

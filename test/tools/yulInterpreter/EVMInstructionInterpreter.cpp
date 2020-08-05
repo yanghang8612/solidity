@@ -423,8 +423,10 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::CALLTOKENID:
 	case Instruction::ISCONTRACT:
 	case Instruction::ISWITNESS:
-	case Instruction::NATIVEFREEZE:
-	case Instruction::NATIVEUNFREEZE:
+//	case Instruction::NATIVEFREEZE:
+//	case Instruction::NATIVEUNFREEZE:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 	{

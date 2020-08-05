@@ -177,8 +177,10 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
 	case Instruction::ISWITNESS:
-	case Instruction::NATIVEFREEZE:
-	case Instruction::NATIVEUNFREEZE:
+//	case Instruction::NATIVEFREEZE:
+//	case Instruction::NATIVEUNFREEZE:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::SELFBALANCE: // depends on previous calls
@@ -288,8 +290,10 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
 	case Instruction::ISWITNESS:
-	case Instruction::NATIVEFREEZE:
-	case Instruction::NATIVEUNFREEZE:
+//	case Instruction::NATIVEFREEZE:
+//	case Instruction::NATIVEUNFREEZE:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::ORIGIN:
@@ -336,8 +340,10 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::DELEGATECALL:
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
-	case Instruction::NATIVEFREEZE:
-	case Instruction::NATIVEUNFREEZE:
+//	case Instruction::NATIVEFREEZE:
+//	case Instruction::NATIVEUNFREEZE:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEVOTE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 		return true;

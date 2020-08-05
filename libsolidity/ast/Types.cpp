@@ -465,24 +465,23 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", TypeProvider::uint256()},
-		{"rewardBalance", TypeProvider::uint256()},
+		{"rewardbalance", TypeProvider::uint256()},
 		{"isContract", TypeProvider::boolean()},
-		{"isWitness", TypeProvider::boolean()},
+		{"iswitness", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
 		{"staticcall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareStaticCall, false, StateMutability::View)},
 		{"tokenBalance", TypeProvider::function(strings{"trcToken"}, strings{"uint"}, FunctionType::Kind::TokenBalance, false, StateMutability::View)},
-        //{"vote", TypeProvider::function(strings{"bytes memory"}, strings{"bytes memory"}, FunctionType::Kind::Vote, false, StateMutability::Payable)},
 	};
 	if (m_stateMutability == StateMutability::Payable)
 	{
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
-        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings{"bool"}, FunctionType::Kind::Freeze, false, StateMutability::NonPayable)});
-        members.emplace_back(MemberList::Member{"unfreeze", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Unfreeze, false, StateMutability::NonPayable)});
-        members.emplace_back(MemberList::Member{"withdrawReward", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::WithdrawReward, false, StateMutability::NonPayable)});
+//        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings{"bool"}, FunctionType::Kind::Freeze, false, StateMutability::NonPayable)});
+//        members.emplace_back(MemberList::Member{"unfreeze", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Unfreeze, false, StateMutability::NonPayable)});
+        members.emplace_back(MemberList::Member{"withdrawreward", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::WithdrawReward, false, StateMutability::NonPayable)});
 	}
 	return members;
 }
@@ -2744,10 +2743,12 @@ string FunctionType::richIdentifier() const
 	case Kind::ABIEncodeWithSignature: id += "abiencodewithsignature"; break;
 	case Kind::ABIDecode: id += "abidecode"; break;
 	case Kind::MetaType: id += "metatype"; break;
-	case Kind::Freeze: id += "freeze"; break;
-	case Kind::Unfreeze: id += "unfreeze"; break;
+//	case Kind::Freeze: id += "freeze"; break;
+//	case Kind::Unfreeze: id += "unfreeze"; break;
+    case Kind::Stake: id += "stake"; break;
+    case Kind::Unstake: id += "unstake"; break;
 	case Kind::Vote: id += "vote"; break;
-	case Kind::WithdrawReward: id += "withdrawReward"; break;
+	case Kind::WithdrawReward: id += "withdrawreward"; break;
 	}
 	id += "_" + stateMutabilityToString(m_stateMutability);
 	id += identifierList(m_parameterTypes) + "returns" + identifierList(m_returnParameterTypes);
