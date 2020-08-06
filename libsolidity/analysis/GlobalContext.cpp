@@ -180,7 +180,7 @@ namespace dev
 
 
             TypePointers returnParameterTypes;
-            returnParameterTypes.push_back(TypeProvider::trcToken());
+            returnParameterTypes.push_back(TypeProvider::boolean());
             strings parameterNames;
             parameterNames.push_back("address");
             parameterNames.push_back("amount");
