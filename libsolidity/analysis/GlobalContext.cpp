@@ -92,11 +92,11 @@ namespace dev
             addStakeMethod();
             //addUnStakeMethod();
             //addVoteMethod();
-            addAssetTokenissueMethod();
-            addUpdateAssetMethod();
+            addassetissueMethod();
+            addupdateassetMethod();
         }
 
-        void GlobalContext::addUpdateAssetMethod() {
+        void GlobalContext::addupdateassetMethod() {
             TypePointers parameterTypes;
             //trcTokenId trcToken
             parameterTypes.push_back(TypeProvider::trcToken());
@@ -116,12 +116,12 @@ namespace dev
             strings returnParameterNames;
             returnParameterNames.push_back("result");
 
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateAsset", TypeProvider::function(
+            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateasset", TypeProvider::function(
                     parameterTypes,
                     returnParameterTypes,
                     parameterNames,
                     returnParameterNames,
-                    FunctionType::Kind::UpdateAsset,
+                    FunctionType::Kind::updateasset,
                     false,
                     StateMutability::Pure,
                     nullptr,
@@ -132,7 +132,7 @@ namespace dev
             ));
         }
 
-        void GlobalContext::addAssetTokenissueMethod() {
+        void GlobalContext::addassetissueMethod() {
             TypePointers parameterTypes;
             //name bytes32
             parameterTypes.push_back(TypeProvider::fixedBytes(32));
@@ -155,12 +155,12 @@ namespace dev
             strings returnParameterNames;
             returnParameterNames.push_back("result");
 
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetTokenissue", TypeProvider::function(
+            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetissue", TypeProvider::function(
                     parameterTypes,
                     returnParameterTypes,
                     parameterNames,
                     returnParameterNames,
-                    FunctionType::Kind::assetTokenissue,
+                    FunctionType::Kind::assetissue,
                     false,
                     StateMutability::Pure,
                     nullptr,

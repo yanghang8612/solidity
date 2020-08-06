@@ -1264,13 +1264,13 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
             }
             m_context << Instruction::NATIVEWITHDRAWREWARD;
             break;
-		case FunctionType::Kind::assetTokenissue:
+		case FunctionType::Kind::assetissue:
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }
             m_context << Instruction::TOKENISSUE;
             break;
-		case FunctionType::Kind::UpdateAsset:
+		case FunctionType::Kind::updateasset:
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
             }

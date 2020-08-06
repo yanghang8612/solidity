@@ -70,8 +70,8 @@ private:
 //  void addUnStakeMethod();
 //	void addVoteMethod();
 //	void addWithdrawRewardMethod();
-	void addAssetTokenissueMethod();
-	void addUpdateAssetMethod();
+	void addassetissueMethod();
+	void addupdateassetMethod();
 };
 
 }
