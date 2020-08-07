@@ -182,7 +182,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 //  case Instruction::NATIVEVOTE:
 //    case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
-    case Instruction::STAKE:
+    case Instruction::NATIVESTAKE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::TOKENISSUE:
 	case Instruction::UPDATEASSET:
@@ -293,11 +293,7 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
 	case Instruction::ISWITNESS:
-//	case Instruction::NATIVEFREEZE:
-//	case Instruction::NATIVEUNFREEZE:
-//  case Instruction::NATIVEVOTE:
-//    case Instruction::NATIVESTAKE:
-    case Instruction::STAKE:
+    case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::TOKENISSUE:
@@ -346,12 +342,7 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::DELEGATECALL:
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
-// todo freeze unfreeze vote
-//	case Instruction::NATIVEFREEZE:
-//	case Instruction::NATIVEUNFREEZE:
-//  case Instruction::NATIVEVOTE:
-//    case Instruction::NATIVESTAKE:
-    case Instruction::STAKE:
+    case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:	
 	case Instruction::NATIVEWITHDRAWREWARD:
 	case Instruction::TOKENISSUE:

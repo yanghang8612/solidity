@@ -1248,31 +1248,30 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 //            m_context << Instruction::NATIVESTAKE;
 //            break;
         case FunctionType::Kind::Stake:
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
             }
-            m_context << Instruction::STAKE;
+            m_context << Instruction::NATIVESTAKE;
             break;
 		case FunctionType::Kind::Unstake:
-            //revert: *this << u256(0) << u256(0) << Instruction::REVERT;
             m_context << Instruction::NATIVEUNSTAKE;
             break;
 		case FunctionType::Kind::WithdrawReward:
             _functionCall.expression().accept(*this);
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
             }
             m_context << Instruction::NATIVEWITHDRAWREWARD;
             break;
 		case FunctionType::Kind::assetissue:
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
             }
             m_context << Instruction::TOKENISSUE;
             break;
 		case FunctionType::Kind::updateasset:
-            for (unsigned i = 0; i < arguments.size(); ++i){
-                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
             }
             m_context << Instruction::UPDATEASSET;
             break;
