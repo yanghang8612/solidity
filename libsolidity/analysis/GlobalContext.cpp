@@ -68,8 +68,11 @@ namespace dev
                     magicVarDecl("sha3", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
                     magicVarDecl("suicide", TypeProvider::function(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
 
-                    //magicVarDecl("stake", TypeProvider::function(strings{"uint256", "uint256"}, strings(), FunctionType::Kind::Stake, false, StateMutability::Pure)),
-                    magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake, false, StateMutability::Pure)),
+                    magicVarDecl("stake", TypeProvider::function(strings{"address", "uint256"}, strings{"bool"}, FunctionType::Kind::Stake)),
+                    magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake)),
+                    magicVarDecl("assetissue", TypeProvider::function(strings{"bytes32", "bytes32", "uint64", "uint8"}, strings{"bool"}, FunctionType::Kind::AssetIssue)),
+                    magicVarDecl("updateasset", TypeProvider::function(strings{"trcToken", "bytes memory", "bytes memory"}, strings{"bool"}, FunctionType::Kind::UpdateAsset)),
+
                     magicVarDecl("tx", TypeProvider::magic(MagicType::Kind::Transaction)),
                     magicVarDecl("type", TypeProvider::function(
                             strings{"address"} /* accepts any contract type, handled by the type checker */,
@@ -89,121 +92,121 @@ namespace dev
             addVerifyBurnProofMethod();
             addVerifyTransferProofMethod();
             addPedersenHashMethod();
-            addStakeMethod();
+            //addStakeMethod();
             //addUnStakeMethod();
             //addVoteMethod();
-            addassetissueMethod();
-            addupdateassetMethod();
+            //addassetissueMethod();
+            //addupdateassetMethod();
         }
 
-        void GlobalContext::addupdateassetMethod() {
-            TypePointers parameterTypes;
-            //trcTokenId trcToken
-            parameterTypes.push_back(TypeProvider::trcToken());
-            //description bytes
-            parameterTypes.push_back(TypeProvider::bytesMemory());
-            //url bytes
-            parameterTypes.push_back(TypeProvider::bytesMemory());
+//        void GlobalContext::addupdateassetMethod() {
+//            TypePointers parameterTypes;
+//            //trcTokenId trcToken
+//            parameterTypes.push_back(TypeProvider::trcToken());
+//            //description bytes
+//            parameterTypes.push_back(TypeProvider::bytesMemory());
+//            //url bytes
+//            parameterTypes.push_back(TypeProvider::bytesMemory());
+//
+//
+//            TypePointers returnParameterTypes;
+//            returnParameterTypes.push_back(TypeProvider::boolean());
+//            strings parameterNames;
+//            parameterNames.push_back("trcTokenId");
+//            parameterNames.push_back("description");
+//            parameterNames.push_back("url");
+//
+//            strings returnParameterNames;
+//            returnParameterNames.push_back("result");
+//
+//            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateasset", TypeProvider::function(
+//                    parameterTypes,
+//                    returnParameterTypes,
+//                    parameterNames,
+//                    returnParameterNames,
+//                    FunctionType::Kind::UpdateAsset,
+//                    false,
+//                    StateMutability::Pure,
+//                    nullptr,
+//                    false,
+//                    false,
+//                    false,
+//                    false)
+//            ));
+//        }
 
+//        void GlobalContext::addassetissueMethod() {
+//            TypePointers parameterTypes;
+//            //name bytes32
+//            parameterTypes.push_back(TypeProvider::fixedBytes(32));
+//            //abbr bytes32
+//            parameterTypes.push_back(TypeProvider::fixedBytes(32));
+//            //totalSupply uint64
+//            parameterTypes.push_back(TypeProvider::uint(64));
+//            //precision uint32
+//            parameterTypes.push_back(TypeProvider::uint(32));
+//
+//
+//            TypePointers returnParameterTypes;
+//            returnParameterTypes.push_back(TypeProvider::trcToken());
+//            strings parameterNames;
+//            parameterNames.push_back("name");
+//            parameterNames.push_back("abbr");
+//            parameterNames.push_back("totalSupply");
+//            parameterNames.push_back("precision");
+//
+//            strings returnParameterNames;
+//            returnParameterNames.push_back("result");
+//
+//            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetissue", TypeProvider::function(
+//                    parameterTypes,
+//                    returnParameterTypes,
+//                    parameterNames,
+//                    returnParameterNames,
+//                    FunctionType::Kind::AssetIssue,
+//                    false,
+//                    StateMutability::Pure,
+//                    nullptr,
+//                    false,
+//                    false,
+//                    false,
+//                    false)
+//            ));
+//        }
 
-            TypePointers returnParameterTypes;
-            returnParameterTypes.push_back(TypeProvider::boolean());
-            strings parameterNames;
-            parameterNames.push_back("trcTokenId");
-            parameterNames.push_back("description");
-            parameterNames.push_back("url");
-
-            strings returnParameterNames;
-            returnParameterNames.push_back("result");
-
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("updateasset", TypeProvider::function(
-                    parameterTypes,
-                    returnParameterTypes,
-                    parameterNames,
-                    returnParameterNames,
-                    FunctionType::Kind::updateasset,
-                    false,
-                    StateMutability::Pure,
-                    nullptr,
-                    false,
-                    false,
-                    false,
-                    false)
-            ));
-        }
-
-        void GlobalContext::addassetissueMethod() {
-            TypePointers parameterTypes;
-            //name bytes32
-            parameterTypes.push_back(TypeProvider::fixedBytes(32));
-            //abbr bytes32
-            parameterTypes.push_back(TypeProvider::fixedBytes(32));
-            //totalSupply uint64
-            parameterTypes.push_back(TypeProvider::uint(64));
-            //precision uint32
-            parameterTypes.push_back(TypeProvider::uint(32));
-
-
-            TypePointers returnParameterTypes;
-            returnParameterTypes.push_back(TypeProvider::trcToken());
-            strings parameterNames;
-            parameterNames.push_back("name");
-            parameterNames.push_back("abbr");
-            parameterNames.push_back("totalSupply");
-            parameterNames.push_back("precision");
-
-            strings returnParameterNames;
-            returnParameterNames.push_back("result");
-
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("assetissue", TypeProvider::function(
-                    parameterTypes,
-                    returnParameterTypes,
-                    parameterNames,
-                    returnParameterNames,
-                    FunctionType::Kind::assetissue,
-                    false,
-                    StateMutability::Pure,
-                    nullptr,
-                    false,
-                    false,
-                    false,
-                    false)
-            ));
-        }
-
-    void GlobalContext::addStakeMethod() {
-            TypePointers parameterTypes;
-
-            parameterTypes.push_back(TypeProvider::address());
-
-            parameterTypes.push_back(TypeProvider::uint256());
-
-
-            TypePointers returnParameterTypes;
-            returnParameterTypes.push_back(TypeProvider::boolean());
-            strings parameterNames;
-            parameterNames.push_back("address");
-            parameterNames.push_back("amount");
-
-
-            strings returnParameterNames;
-            returnParameterNames.push_back("result");
-
-            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
-                    parameterTypes,
-                    returnParameterTypes,
-                    parameterNames,
-                    returnParameterNames,
-                    FunctionType::Kind::Stake,
-                    false,
-                    StateMutability::Pure,
-                    nullptr,
-                    false,
-                    false,
-                    false,
-                    false)
-            ));
-    }
+//    void GlobalContext::addStakeMethod() {
+//            TypePointers parameterTypes;
+//
+//            parameterTypes.push_back(TypeProvider::address());
+//
+//            parameterTypes.push_back(TypeProvider::uint256());
+//
+//
+//            TypePointers returnParameterTypes;
+//            returnParameterTypes.push_back(TypeProvider::boolean());
+//            strings parameterNames;
+//            parameterNames.push_back("address");
+//            parameterNames.push_back("amount");
+//
+//
+//            strings returnParameterNames;
+//            returnParameterNames.push_back("result");
+//
+//            m_magicVariables.push_back(make_shared<MagicVariableDeclaration>("stake", TypeProvider::function(
+//                    parameterTypes,
+//                    returnParameterTypes,
+//                    parameterNames,
+//                    returnParameterNames,
+//                    FunctionType::Kind::Stake,
+//                    false,
+//                    StateMutability::Pure,
+//                    nullptr,
+//                    false,
+//                    false,
+//                    false,
+//                    false)
+//            ));
+//    }
 
 //void GlobalContext::addUnStakeMethod() {
 //    TypePointers parameterTypes;

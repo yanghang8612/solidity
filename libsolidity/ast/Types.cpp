@@ -2749,8 +2749,8 @@ string FunctionType::richIdentifier() const
         case Kind::Stake: id += "stake"; break;
         case Kind::Unstake: id += "unstake"; break;
         case Kind::WithdrawReward: id += "withdrawreward"; break;
-        case Kind::assetissue: id += "assetissue"; break;
-        case Kind::updateasset: id += "updateasset"; break;
+        case Kind::AssetIssue: id += "assetissue"; break;
+        case Kind::UpdateAsset: id += "updateasset"; break;
 	}
 	id += "_" + stateMutabilityToString(m_stateMutability);
 	id += identifierList(m_parameterTypes) + "returns" + identifierList(m_returnParameterTypes);

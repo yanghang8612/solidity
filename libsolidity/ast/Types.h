@@ -1016,8 +1016,8 @@ public:
         Stake,
         Unstake,		
 		WithdrawReward,//< CALL to withdrawReward to address
-		assetissue,//CALL to issue new Asset
-		updateasset,//CALL to issue new Asset
+		AssetIssue,//CALL to issue new Asset
+		UpdateAsset,//CALL to update Asset
 		Log0,
 		Log1,
 		Log2,
