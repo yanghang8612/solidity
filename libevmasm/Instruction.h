@@ -199,7 +199,7 @@ enum class Instruction: uint8_t
 	NATIVEUNSTAKE,
 	NATIVEWITHDRAWREWARD,
 	REWARDBALANCE,
-	ISWITNESS,
+    ISSRCANDIDATE,
 	TOKENISSUE,
 	UPDATEASSET,
 // todo freeze unfreeze vote

@@ -190,7 +190,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::REWARDBALANCE:
 		case Instruction::TOKENBALANCE:
 		case Instruction::ISCONTRACT:
-		case Instruction::ISWITNESS:
+		case Instruction::ISSRCANDIDATE:
 			gas = GasCosts::balanceGas(m_evmVersion);
 			break;
         case Instruction::NATIVESTAKE:

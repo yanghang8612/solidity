@@ -64,7 +64,7 @@ std::map<std::string, Instruction> const dev::eth::c_instructions =
 	{ "REWARDBALANCE", Instruction::REWARDBALANCE },
 	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
 	{ "ISCONTRACT", Instruction::ISCONTRACT },
-	{ "ISWITNESS", Instruction::ISWITNESS },
+	{ "ISSRCANDIDATE", Instruction::ISSRCANDIDATE },
 	{ "ORIGIN", Instruction::ORIGIN },
 //	{ "NATIVEFREEZE", Instruction::NATIVEFREEZE },
 //	{ "NATIVEUNFREEZE", Instruction::NATIVEUNFREEZE },
@@ -225,7 +225,7 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 	{ Instruction::REWARDBALANCE,	{ "REWARDBALANCE",	0, 1, 1, false, Tier::Balance } },
 	{ Instruction::TOKENBALANCE,	{ "TOKENBALANCE",	0, 2, 1, false, Tier::Balance } },
 	{ Instruction::ISCONTRACT,	{ "ISCONTRACT",	0, 1, 1, false, Tier::Balance } },
-	{ Instruction::ISWITNESS,	{ "ISWITNESS",	0, 1, 1, false, Tier::Balance } },
+	{ Instruction::ISSRCANDIDATE,	{ "ISSRCANDIDATE",	0, 1, 1, false, Tier::Balance } },
 	{ Instruction::ORIGIN,		{ "ORIGIN",			0, 0, 1, false, Tier::Base } },
 	// todo freeze unfreeze vote
 //	{ Instruction::NATIVEFREEZE,		{ "NATIVEFREEZE",			0, 4, 1, true, Tier::Ext } },

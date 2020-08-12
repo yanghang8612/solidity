@@ -176,7 +176,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
-	case Instruction::ISWITNESS:
+	case Instruction::ISSRCANDIDATE:
 //	case Instruction::NATIVEFREEZE:
 //	case Instruction::NATIVEUNFREEZE:
 //  case Instruction::NATIVEVOTE:
@@ -212,7 +212,7 @@ bool SemanticInformation::movable(Instruction _instruction)
 	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
-	case Instruction::ISWITNESS:
+	case Instruction::ISSRCANDIDATE:
 	case Instruction::SELFBALANCE:
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -292,7 +292,7 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
-	case Instruction::ISWITNESS:
+	case Instruction::ISSRCANDIDATE:
     case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEWITHDRAWREWARD:
