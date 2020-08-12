@@ -233,7 +233,7 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 //	{ Instruction::NATIVEVOTE,		{ "NATIVEVOTE",			0, 4, 1, true, Tier::Ext } },
     { Instruction::NATIVESTAKE,		{ "NATIVESTAKE",			0, 2, 1, true, Tier::Ext } },
 	{ Instruction::NATIVEUNSTAKE,		{ "NATIVEUNSTAKE",			0, 0, 1, true, Tier::Ext } },
-	{ Instruction::NATIVEWITHDRAWREWARD,		{ "NATIVEWITHDRAWREWARD",			0, 1, 1, true, Tier::Ext } },
+	{ Instruction::NATIVEWITHDRAWREWARD,		{ "NATIVEWITHDRAWREWARD",			0, 0, 1, true, Tier::Ext } },
 	{ Instruction::CALLER,		{ "CALLER",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLVALUE,	{ "CALLVALUE",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLTOKENVALUE,	{ "CALLTOKENVALUE",		0, 0, 1, false, Tier::Base } },
