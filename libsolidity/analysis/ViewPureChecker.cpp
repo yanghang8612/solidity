@@ -349,7 +349,7 @@ void ViewPureChecker::endVisit(MemberAccess const& _memberAccess)
 			mutability = StateMutability::View;
 		else if (member == "isContract")
 			mutability = StateMutability::View;
-		else if (member == "iswitness")
+		else if (member == "issrcandidate")
 			mutability = StateMutability::View;
 		break;
 	case Type::Category::Magic:

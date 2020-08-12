@@ -467,7 +467,7 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 		{"balance", TypeProvider::uint256()},
 		{"rewardbalance", TypeProvider::uint256()},
 		{"isContract", TypeProvider::boolean()},
-		{"iswitness", TypeProvider::boolean()},
+		{"issrcandidate", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},

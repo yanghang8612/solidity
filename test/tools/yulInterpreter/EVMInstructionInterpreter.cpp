@@ -422,7 +422,7 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::CALLTOKENVALUE:
 	case Instruction::CALLTOKENID:
 	case Instruction::ISCONTRACT:
-	case Instruction::ISWITNESS:
+	case Instruction::ISSRCANDIDATE:
     case Instruction::NATIVESTAKE:
     case Instruction::NATIVEUNSTAKE:
 	case Instruction::NATIVEWITHDRAWREWARD:

@@ -1502,14 +1502,14 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::ISCONTRACT;
 		}
-		else if (member == "iswitness")
+		else if (member == "issrcandidate")
 		{
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
 				*TypeProvider::address(),
 				true
 			);
-			m_context << Instruction::ISWITNESS;
+			m_context << Instruction::ISSRCANDIDATE;
 		}
 		else if ((set<string>{"send", "transfer", "transferToken"}).count(member))
 		{
