@@ -1520,15 +1520,15 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 		}
-        else if ((set<string>{"withdrawreward"}).count(member))
-        {
-            solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
-            utils().convertType(
-                    *_memberAccess.expression().annotation().type,
-                    AddressType(StateMutability::Payable),
-                    true
-            );
-        }
+        // else if ((set<string>{"withdrawreward"}).count(member))
+        // {
+        //     solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
+        //     utils().convertType(
+        //             *_memberAccess.expression().annotation().type,
+        //             AddressType(StateMutability::Payable),
+        //             true
+        //     );
+        // }
 //		else if ((set<string>{"freeze", "unfreeze", "withdrawreward"}).count(member))
 //		{
 //            solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
