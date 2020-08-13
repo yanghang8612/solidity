@@ -708,9 +708,9 @@ void IRGeneratorForStatements::endVisit(MemberAccess const& _memberAccess)
 				"isContract(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
-		else if (member == "issrcandidate")
+		else if (member == "isSRCandidate")
 			defineExpression(_memberAccess) <<
-				"issrcandidate(" <<
+				"isSRCandidate(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
 		else if (set<string>{"send", "transfer"}.count(member))

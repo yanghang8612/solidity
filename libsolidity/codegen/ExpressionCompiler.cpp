@@ -1502,7 +1502,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::ISCONTRACT;
 		}
-		else if (member == "issrcandidate")
+		else if (member == "isSRCandidate")
 		{
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
