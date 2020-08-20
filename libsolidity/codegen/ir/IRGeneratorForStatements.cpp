@@ -698,9 +698,19 @@ void IRGeneratorForStatements::endVisit(MemberAccess const& _memberAccess)
 				"balance(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
+		else if (member == "rewardbalance")
+			defineExpression(_memberAccess) <<
+				"rewardbalance(" <<
+				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
+				")\n";
 		else if (member == "isContract")
 			defineExpression(_memberAccess) <<
 				"isContract(" <<
+				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
+				")\n";
+		else if (member == "isSRCandidate")
+			defineExpression(_memberAccess) <<
+				"isSRCandidate(" <<
 				expressionAsType(_memberAccess.expression(), *TypeProvider::address()) <<
 				")\n";
 		else if (set<string>{"send", "transfer"}.count(member))

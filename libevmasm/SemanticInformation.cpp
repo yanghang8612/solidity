@@ -173,8 +173,19 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::PC:
 	case Instruction::MSIZE: // depends on previous writes and reads, not only on content
 	case Instruction::BALANCE: // depends on previous calls
+	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
+	case Instruction::ISSRCANDIDATE:
+//	case Instruction::NATIVEFREEZE:
+//	case Instruction::NATIVEUNFREEZE:
+//  case Instruction::NATIVEVOTE:
+//    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
+    case Instruction::NATIVESTAKE:
+	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 	case Instruction::SELFBALANCE: // depends on previous calls
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -198,8 +209,10 @@ bool SemanticInformation::movable(Instruction _instruction)
 	{
 	case Instruction::KECCAK256:
 	case Instruction::BALANCE:
+	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
+	case Instruction::ISSRCANDIDATE:
 	case Instruction::SELFBALANCE:
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -276,8 +289,15 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::ADDRESS:
 	case Instruction::SELFBALANCE:
 	case Instruction::BALANCE:
+	case Instruction::REWARDBALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
+	case Instruction::ISSRCANDIDATE:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:
+	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 	case Instruction::ORIGIN:
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
@@ -322,6 +342,11 @@ bool SemanticInformation::invalidInViewFunctions(Instruction _instruction)
 	case Instruction::DELEGATECALL:
 	case Instruction::CREATE2:
 	case Instruction::SELFDESTRUCT:
+    case Instruction::NATIVESTAKE:
+    case Instruction::NATIVEUNSTAKE:	
+	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::TOKENISSUE:
+	case Instruction::UPDATEASSET:
 		return true;
 	default:
 		break;

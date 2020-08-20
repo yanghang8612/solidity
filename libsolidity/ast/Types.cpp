@@ -465,7 +465,9 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", TypeProvider::uint256()},
+		{"rewardbalance", TypeProvider::uint256()},
 		{"isContract", TypeProvider::boolean()},
+		{"isSRCandidate", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
@@ -477,6 +479,9 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 		members.emplace_back(MemberList::Member{"send", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transfer", TypeProvider::function(strings{"uint"}, strings(), FunctionType::Kind::Transfer, false, StateMutability::NonPayable)});
 		members.emplace_back(MemberList::Member{"transferToken", TypeProvider::function(strings{"uint", "trcToken"}, strings(), FunctionType::Kind::TransferToken)});
+//        members.emplace_back(MemberList::Member{"freeze", TypeProvider::function(strings{"uint", "uint", "uint"}, strings{"bool"}, FunctionType::Kind::Freeze, false, StateMutability::NonPayable)});
+//        members.emplace_back(MemberList::Member{"unfreeze", TypeProvider::function(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Unfreeze, false, StateMutability::NonPayable)});
+//        members.emplace_back(MemberList::Member{"withdrawreward", TypeProvider::function(strings{}, strings{"uint"}, FunctionType::Kind::WithdrawReward, false, StateMutability::NonPayable)});
 	}
 	return members;
 }
@@ -682,7 +687,7 @@ BoolResult FixedPointType::isExplicitlyConvertibleTo(Type const& _convertTo) con
 
 TypeResult FixedPointType::unaryOperatorResult(Token _operator) const
 {
-	switch(_operator)
+	switch (_operator)
 	{
 	case Token::Delete:
 		// "delete" is ok for all fixed types
@@ -1840,10 +1845,10 @@ TypePointer ArrayType::decodingType() const
 
 TypeResult ArrayType::interfaceType(bool _inLibrary) const
 {
-	if (_inLibrary && m_interfaceType_library.is_initialized())
+	if (_inLibrary && m_interfaceType_library.has_value())
 		return *m_interfaceType_library;
 
-	if (!_inLibrary && m_interfaceType.is_initialized())
+	if (!_inLibrary && m_interfaceType.has_value())
 		return *m_interfaceType;
 
 	TypeResult result{TypePointer{}};
@@ -1877,7 +1882,7 @@ u256 ArrayType::memoryDataSize() const
 	solAssert(m_location == DataLocation::Memory, "");
 	solAssert(!isByteArray(), "");
 	bigint size = bigint(m_length) * m_baseType->memoryHeadSize();
-	solAssert(size <= numeric_limits<unsigned>::max(), "Array size does not fit u256.");
+	solAssert(size <= numeric_limits<u256>::max(), "Array size does not fit u256.");
 	return u256(size);
 }
 
@@ -2134,10 +2139,10 @@ MemberList::MemberMap StructType::nativeMembers(ContractDefinition const*) const
 
 TypeResult StructType::interfaceType(bool _inLibrary) const
 {
-	if (_inLibrary && m_interfaceType_library.is_initialized())
+	if (_inLibrary && m_interfaceType_library.has_value())
 		return *m_interfaceType_library;
 
-	if (!_inLibrary && m_interfaceType.is_initialized())
+	if (!_inLibrary && m_interfaceType.has_value())
 		return *m_interfaceType;
 
 	TypeResult result{TypePointer{}};
@@ -2194,7 +2199,7 @@ TypeResult StructType::interfaceType(bool _inLibrary) const
 		}
 	};
 
-	m_recursive = m_recursive.get() || (CycleDetector<StructDefinition>(visitor).run(structDefinition()) != nullptr);
+	m_recursive = m_recursive.value() || (CycleDetector<StructDefinition>(visitor).run(structDefinition()) != nullptr);
 
 	std::string const recursiveErrMsg = "Recursive type not allowed for public or external contract functions.";
 
@@ -2207,13 +2212,13 @@ TypeResult StructType::interfaceType(bool _inLibrary) const
 		else
 			m_interfaceType_library = TypeProvider::withLocation(this, DataLocation::Memory, true);
 
-		if (m_recursive.get())
+		if (m_recursive.value())
 			m_interfaceType = TypeResult::err(recursiveErrMsg);
 
 		return *m_interfaceType_library;
 	}
 
-	if (m_recursive.get())
+	if (m_recursive.value())
 		m_interfaceType = TypeResult::err(recursiveErrMsg);
 	else if (!result.message().empty())
 		m_interfaceType = result;
@@ -2690,54 +2695,62 @@ string FunctionType::richIdentifier() const
 	string id = "t_function_";
 	switch (m_kind)
 	{
-	case Kind::Internal: id += "internal"; break;
-	case Kind::External: id += "external"; break;
-	case Kind::DelegateCall: id += "delegatecall"; break;
-	case Kind::BareCall: id += "barecall"; break;
-	case Kind::BareCallCode: id += "barecallcode"; break;
-	case Kind::BareDelegateCall: id += "baredelegatecall"; break;
-	case Kind::BareStaticCall: id += "barestaticcall"; break;
-	case Kind::Creation: id += "creation"; break;
-	case Kind::Send: id += "send"; break;
-	case Kind::Transfer: id += "transfer"; break;
-	case Kind::TransferToken: id += "transferToken"; break;
-	case Kind::TokenBalance: id += "tokenBalance"; break;
-	case Kind::KECCAK256: id += "keccak256"; break;
-	case Kind::Selfdestruct: id += "selfdestruct"; break;
-	case Kind::Revert: id += "revert"; break;
-	case Kind::ECRecover: id += "ecrecover"; break;
-	case Kind::ValidateMultiSign: id += "validatemultisign"; break;
-	case Kind::BatchValidateSign: id += "batchvalidatesign"; break;
-	case Kind::verifyBurnProof: id += "verifyBurnProof";break;
-	case Kind::verifyTransferProof: id += "verifyTransferProof";break;
-	case Kind::verifyMintProof: id += "verifyMintProof";break;
-	case Kind::pedersenHash: id += "pedersenHash";break;
-	case Kind::SHA256: id += "sha256"; break;
-	case Kind::RIPEMD160: id += "ripemd160"; break;
-	case Kind::Log0: id += "log0"; break;
-	case Kind::Log1: id += "log1"; break;
-	case Kind::Log2: id += "log2"; break;
-	case Kind::Log3: id += "log3"; break;
-	case Kind::Log4: id += "log4"; break;
-	case Kind::GasLeft: id += "gasleft"; break;
-	case Kind::Event: id += "event"; break;
-	case Kind::SetGas: id += "setgas"; break;
-	case Kind::SetValue: id += "setvalue"; break;
-	case Kind::BlockHash: id += "blockhash"; break;
-	case Kind::AddMod: id += "addmod"; break;
-	case Kind::MulMod: id += "mulmod"; break;
-	case Kind::ArrayPush: id += "arraypush"; break;
-	case Kind::ArrayPop: id += "arraypop"; break;
-	case Kind::ByteArrayPush: id += "bytearraypush"; break;
-	case Kind::ObjectCreation: id += "objectcreation"; break;
-	case Kind::Assert: id += "assert"; break;
-	case Kind::Require: id += "require"; break;
-	case Kind::ABIEncode: id += "abiencode"; break;
-	case Kind::ABIEncodePacked: id += "abiencodepacked"; break;
-	case Kind::ABIEncodeWithSelector: id += "abiencodewithselector"; break;
-	case Kind::ABIEncodeWithSignature: id += "abiencodewithsignature"; break;
-	case Kind::ABIDecode: id += "abidecode"; break;
-	case Kind::MetaType: id += "metatype"; break;
+        case Kind::Internal: id += "internal"; break;
+        case Kind::External: id += "external"; break;
+        case Kind::DelegateCall: id += "delegatecall"; break;
+        case Kind::BareCall: id += "barecall"; break;
+        case Kind::BareCallCode: id += "barecallcode"; break;
+        case Kind::BareDelegateCall: id += "baredelegatecall"; break;
+        case Kind::BareStaticCall: id += "barestaticcall"; break;
+        case Kind::Creation: id += "creation"; break;
+        case Kind::Send: id += "send"; break;
+        case Kind::Transfer: id += "transfer"; break;
+        case Kind::TransferToken: id += "transferToken"; break;
+        case Kind::TokenBalance: id += "tokenBalance"; break;
+        case Kind::KECCAK256: id += "keccak256"; break;
+        case Kind::Selfdestruct: id += "selfdestruct"; break;
+        case Kind::Revert: id += "revert"; break;
+        case Kind::ECRecover: id += "ecrecover"; break;
+        case Kind::ValidateMultiSign: id += "validatemultisign"; break;
+        case Kind::BatchValidateSign: id += "batchvalidatesign"; break;
+        case Kind::verifyBurnProof: id += "verifyBurnProof";break;
+        case Kind::verifyTransferProof: id += "verifyTransferProof";break;
+        case Kind::verifyMintProof: id += "verifyMintProof";break;
+        case Kind::pedersenHash: id += "pedersenHash";break;
+        case Kind::SHA256: id += "sha256"; break;
+        case Kind::RIPEMD160: id += "ripemd160"; break;
+        case Kind::Log0: id += "log0"; break;
+        case Kind::Log1: id += "log1"; break;
+        case Kind::Log2: id += "log2"; break;
+        case Kind::Log3: id += "log3"; break;
+        case Kind::Log4: id += "log4"; break;
+        case Kind::GasLeft: id += "gasleft"; break;
+        case Kind::Event: id += "event"; break;
+        case Kind::SetGas: id += "setgas"; break;
+        case Kind::SetValue: id += "setvalue"; break;
+        case Kind::BlockHash: id += "blockhash"; break;
+        case Kind::AddMod: id += "addmod"; break;
+        case Kind::MulMod: id += "mulmod"; break;
+        case Kind::ArrayPush: id += "arraypush"; break;
+        case Kind::ArrayPop: id += "arraypop"; break;
+        case Kind::ByteArrayPush: id += "bytearraypush"; break;
+        case Kind::ObjectCreation: id += "objectcreation"; break;
+        case Kind::Assert: id += "assert"; break;
+        case Kind::Require: id += "require"; break;
+        case Kind::ABIEncode: id += "abiencode"; break;
+        case Kind::ABIEncodePacked: id += "abiencodepacked"; break;
+        case Kind::ABIEncodeWithSelector: id += "abiencodewithselector"; break;
+        case Kind::ABIEncodeWithSignature: id += "abiencodewithsignature"; break;
+        case Kind::ABIDecode: id += "abidecode"; break;
+        case Kind::MetaType: id += "metatype"; break;
+    //	case Kind::Freeze: id += "freeze"; break;
+    //	case Kind::Unfreeze: id += "unfreeze"; break;
+    //  case Kind::Vote: id += "vote"; break;
+        case Kind::Stake: id += "stake"; break;
+        case Kind::Unstake: id += "unstake"; break;
+        case Kind::WithdrawReward: id += "withdrawreward"; break;
+        case Kind::AssetIssue: id += "assetissue"; break;
+        case Kind::UpdateAsset: id += "updateasset"; break;
 	}
 	id += "_" + stateMutabilityToString(m_stateMutability);
 	id += identifierList(m_parameterTypes) + "returns" + identifierList(m_returnParameterTypes);
@@ -2882,7 +2895,7 @@ unsigned FunctionType::sizeOnStack() const
 
 	unsigned size = 0;
 
-	switch(kind)
+	switch (kind)
 	{
 	case Kind::External:
 	case Kind::DelegateCall:
@@ -3423,6 +3436,15 @@ MemberList::MemberMap TypeType::nativeMembers(ContractDefinition const* _current
 			members.emplace_back(enumValue->name(), enumType);
 	}
 	return members;
+}
+
+BoolResult TypeType::isExplicitlyConvertibleTo(Type const& _convertTo) const
+{
+	if (auto const* address = dynamic_cast<AddressType const*>(&_convertTo))
+		if (address->stateMutability() == StateMutability::NonPayable)
+			if (auto const* contractType = dynamic_cast<ContractType const*>(m_actualType))
+				return contractType->contractDefinition().isLibrary();
+	return isImplicitlyConvertibleTo(_convertTo);
 }
 
 ModifierType::ModifierType(ModifierDefinition const& _modifier)
