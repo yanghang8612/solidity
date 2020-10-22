@@ -68,11 +68,11 @@ namespace dev
                     magicVarDecl("sha3", TypeProvider::function(strings{"bytes memory"}, strings{"bytes32"}, FunctionType::Kind::KECCAK256, false, StateMutability::Pure)),
                     magicVarDecl("suicide", TypeProvider::function(strings{"address payable"}, strings{}, FunctionType::Kind::Selfdestruct)),
 
-                    magicVarDecl("stake", TypeProvider::function(strings{"address", "uint256"}, strings{"bool"}, FunctionType::Kind::Stake)),
-                    magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake)),
+                    //magicVarDecl("stake", TypeProvider::function(strings{"address", "uint256"}, strings{"bool"}, FunctionType::Kind::Stake)),
+                    //magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake)),
                     magicVarDecl("assetissue", TypeProvider::function(strings{"bytes32", "bytes32", "uint64", "uint8"}, strings{"uint"}, FunctionType::Kind::AssetIssue)),
                     magicVarDecl("updateasset", TypeProvider::function(strings{"trcToken", "bytes memory", "bytes memory"}, strings{"bool"}, FunctionType::Kind::UpdateAsset)),
-                    magicVarDecl("withdrawreward", TypeProvider::function(strings{}, strings{"uint"}, FunctionType::Kind::WithdrawReward)),
+                    //magicVarDecl("withdrawreward", TypeProvider::function(strings{}, strings{"uint"}, FunctionType::Kind::WithdrawReward)),
 
                     magicVarDecl("tx", TypeProvider::magic(MagicType::Kind::Transaction)),
                     magicVarDecl("type", TypeProvider::function(

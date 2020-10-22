@@ -465,9 +465,9 @@ MemberList::MemberMap AddressType::nativeMembers(ContractDefinition const*) cons
 {
 	MemberList::MemberMap members = {
 		{"balance", TypeProvider::uint256()},
-		{"rewardbalance", TypeProvider::uint256()},
+		//{"rewardbalance", TypeProvider::uint256()},
 		{"isContract", TypeProvider::boolean()},
-		{"isSRCandidate", TypeProvider::boolean()},
+		//{"isSRCandidate", TypeProvider::boolean()},
 		{"call", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCall, false, StateMutability::Payable)},
 		{"callcode", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareCallCode, false, StateMutability::Payable)},
 		{"delegatecall", TypeProvider::function(strings{"bytes memory"}, strings{"bool", "bytes memory"}, FunctionType::Kind::BareDelegateCall, false, StateMutability::NonPayable)},
