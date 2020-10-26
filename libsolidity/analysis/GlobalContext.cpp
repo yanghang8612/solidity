@@ -70,8 +70,8 @@ namespace dev
 
                     //magicVarDecl("stake", TypeProvider::function(strings{"address", "uint256"}, strings{"bool"}, FunctionType::Kind::Stake)),
                     //magicVarDecl("unstake", TypeProvider::function(strings{}, strings{"bool"}, FunctionType::Kind::Unstake)),
-                    magicVarDecl("assetissue", TypeProvider::function(strings{"bytes32", "bytes32", "uint64", "uint8"}, strings{"uint"}, FunctionType::Kind::AssetIssue)),
-                    magicVarDecl("updateasset", TypeProvider::function(strings{"trcToken", "bytes memory", "bytes memory"}, strings{"bool"}, FunctionType::Kind::UpdateAsset)),
+                    //magicVarDecl("assetissue", TypeProvider::function(strings{"bytes32", "bytes32", "uint64", "uint8"}, strings{"uint"}, FunctionType::Kind::AssetIssue)),
+                    //magicVarDecl("updateasset", TypeProvider::function(strings{"trcToken", "bytes memory", "bytes memory"}, strings{"bool"}, FunctionType::Kind::UpdateAsset)),
                     //magicVarDecl("withdrawreward", TypeProvider::function(strings{}, strings{"uint"}, FunctionType::Kind::WithdrawReward)),
 
                     magicVarDecl("tx", TypeProvider::magic(MagicType::Kind::Transaction)),
