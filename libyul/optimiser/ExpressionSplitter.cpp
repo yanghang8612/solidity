@@ -22,6 +22,7 @@
 #include <libyul/optimiser/ExpressionSplitter.h>
 
 #include <libyul/optimiser/ASTWalker.h>
+#include <libyul/optimiser/OptimiserStep.h>
 
 #include <libyul/AsmData.h>
 #include <libyul/Dialect.h>
@@ -34,6 +35,11 @@ using namespace std;
 using namespace dev;
 using namespace langutil;
 using namespace yul;
+
+void ExpressionSplitter::run(OptimiserStepContext& _context, Block& _ast)
+{
+	ExpressionSplitter{_context.dialect, _context.dispenser}(_ast);
+}
 
 void ExpressionSplitter::operator()(FunctionalInstruction& _instruction)
 {
@@ -79,8 +85,8 @@ void ExpressionSplitter::operator()(Block& _block)
 	vector<Statement> saved;
 	swap(saved, m_statementsToPrefix);
 
-	function<boost::optional<vector<Statement>>(Statement&)> f =
-			[&](Statement& _statement) -> boost::optional<vector<Statement>> {
+	function<std::optional<vector<Statement>>(Statement&)> f =
+			[&](Statement& _statement) -> std::optional<vector<Statement>> {
 		m_statementsToPrefix.clear();
 		visit(_statement);
 		if (m_statementsToPrefix.empty())

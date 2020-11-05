@@ -42,6 +42,7 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -77,6 +78,8 @@ class DeclarationContainer;
  * Easy to use and self-contained Solidity compiler with as few header dependencies as possible.
  * It holds state and can be used to either step through the compilation stages (and abort e.g.
  * before compilation to bytecode) or run the whole compilation in one call.
+ * If error recovery is active, it is possible to progress through the stages even when
+ * there are errors. In any case, producing code is only possible without errors.
  */
 class CompilerStack: boost::noncopyable
 {
@@ -84,8 +87,8 @@ public:
 	enum State {
 		Empty,
 		SourcesSet,
-		ParsingSuccessful,
-		AnalysisSuccessful,
+		ParsingPerformed,
+		AnalysisPerformed,
 		CompilationSuccessful
 	};
 
@@ -109,12 +112,16 @@ public:
 	/// @returns the current state.
 	State state() const { return m_stackState; }
 
+	bool hasError() const { return m_hasError; }
+
+	bool compilationSuccessful() const { return m_stackState >= CompilationSuccessful; }
+
 	/// Resets the compiler to an empty state. Unless @a _keepSettings is set to true,
 	/// all settings are reset as well.
 	void reset(bool _keepSettings = false);
 
 	// Parses a remapping of the format "context:prefix=target".
-	static boost::optional<Remapping> parseRemapping(std::string const& _remapping);
+	static std::optional<Remapping> parseRemapping(std::string const& _remapping);
 
 	/// Sets path remappings.
 	/// Must be set before parsing.
@@ -145,14 +152,20 @@ public:
 	/// Must be set before parsing.
 	void setEVMVersion(langutil::EVMVersion _version = langutil::EVMVersion{});
 
-	/// Sets the list of requested contract names. If empty, no filtering is performed and every contract
-	/// found in the supplied sources is compiled. Names are cleared iff @a _contractNames is missing.
-	void setRequestedContractNames(std::set<std::string> const& _contractNames = std::set<std::string>{}) {
+	/// Sets the requested contract names by source.
+	/// If empty, no filtering is performed and every contract
+	/// found in the supplied sources is compiled.
+	/// Names are cleared iff @a _contractNames is missing.
+	void setRequestedContractNames(std::map<std::string, std::set<std::string>> const& _contractNames = std::map<std::string, std::set<std::string>>{})
+	{
 		m_requestedContractNames = _contractNames;
 	}
 
 	/// Enable experimental generation of Yul IR code.
 	void enableIRGeneration(bool _enable = true) { m_generateIR = _enable; }
+
+	/// Enable experimental generation of eWasm code. If enabled, IR is also generated.
+	void enableEWasmGeneration(bool _enable = true) { m_generateEWasm = _enable; }
 
 	/// @arg _metadataLiteralSources When true, store sources as literals in the contract metadata.
 	/// Must be set before parsing.
@@ -219,6 +232,12 @@ public:
 	/// @returns the optimized IR representation of a contract.
 	std::string const& yulIROptimized(std::string const& _contractName) const;
 
+	/// @returns the eWasm text representation of a contract.
+	std::string const& eWasm(std::string const& _contractName) const;
+
+	/// @returns the eWasm representation of a contract.
+	eth::LinkerObject const& eWasmObject(std::string const& _contractName) const;
+
 	/// @returns the assembled object for a contract.
 	eth::LinkerObject const& object(std::string const& _contractName) const;
 
@@ -252,6 +271,10 @@ public:
 	/// @returns a JSON representing the contract ABI.
 	/// Prerequisite: Successful call to parse or compile.
 	Json::Value const& contractABI(std::string const& _contractName) const;
+
+	/// @returns a JSON representing the storage layout of the contract.
+	/// Prerequisite: Successful call to parse or compile.
+	Json::Value const& storageLayout(std::string const& _contractName) const;
 
 	/// @returns a JSON representing the contract's user documentation.
 	/// Prerequisite: Successful call to parse or compile.
@@ -296,8 +319,11 @@ private:
 		eth::LinkerObject runtimeObject; ///< Runtime object.
 		std::string yulIR; ///< Experimental Yul IR code.
 		std::string yulIROptimized; ///< Optimized experimental Yul IR code.
+		std::string eWasm; ///< Experimental eWasm text representation
+		eth::LinkerObject eWasmObject; ///< Experimental eWasm code
 		mutable std::unique_ptr<std::string const> metadata; ///< The metadata json that will be hashed into the chain.
 		mutable std::unique_ptr<Json::Value const> abi;
+		mutable std::unique_ptr<Json::Value const> storageLayout;
 		mutable std::unique_ptr<Json::Value const> userDocumentation;
 		mutable std::unique_ptr<Json::Value const> devDocumentation;
 		mutable std::unique_ptr<std::string const> sourceMapping;
@@ -310,6 +336,9 @@ private:
 	StringMap loadMissingSources(SourceUnit const& _ast, std::string const& _path);
 	std::string applyRemapping(std::string const& _path, std::string const& _context);
 	void resolveImports();
+
+	/// @returns true if the source is requested to be compiled.
+	bool isRequestedSource(std::string const& _sourceName) const;
 
 	/// @returns true if the contract is requested to be compiled.
 	bool isRequestedContract(ContractDefinition const& _contract) const;
@@ -325,6 +354,9 @@ private:
 	/// Generate Yul IR for a single contract.
 	/// The IR is stored but otherwise unused.
 	void generateIR(ContractDefinition const& _contract);
+
+	/// Generate eWasm representation for a single contract.
+	void generateEWasm(ContractDefinition const& _contract);
 
 	/// Links all the known library addresses in the available objects. Any unknown
 	/// library will still be kept as an unlinked placeholder in the objects.
@@ -355,6 +387,10 @@ private:
 	/// This will generate the JSON object and store it in the Contract object if it is not present yet.
 	Json::Value const& contractABI(Contract const&) const;
 
+	/// @returns the storage layout of the contract as a JSON object.
+	/// This will generate the JSON object and store it in the Contract object if it is not present yet.
+	Json::Value const& storageLayout(Contract const&) const;
+
 	/// @returns the Natspec User documentation as a JSON object.
 	/// This will generate the JSON object and store it in the Contract object if it is not present yet.
 	Json::Value const& natspecUser(Contract const&) const;
@@ -377,8 +413,9 @@ private:
 	ReadCallback::Callback m_readFile;
 	OptimiserSettings m_optimiserSettings;
 	langutil::EVMVersion m_evmVersion;
-	std::set<std::string> m_requestedContractNames;
+	std::map<std::string, std::set<std::string>> m_requestedContractNames;
 	bool m_generateIR;
+	bool m_generateEWasm;
 	std::map<std::string, h160> m_libraries;
 	/// list of path prefix remappings, e.g. mylibrary: github.com/ethereum = /usr/local/ethereum
 	/// "context:prefix=target"
@@ -396,6 +433,9 @@ private:
 	bool m_metadataLiteralSources = false;
 	bool m_parserErrorRecovery = false;
 	State m_stackState = Empty;
+	/// Whether or not there has been an error during processing.
+	/// If this is true, the stack will refuse to generate code.
+	bool m_hasError = false;
 	bool m_release = VersionIsRelease;
 };
 

@@ -78,8 +78,7 @@ void ExpressionCompiler::appendStateVariableInitialization(VariableDeclaration c
 void ExpressionCompiler::appendConstStateVariableAccessor(VariableDeclaration const& _varDecl)
 {
 	solAssert(_varDecl.isConstant(), "");
-	_varDecl.value()->accept(*this);
-	utils().convertType(*_varDecl.value()->annotation().type, *_varDecl.annotation().type);
+	acceptAndConvert(*_varDecl.value(), *_varDecl.annotation().type);
 
 	// append return
 	m_context << dupInstruction(_varDecl.annotation().type->sizeOnStack() + 1);
@@ -225,14 +224,12 @@ bool ExpressionCompiler::visit(Conditional const& _condition)
 	CompilerContext::LocationSetter locationSetter(m_context, _condition);
 	_condition.condition().accept(*this);
 	eth::AssemblyItem trueTag = m_context.appendConditionalJump();
-	_condition.falseExpression().accept(*this);
-	utils().convertType(*_condition.falseExpression().annotation().type, *_condition.annotation().type);
+	acceptAndConvert(_condition.falseExpression(), *_condition.annotation().type);
 	eth::AssemblyItem endTag = m_context.appendJumpToNew();
 	m_context << trueTag;
 	int offset = _condition.annotation().type->sizeOnStack();
 	m_context.adjustStackOffset(-offset);
-	_condition.trueExpression().accept(*this);
-	utils().convertType(*_condition.trueExpression().annotation().type, *_condition.annotation().type);
+	acceptAndConvert(_condition.trueExpression(), *_condition.annotation().type);
 	m_context << endTag;
 	return false;
 }
@@ -317,13 +314,12 @@ bool ExpressionCompiler::visit(TupleExpression const& _tuple)
 		ArrayType const& arrayType = dynamic_cast<ArrayType const&>(*_tuple.annotation().type);
 
 		solAssert(!arrayType.isDynamicallySized(), "Cannot create dynamically sized inline array.");
-		utils().allocateMemory(max(u256(32u), arrayType.memorySize()));
+		utils().allocateMemory(max(u256(32u), arrayType.memoryDataSize()));
 		m_context << Instruction::DUP1;
 
 		for (auto const& component: _tuple.components())
 		{
-			component->accept(*this);
-			utils().convertType(*component->annotation().type, *arrayType.baseType(), true);
+			acceptAndConvert(*component, *arrayType.baseType(), true);
 			utils().storeInMemoryDynamic(*arrayType.baseType(), true);
 		}
 
@@ -451,17 +447,13 @@ bool ExpressionCompiler::visit(BinaryOperation const& _binaryOperation)
 		bool swap = m_optimiseOrderLiterals && TokenTraits::isCommutativeOp(c_op) && isLiteral(rightExpression) && !isLiteral(leftExpression);
 		if (swap)
 		{
-			leftExpression.accept(*this);
-			utils().convertType(*leftExpression.annotation().type, *leftTargetType, cleanupNeeded);
-			rightExpression.accept(*this);
-			utils().convertType(*rightExpression.annotation().type, *rightTargetType, cleanupNeeded);
+			acceptAndConvert(leftExpression, *leftTargetType, cleanupNeeded);
+			acceptAndConvert(rightExpression, *rightTargetType, cleanupNeeded);
 		}
 		else
 		{
-			rightExpression.accept(*this);
-			utils().convertType(*rightExpression.annotation().type, *rightTargetType, cleanupNeeded);
-			leftExpression.accept(*this);
-			utils().convertType(*leftExpression.annotation().type, *leftTargetType, cleanupNeeded);
+			acceptAndConvert(rightExpression, *rightTargetType, cleanupNeeded);
+			acceptAndConvert(leftExpression, *leftTargetType, cleanupNeeded);
 		}
 		if (TokenTraits::isShiftOp(c_op))
 			// shift only cares about the signedness of both sides
@@ -483,9 +475,22 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 	{
 		solAssert(_functionCall.arguments().size() == 1, "");
 		solAssert(_functionCall.names().empty(), "");
-		Expression const& firstArgument = *_functionCall.arguments().front();
-		firstArgument.accept(*this);
-		utils().convertType(*firstArgument.annotation().type, *_functionCall.annotation().type);
+		auto const& expression = *_functionCall.arguments().front();
+		auto const& targetType = *_functionCall.annotation().type;
+		if (auto const* typeType = dynamic_cast<TypeType const*>(expression.annotation().type))
+			if (auto const* addressType = dynamic_cast<AddressType const*>(&targetType))
+			{
+				auto const* contractType = dynamic_cast<ContractType const*>(typeType->actualType());
+				solAssert(
+					contractType &&
+					contractType->contractDefinition().isLibrary() &&
+					addressType->stateMutability() == StateMutability::NonPayable,
+					""
+				);
+				m_context.appendLibraryAddress(contractType->contractDefinition().fullyQualifiedName());
+				return false;
+			}
+		acceptAndConvert(expression, targetType);
 		return false;
 	}
 
@@ -526,13 +531,12 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		TypeType const& type = dynamic_cast<TypeType const&>(*_functionCall.expression().annotation().type);
 		auto const& structType = dynamic_cast<StructType const&>(*type.actualType());
 
-		utils().allocateMemory(max(u256(32u), structType.memorySize()));
+		utils().allocateMemory(max(u256(32u), structType.memoryDataSize()));
 		m_context << Instruction::DUP1;
 
 		for (unsigned i = 0; i < arguments.size(); ++i)
 		{
-			arguments[i]->accept(*this);
-			utils().convertType(*arguments[i]->annotation().type, *functionType->parameterTypes()[i]);
+			acceptAndConvert(*arguments[i], *functionType->parameterTypes()[i]);
 			utils().storeInMemoryDynamic(*functionType->parameterTypes()[i]);
 		}
 		m_context << Instruction::POP;
@@ -552,10 +556,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 
 			eth::AssemblyItem returnLabel = m_context.pushNewTag();
 			for (unsigned i = 0; i < arguments.size(); ++i)
-			{
-				arguments[i]->accept(*this);
-				utils().convertType(*arguments[i]->annotation().type, *function.parameterTypes()[i]);
-			}
+				acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
 
 			{
 				bool shortcutTaken = false;
@@ -647,8 +648,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			// stack layout: contract_address function_id [gas] [value]
 			_functionCall.expression().accept(*this);
 
-			arguments.front()->accept(*this);
-			utils().convertType(*arguments.front()->annotation().type, *TypeProvider::uint256(), true);
+			acceptAndConvert(*arguments.front(), *TypeProvider::uint256(), true);
 			// Note that function is not the original function, but the ".gas" function.
 			// Its values of gasSet and valueSet is equal to the original function's though.
 			unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0);
@@ -673,11 +673,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			// Provide the gas stipend manually at first because we may send zero trx.
 			// Will be zeroed if we send more than zero trx.
 			m_context << u256(eth::GasCosts::callStipend);
-			arguments.front()->accept(*this);
-			utils().convertType(
-				*arguments.front()->annotation().type,
-				*function.parameterTypes().front(), true
-			);
+			acceptAndConvert(*arguments.front(), *function.parameterTypes().front(), true);
 			// gas <- gas * !value
 			m_context << Instruction::SWAP1 << Instruction::DUP2;
 			m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP1;
@@ -704,7 +700,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				m_context.appendConditionalRevert(true);
 			}
 			break;
-		case FunctionType::Kind::TransferToken :
+		case FunctionType::Kind::TransferToken:
 			_functionCall.expression().accept(*this);
 			// Provide the gas stipend manually at first because we may send zero trx.
 			// Will be zeroed if we send more than zero trx.
@@ -771,8 +767,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			m_context << Instruction::TOKENBALANCE;
 			break;
 		case FunctionType::Kind::Selfdestruct:
-			arguments.front()->accept(*this);
-			utils().convertType(*arguments.front()->annotation().type, *function.parameterTypes().front(), true);
+			acceptAndConvert(*arguments.front(), *function.parameterTypes().front(), true);
 			m_context << Instruction::SELFDESTRUCT;
 			break;
 		case FunctionType::Kind::Revert:
@@ -820,10 +815,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		{
 			unsigned logNumber = int(function.kind()) - int(FunctionType::Kind::Log0);
 			for (unsigned arg = logNumber; arg > 0; --arg)
-			{
-				arguments[arg]->accept(*this);
-				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
-			}
+				acceptAndConvert(*arguments[arg], *function.parameterTypes()[arg], true);
 			arguments.front()->accept(*this);
 			utils().fetchFreeMemoryPointer();
 			solAssert(function.parameterTypes().front()->isValueType(), "");
@@ -893,23 +885,18 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::BlockHash:
 		{
-			arguments[0]->accept(*this);
-			utils().convertType(*arguments[0]->annotation().type, *function.parameterTypes()[0], true);
+			acceptAndConvert(*arguments[0], *function.parameterTypes()[0], true);
 			m_context << Instruction::BLOCKHASH;
 			break;
 		}
 		case FunctionType::Kind::AddMod:
 		case FunctionType::Kind::MulMod:
 		{
-			arguments[2]->accept(*this);
-			utils().convertType(*arguments[2]->annotation().type, *TypeProvider::uint256());
+			acceptAndConvert(*arguments[2], *TypeProvider::uint256());
 			m_context << Instruction::DUP1 << Instruction::ISZERO;
 			m_context.appendConditionalInvalid();
 			for (unsigned i = 1; i < 3; i ++)
-			{
-				arguments[2 - i]->accept(*this);
-				utils().convertType(*arguments[2 - i]->annotation().type, *TypeProvider::uint256());
-			}
+				acceptAndConvert(*arguments[2 - i], *TypeProvider::uint256());
 			if (function.kind() == FunctionType::Kind::AddMod)
 				m_context << Instruction::ADDMOD;
 			else
@@ -921,6 +908,10 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::RIPEMD160:
 		case FunctionType::Kind::ValidateMultiSign:
         case FunctionType::Kind::BatchValidateSign:
+        case FunctionType::Kind::verifyBurnProof:
+        case FunctionType::Kind::verifyTransferProof:
+        case FunctionType::Kind::verifyMintProof:
+        case FunctionType::Kind::pedersenHash:
 		{
 			_functionCall.expression().accept(*this);
 			static map<FunctionType::Kind, u256> const contractAddresses{
@@ -928,7 +919,11 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 				{FunctionType::Kind::SHA256, 2},
 				{FunctionType::Kind::RIPEMD160, 3},
 				{FunctionType::Kind::BatchValidateSign, 9},
-                {FunctionType::Kind::ValidateMultiSign, 10}
+                {FunctionType::Kind::ValidateMultiSign, 10},
+                {FunctionType::Kind::verifyMintProof, 16777217},
+                {FunctionType::Kind::verifyTransferProof, 16777218},
+                {FunctionType::Kind::verifyBurnProof, 16777219},
+                {FunctionType::Kind::pedersenHash, 16777220}
 			};
 			m_context << contractAddresses.at(function.kind());
 			for (unsigned i = function.sizeOnStack(); i > 0; --i)
@@ -997,8 +992,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			solAssert(arguments.size() == 1, "");
 
 			// Fetch requested length.
-			arguments[0]->accept(*this);
-			utils().convertType(*arguments[0]->annotation().type, *TypeProvider::uint256());
+			acceptAndConvert(*arguments[0], *TypeProvider::uint256());
 
 			// Stack: requested_length
 			utils().fetchFreeMemoryPointer();
@@ -1037,8 +1031,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::Assert:
 		case FunctionType::Kind::Require:
 		{
-			arguments.front()->accept(*this);
-			utils().convertType(*arguments.front()->annotation().type, *function.parameterTypes().front(), false);
+			acceptAndConvert(*arguments.front(), *function.parameterTypes().front(), false);
 			if (arguments.size() > 1)
 			{
 				// Users probably expect the second argument to be evaluated
@@ -1200,7 +1193,91 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::MetaType:
 			// No code to generate.
 			break;
-		}
+//		case FunctionType::Kind::Freeze:
+//		{
+//            _functionCall.expression().accept(*this);
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVEFREEZE;
+//            break;
+//		}
+//		case FunctionType::Kind::Unfreeze:
+//        {
+//            _functionCall.expression().accept(*this);
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVEUNFREEZE;
+//            break;
+//		}
+//		case FunctionType::Kind::Vote:
+//        {
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVEVOTE;
+//            break;
+//		}
+// case FunctionType::Kind::Vote:
+//         {
+//             solAssert(arguments.size() == 2, "");
+//             //solAssert(!function.padArguments(), "");
+//             // Optimization: If type is bytes or string, then do not encode,
+//             // but directly compute vote on memory.
+//             _functionCall.expression().accept(*this);
+//             for(unsigned i = 0; i < arguments.size(); ++i) {
+//                 TypePointer const& argType = arguments[i]->annotation().type;
+//                 solAssert(argType, "");
+//                 arguments[i]->accept(*this);
+//                 if (*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::address())) {
+//                     ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::address()));
+//                     m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
+//                 } else if(*argType == *TypeProvider::array(DataLocation::Memory, TypeProvider::uint256())){
+//                     ArrayUtils(m_context).retrieveLength(*TypeProvider::array(DataLocation::Memory, TypeProvider::uint256()));
+//                     m_context << Instruction::SWAP1 << u256(0x20*30) << Instruction::ADD;
+//                 }
+//             }
+//             m_context << Instruction::NATIVEVOTE;
+//             break;
+//         }
+//		case FunctionType::Kind::stake:
+//            for (unsigned i = 0; i < arguments.size(); ++i){
+//                acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
+//            }
+//            m_context << Instruction::NATIVESTAKE;
+//            break;
+        case FunctionType::Kind::Stake:
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
+            }
+            m_context << Instruction::NATIVESTAKE;
+            break;
+		case FunctionType::Kind::Unstake:
+            m_context << Instruction::NATIVEUNSTAKE;
+            break;
+		case FunctionType::Kind::WithdrawReward:
+            _functionCall.expression().accept(*this);
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
+            }
+            m_context << Instruction::NATIVEWITHDRAWREWARD;
+            break;
+		case FunctionType::Kind::AssetIssue:
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
+            }
+            m_context << Instruction::TOKENISSUE;
+            break;
+		case FunctionType::Kind::UpdateAsset:
+            for (unsigned i = arguments.size(); i > 0; --i){
+                acceptAndConvert(*arguments[i - 1], *function.parameterTypes()[i - 1]);
+            }
+            m_context << Instruction::UPDATEASSET;
+            break;
+		default:
+		    solAssert(false, "unsupported member function of Kind");
+        }
 	}
 	return false;
 }
@@ -1219,12 +1296,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 	if (auto funType = dynamic_cast<FunctionType const*>(_memberAccess.annotation().type))
 		if (funType->bound())
 		{
-			_memberAccess.expression().accept(*this);
-			utils().convertType(
-				*_memberAccess.expression().annotation().type,
-				*funType->selfType(),
-				true
-			);
+			acceptAndConvert(_memberAccess.expression(), *funType->selfType(), true);
 			if (funType->kind() == FunctionType::Kind::Internal)
 			{
 				FunctionDefinition const& funDef = dynamic_cast<decltype(funDef)>(funType->declaration());
@@ -1292,6 +1364,10 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::ECRecover:
 				case FunctionType::Kind::ValidateMultiSign:
                 case FunctionType::Kind::BatchValidateSign:
+                case FunctionType::Kind::verifyBurnProof:
+                case FunctionType::Kind::verifyTransferProof:
+                case FunctionType::Kind::verifyMintProof:
+                case FunctionType::Kind::pedersenHash:
 				case FunctionType::Kind::SHA256:
 				case FunctionType::Kind::RIPEMD160:
 				default:
@@ -1338,6 +1414,28 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 						utils().leftShiftNumberOnStack(224);
 						return false;
 					}
+	// Another special case for `address(this).balance`. Post-Istanbul, we can use the selfbalance
+	// opcode.
+	if (
+		m_context.evmVersion().hasSelfBalance() &&
+		member == "balance" &&
+		_memberAccess.expression().annotation().type->category() == Type::Category::Address
+	)
+		if (FunctionCall const* funCall = dynamic_cast<FunctionCall const*>(&_memberAccess.expression()))
+			if (auto const* addr = dynamic_cast<ElementaryTypeNameExpression const*>(&funCall->expression()))
+				if (
+					addr->typeName().token() == Token::Address &&
+					funCall->arguments().size() == 1
+				)
+					if (auto arg = dynamic_cast<Identifier const*>( funCall->arguments().front().get()))
+						if (
+							arg->name() == "this" &&
+							dynamic_cast<MagicVariableDeclaration const*>(arg->annotation().referencedDeclaration)
+						)
+						{
+							m_context << Instruction::SELFBALANCE;
+							return false;
+						}
 
 	_memberAccess.expression().accept(*this);
 	switch (_memberAccess.expression().annotation().type->category())
@@ -1386,6 +1484,15 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 			m_context << Instruction::BALANCE;
 		}
+		else if (member == "rewardbalance")
+		{
+			utils().convertType(
+				*_memberAccess.expression().annotation().type,
+				*TypeProvider::address(),
+				true
+			);
+			m_context << Instruction::REWARDBALANCE;
+		}
 		else if (member == "isContract")
 		{
 			utils().convertType(
@@ -1394,6 +1501,15 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 			m_context << Instruction::ISCONTRACT;
+		}
+		else if (member == "isSRCandidate")
+		{
+			utils().convertType(
+				*_memberAccess.expression().annotation().type,
+				*TypeProvider::address(),
+				true
+			);
+			m_context << Instruction::ISSRCANDIDATE;
 		}
 		else if ((set<string>{"send", "transfer", "transferToken"}).count(member))
 		{
@@ -1404,6 +1520,24 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				true
 			);
 		}
+        // else if ((set<string>{"withdrawreward"}).count(member))
+        // {
+        //     solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
+        //     utils().convertType(
+        //             *_memberAccess.expression().annotation().type,
+        //             AddressType(StateMutability::Payable),
+        //             true
+        //     );
+        // }
+//		else if ((set<string>{"freeze", "unfreeze", "withdrawreward"}).count(member))
+//		{
+//            solAssert(dynamic_cast<AddressType const&>(*_memberAccess.expression().annotation().type).stateMutability() == StateMutability::Payable, "");
+//            utils().convertType(
+//                    *_memberAccess.expression().annotation().type,
+//                    AddressType(StateMutability::Payable),
+//                    true
+//            );
+//		}
 		else if ((set<string>{"tokenBalance", "call", "callcode", "delegatecall", "staticcall"}).count(member))
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
@@ -1655,8 +1789,7 @@ bool ExpressionCompiler::visit(IndexAccess const& _indexAccess)
 		ArrayType const& arrayType = dynamic_cast<ArrayType const&>(baseType);
 		solAssert(_indexAccess.indexExpression(), "Index expression expected.");
 
-		_indexAccess.indexExpression()->accept(*this);
-		utils().convertType(*_indexAccess.indexExpression()->annotation().type, *TypeProvider::uint256(), true);
+		acceptAndConvert(*_indexAccess.indexExpression(), *TypeProvider::uint256(), true);
 		// stack layout: <base_ref> [<length>] <index>
 		switch (arrayType.location())
 		{
@@ -1684,8 +1817,7 @@ bool ExpressionCompiler::visit(IndexAccess const& _indexAccess)
 		FixedBytesType const& fixedBytesType = dynamic_cast<FixedBytesType const&>(baseType);
 		solAssert(_indexAccess.indexExpression(), "Index expression expected.");
 
-		_indexAccess.indexExpression()->accept(*this);
-		utils().convertType(*_indexAccess.indexExpression()->annotation().type, *TypeProvider::uint256(), true);
+		acceptAndConvert(*_indexAccess.indexExpression(), *TypeProvider::uint256(), true);
 		// stack layout: <value> <index>
 		// check out-of-bounds access
 		m_context << u256(fixedBytesType.numBytes());
@@ -2119,6 +2251,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	if (_functionType.kind() == FunctionType::Kind::ECRecover
 	|| _functionType.kind() == FunctionType::Kind::ValidateMultiSign
 	|| _functionType.kind() == FunctionType::Kind::BatchValidateSign
+	|| _functionType.kind() == FunctionType::Kind::verifyBurnProof
+	|| _functionType.kind() == FunctionType::Kind::verifyTransferProof
+	|| _functionType.kind() == FunctionType::Kind::verifyMintProof
+	|| _functionType.kind() == FunctionType::Kind::pedersenHash
 	)
 		// This would be the only combination of padding and in-place encoding,
 		// but all parameters of ecrecover are value types anyway.
@@ -2258,6 +2394,24 @@ void ExpressionCompiler::appendExternalFunctionCall(
 				utils().pushZeroPointer();
 		}
 	}
+	else if (funKind == FunctionType::Kind::verifyTransferProof ||funKind == FunctionType::Kind::verifyMintProof){
+	    //in this kind of precompiled contracts , return type is dynamicType
+	    if (haveReturndatacopy)
+	    {
+	        m_context << Instruction::RETURNDATASIZE;
+	        m_context.appendInlineAssembly(R"({
+				switch v case 0 {
+					v := 0x60
+				} default {
+					v := mload(0x40)
+					mstore(0x40, add(v, and(add(returndatasize(), 0x3f), not(0x1f))))
+					mstore(v, returndatasize())
+					returndatacopy(add(v, 0x20), 0, returndatasize())
+				}
+	        })", {"v"});
+	    }
+
+	}
 	else if (funKind == FunctionType::Kind::RIPEMD160)
 	{
 		// fix: built-in contract returns right-aligned data
@@ -2318,8 +2472,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 void ExpressionCompiler::appendExpressionCopyToMemory(Type const& _expectedType, Expression const& _expression)
 {
 	solUnimplementedAssert(_expectedType.isValueType(), "Not implemented for non-value types.");
-	_expression.accept(*this);
-	utils().convertType(*_expression.annotation().type, _expectedType, true);
+	acceptAndConvert(_expression, _expectedType, true);
 	utils().storeInMemoryDynamic(_expectedType);
 }
 
@@ -2328,10 +2481,7 @@ void ExpressionCompiler::appendVariable(VariableDeclaration const& _variable, Ex
 	if (!_variable.isConstant())
 		setLValueFromDeclaration(_variable, _expression);
 	else
-	{
-		_variable.value()->accept(*this);
-		utils().convertType(*_variable.value()->annotation().type, *_variable.annotation().type);
-	}
+		acceptAndConvert(*_variable.value(), *_variable.annotation().type);
 }
 
 void ExpressionCompiler::setLValueFromDeclaration(Declaration const& _declaration, Expression const& _expression)
@@ -2361,6 +2511,12 @@ bool ExpressionCompiler::cleanupNeededForOp(Type::Category _type, Token _op)
 		return true;
 	else
 		return false;
+}
+
+void ExpressionCompiler::acceptAndConvert(Expression const& _expression, Type const& _type, bool _cleanupNeeded)
+{
+	_expression.accept(*this);
+	utils().convertType(*_expression.annotation().type, _type, _cleanupNeeded);
 }
 
 CompilerUtils ExpressionCompiler::utils()

@@ -38,10 +38,12 @@ namespace solidity
 
 NameAndTypeResolver::NameAndTypeResolver(
 	GlobalContext& _globalContext,
+	langutil::EVMVersion _evmVersion,
 	map<ASTNode const*, shared_ptr<DeclarationContainer>>& _scopes,
 	ErrorReporter& _errorReporter
-) :
+):
 	m_scopes(_scopes),
+	m_evmVersion(_evmVersion),
 	m_errorReporter(_errorReporter),
 	m_globalContext(_globalContext)
 {
@@ -91,13 +93,13 @@ bool NameAndTypeResolver::performImports(SourceUnit& _sourceUnit, map<string, So
 			if (!imp->symbolAliases().empty())
 				for (auto const& alias: imp->symbolAliases())
 				{
-					auto declarations = scope->second->resolveName(alias.first->name(), false);
+					auto declarations = scope->second->resolveName(alias.symbol->name(), false);
 					if (declarations.empty())
 					{
 						m_errorReporter.declarationError(
 							imp->location(),
 							"Declaration \"" +
-							alias.first->name() +
+							alias.symbol->name() +
 							"\" not found in \"" +
 							path +
 							"\" (referenced as \"" +
@@ -109,7 +111,7 @@ bool NameAndTypeResolver::performImports(SourceUnit& _sourceUnit, map<string, So
 					else
 						for (Declaration const* declaration: declarations)
 							if (!DeclarationRegistrationHelper::registerDeclaration(
-								target, *declaration, alias.second.get(), &imp->location(), true, false, m_errorReporter
+								target, *declaration, alias.alias.get(), &alias.location, true, false, m_errorReporter
 							))
 								error = true;
 				}
@@ -324,7 +326,7 @@ bool NameAndTypeResolver::resolveNamesAndTypesInternal(ASTNode& _node, bool _res
 	{
 		if (m_scopes.count(&_node))
 			setScope(&_node);
-		return ReferencesResolver(m_errorReporter, *this, _resolveInsideCode).resolve(_node);
+		return ReferencesResolver(m_errorReporter, *this, m_evmVersion, _resolveInsideCode).resolve(_node);
 	}
 }
 
@@ -523,7 +525,7 @@ bool DeclarationRegistrationHelper::registerDeclaration(
 	{
 		if (dynamic_cast<MagicVariableDeclaration const*>(shadowedDeclaration))
 			_errorReporter.warning(
-				_declaration.location(),
+				*_errorLocation,
 				"This declaration shadows a builtin symbol."
 			);
 		else

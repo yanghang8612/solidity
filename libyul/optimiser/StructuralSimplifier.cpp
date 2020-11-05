@@ -28,7 +28,7 @@ using namespace std;
 using namespace dev;
 using namespace yul;
 
-using OptionalStatements = boost::optional<vector<Statement>>;
+using OptionalStatements = std::optional<vector<Statement>>;
 
 namespace {
 
@@ -54,36 +54,19 @@ OptionalStatements replaceConstArgSwitch(Switch& _switchStmt, u256 const& _const
 	if (matchingCaseBlock)
 		return make_vector<Statement>(std::move(*matchingCaseBlock));
 	else
-		return {{}};
+		return optional<vector<Statement>>{vector<Statement>{}};
 }
 
+}
+
+void StructuralSimplifier::run(OptimiserStepContext&, Block& _ast)
+{
+	StructuralSimplifier{}(_ast);
 }
 
 void StructuralSimplifier::operator()(Block& _block)
 {
-	pushScope(false);
 	simplify(_block.statements);
-	popScope();
-}
-
-boost::optional<dev::u256> StructuralSimplifier::hasLiteralValue(Expression const& _expression) const
-{
-	Expression const* expr = &_expression;
-
-	if (expr->type() == typeid(Identifier))
-	{
-		Identifier const& ident = boost::get<Identifier>(*expr);
-		if (m_value.count(ident.name))
-			expr = m_value.at(ident.name);
-	}
-
-	if (expr && expr->type() == typeid(Literal))
-	{
-		Literal const& literal = boost::get<Literal>(*expr);
-		return valueOfLiteral(literal);
-	}
-
-	return boost::optional<u256>();
 }
 
 void StructuralSimplifier::simplify(std::vector<yul::Statement>& _statements)
@@ -97,8 +80,8 @@ void StructuralSimplifier::simplify(std::vector<yul::Statement>& _statements)
 			return {};
 		},
 		[&](Switch& _switchStmt) -> OptionalStatements {
-			if (boost::optional<u256> const constExprVal = hasLiteralValue(*_switchStmt.expression))
-				return replaceConstArgSwitch(_switchStmt, constExprVal.get());
+			if (std::optional<u256> const constExprVal = hasLiteralValue(*_switchStmt.expression))
+				return replaceConstArgSwitch(_switchStmt, constExprVal.value());
 			return {};
 		},
 		[&](ForLoop& _forLoop) -> OptionalStatements {
@@ -124,34 +107,24 @@ void StructuralSimplifier::simplify(std::vector<yul::Statement>& _statements)
 
 bool StructuralSimplifier::expressionAlwaysTrue(Expression const& _expression)
 {
-	return boost::apply_visitor(GenericFallbackReturnsVisitor<bool, Identifier const, Literal const>(
-		[&](Identifier const& _identifier) -> bool {
-			if (auto expr = m_value[_identifier.name])
-				return expressionAlwaysTrue(*expr);
-			return false;
-		},
-		[](Literal const& _literal) -> bool {
-			return
-				(_literal.kind == LiteralKind::Boolean && _literal.value == "true"_yulstring) ||
-				(_literal.kind == LiteralKind::Number && valueOfNumberLiteral(_literal) != u256(0))
-			;
-		}
-	), _expression);
+	if (std::optional<u256> value = hasLiteralValue(_expression))
+		return *value != 0;
+	else
+		return false;
 }
 
 bool StructuralSimplifier::expressionAlwaysFalse(Expression const& _expression)
 {
-	return boost::apply_visitor(GenericFallbackReturnsVisitor<bool, Identifier const, Literal const>(
-		[&](Identifier const& _identifier) -> bool {
-			if (auto expr = m_value[_identifier.name])
-				return expressionAlwaysFalse(*expr);
-			return false;
-		},
-		[](Literal const& _literal) -> bool {
-			return
-				(_literal.kind == LiteralKind::Boolean && _literal.value == "false"_yulstring) ||
-				(_literal.kind == LiteralKind::Number && valueOfNumberLiteral(_literal) == u256(0))
-			;
-		}
-	), _expression);
+	if (std::optional<u256> value = hasLiteralValue(_expression))
+		return *value == 0;
+	else
+		return false;
+}
+
+std::optional<dev::u256> StructuralSimplifier::hasLiteralValue(Expression const& _expression) const
+{
+	if (_expression.type() == typeid(Literal))
+		return valueOfLiteral(boost::get<Literal>(_expression));
+	else
+		return std::optional<u256>();
 }

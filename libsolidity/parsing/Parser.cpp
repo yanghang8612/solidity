@@ -118,12 +118,15 @@ void Parser::parsePragmaVersion(SourceLocation const& _location, vector<Token> c
 	static SemVerVersion const currentVersion{string(VersionString)};
 	// FIXME: only match for major version incompatibility
 	if (!matchExpression.matches(currentVersion))
-		m_errorReporter.fatalParserError(
-			_location,
-			"Source file requires different compiler version (current compiler is " +
-			string(VersionString) + " - note that nightly builds are considered to be "
-			"strictly less than the released version"
-		);
+		// If m_parserErrorRecovery is true, the same message will appear from SyntaxChecker::visit(),
+		// so we don't need to report anything here.
+		if (!m_parserErrorRecovery)
+			m_errorReporter.fatalParserError(
+				_location,
+				"Source file requires different compiler version (current compiler is " +
+				string(VersionString) + " - note that nightly builds are considered to be "
+				"strictly less than the released version"
+			);
 }
 
 ASTPointer<PragmaDirective> Parser::parsePragmaDirective()
@@ -177,7 +180,7 @@ ASTPointer<ImportDirective> Parser::parseImportDirective()
 	expectToken(Token::Import);
 	ASTPointer<ASTString> path;
 	ASTPointer<ASTString> unitAlias = make_shared<string>();
-	vector<pair<ASTPointer<Identifier>, ASTPointer<ASTString>>> symbolAliases;
+	ImportDirective::SymbolAliasList symbolAliases;
 
 	if (m_scanner->currentToken() == Token::StringLiteral)
 	{
@@ -195,14 +198,16 @@ ASTPointer<ImportDirective> Parser::parseImportDirective()
 			m_scanner->next();
 			while (true)
 			{
-				ASTPointer<Identifier> id = parseIdentifier();
 				ASTPointer<ASTString> alias;
+				SourceLocation aliasLocation = SourceLocation{position(), endPosition(), source()};
+				ASTPointer<Identifier> id = parseIdentifier();
 				if (m_scanner->currentToken() == Token::As)
 				{
 					expectToken(Token::As);
+					aliasLocation = SourceLocation{position(), endPosition(), source()};
 					alias = expectIdentifierToken();
 				}
-				symbolAliases.emplace_back(move(id), move(alias));
+				symbolAliases.emplace_back(ImportDirective::SymbolAlias{move(id), move(alias), aliasLocation});
 				if (m_scanner->currentToken() != Token::Comma)
 					break;
 				m_scanner->next();
@@ -236,7 +241,7 @@ ASTPointer<ImportDirective> Parser::parseImportDirective()
 ContractDefinition::ContractKind Parser::parseContractKind()
 {
 	ContractDefinition::ContractKind kind;
-	switch(m_scanner->currentToken())
+	switch (m_scanner->currentToken())
 	{
 	case Token::Interface:
 		kind = ContractDefinition::ContractKind::Interface;
@@ -383,7 +388,7 @@ StateMutability Parser::parseStateMutability()
 {
 	StateMutability stateMutability(StateMutability::NonPayable);
 	Token token = m_scanner->currentToken();
-	switch(token)
+	switch (token)
 	{
 		case Token::Payable:
 			stateMutability = StateMutability::Payable;
@@ -869,7 +874,9 @@ ASTPointer<TypeName> Parser::parseTypeName(bool _allowVar)
 		ASTNodeFactory nodeFactory(*this);
 		nodeFactory.markEndPosition();
 		m_scanner->next();
-		auto stateMutability = boost::make_optional(elemTypeName.token() == Token::Address, StateMutability::NonPayable);
+		auto stateMutability = elemTypeName.token() == Token::Address
+			? optional<StateMutability>{StateMutability::NonPayable}
+			: nullopt;
 		if (TokenTraits::isStateMutabilitySpecifier(m_scanner->currentToken(), false))
 		{
 			if (elemTypeName.token() == Token::Address)

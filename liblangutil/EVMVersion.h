@@ -22,9 +22,9 @@
 
 #include <libevmasm/Instruction.h>
 
+#include <optional>
 #include <string>
 
-#include <boost/optional.hpp>
 #include <boost/operators.hpp>
 
 
@@ -48,13 +48,15 @@ public:
 	static EVMVersion byzantium() { return {Version::Byzantium}; }
 	static EVMVersion constantinople() { return {Version::Constantinople}; }
 	static EVMVersion petersburg() { return {Version::Petersburg}; }
+	static EVMVersion istanbul() { return {Version::Istanbul}; }
+	static EVMVersion berlin() { return {Version::Berlin}; }
 
-	static boost::optional<EVMVersion> fromString(std::string const& _version)
+	static std::optional<EVMVersion> fromString(std::string const& _version)
 	{
-		for (auto const& v: {homestead(), tangerineWhistle(), spuriousDragon(), byzantium(), constantinople(), petersburg()})
+		for (auto const& v: {homestead(), tangerineWhistle(), spuriousDragon(), byzantium(), constantinople(), petersburg(), istanbul(), berlin()})
 			if (_version == v.name())
 				return v;
-		return {};
+		return std::nullopt;
 	}
 
 	bool operator==(EVMVersion const& _other) const { return m_version == _other.m_version; }
@@ -70,6 +72,8 @@ public:
 		case Version::Byzantium: return "byzantium";
 		case Version::Constantinople: return "constantinople";
 		case Version::Petersburg: return "petersburg";
+		case Version::Istanbul: return "istanbul";
+		case Version::Berlin: return "berlin";
 		}
 		return "INVALID";
 	}
@@ -80,6 +84,8 @@ public:
 	bool hasBitwiseShifting() const { return *this >= constantinople(); }
 	bool hasCreate2() const { return *this >= constantinople(); }
 	bool hasExtCodeHash() const { return *this >= constantinople(); }
+	bool hasChainID() const { return *this >= istanbul(); }
+	bool hasSelfBalance() const { return *this >= istanbul(); }
 
 	bool hasOpcode(dev::eth::Instruction _opcode) const;
 
@@ -88,7 +94,7 @@ public:
 	bool canOverchargeGasForCall() const { return *this >= tangerineWhistle(); }
 
 private:
-	enum class Version { Homestead, TangerineWhistle, SpuriousDragon, Byzantium, Constantinople, Petersburg };
+	enum class Version { Homestead, TangerineWhistle, SpuriousDragon, Byzantium, Constantinople, Petersburg, Istanbul, Berlin };
 
 	EVMVersion(Version _version): m_version(_version) {}
 

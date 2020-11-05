@@ -187,9 +187,32 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				gas += GasCosts::expByteGas(m_evmVersion) * 32;
 			break;
 		case Instruction::BALANCE:
+		case Instruction::REWARDBALANCE:
 		case Instruction::TOKENBALANCE:
 		case Instruction::ISCONTRACT:
+		case Instruction::ISSRCANDIDATE:
 			gas = GasCosts::balanceGas(m_evmVersion);
+			break;
+        case Instruction::NATIVESTAKE:
+            gas = runGas(Instruction::NATIVESTAKE);
+            break;
+		case Instruction::NATIVEUNSTAKE:
+			gas = runGas(Instruction::NATIVEUNSTAKE);
+			break;
+		case Instruction::NATIVEWITHDRAWREWARD:
+			gas = runGas(Instruction::NATIVEWITHDRAWREWARD);
+			break;
+		case Instruction::TOKENISSUE:
+            gas = runGas(Instruction::TOKENISSUE);
+            break;
+		case Instruction::UPDATEASSET:
+			gas = runGas(Instruction::UPDATEASSET);
+		break;
+		case Instruction::CHAINID:
+			gas = runGas(Instruction::CHAINID);
+			break;
+		case Instruction::SELFBALANCE:
+			gas = runGas(Instruction::SELFBALANCE);
 			break;
 		default:
 			gas = runGas(_item.instruction());

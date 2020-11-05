@@ -9,7 +9,7 @@ Contract ABI Specification
 Basic Design
 ============
 
-The Contract Application Binary Interface (ABI) is the standard way to interact with contracts in the Ethereum ecosystem, both
+The Contract Application Binary Interface (ABI) is the standard way to interact with contracts in the Tron ecosystem, both
 from outside the blockchain and for contract-to-contract interaction. Data is encoded according to its type,
 as described in this specification.  The encoding is not self describing and thus requires a schema in order to decode.
 
@@ -141,19 +141,19 @@ on the type of ``X`` being
   ``enc(X) = head(X(1)) ... head(X(k)) tail(X(1)) ... tail(X(k))``
 
   where ``X = (X(1), ..., X(k))`` and
-  ``head`` and ``tail`` are defined for ``Ti`` being a static type as
+  ``head`` and ``tail`` are defined for ``Ti`` as follows:
+
+  if ``Ti`` is static:
 
     ``head(X(i)) = enc(X(i))`` and ``tail(X(i)) = ""`` (the empty string)
 
-  and as
+  otherwise, i.e. if ``Ti`` is dynamic:
 
-    ``head(X(i)) = enc(len(head(X(1)) ... head(X(k)) tail(X(1)) ... tail(X(i-1)) ))``
+    ``head(X(i)) = enc(len( head(X(1)) ... head(X(k)) tail(X(1)) ... tail(X(i-1)) ))``
     ``tail(X(i)) = enc(X(i))``
 
-  otherwise, i.e. if ``Ti`` is a dynamic type.
-
   Note that in the dynamic case, ``head(X(i))`` is well-defined since the lengths of
-  the head parts only depend on the types and not the values. Its value is the offset
+  the head parts only depend on the types and not the values. The value of ``head(X(i))`` is the offset
   of the beginning of ``tail(X(i))`` relative to the start of ``enc(X)``.
 
 - ``T[k]`` for any ``T`` and ``k``:
@@ -411,13 +411,13 @@ Offset ``g`` points to the start of the content of the array ``["one", "two", "t
 Events
 ======
 
-Events are an abstraction of the Ethereum logging/event-watching protocol. Log entries provide the contract's address, a series of up to four topics and some arbitrary length binary data. Events leverage the existing function ABI in order to interpret this (together with an interface spec) as a properly typed structure.
+Events are an abstraction of the Tron logging/event-watching protocol. Log entries provide the contract's address, a series of up to four topics and some arbitrary length binary data. Events leverage the existing function ABI in order to interpret this (together with an interface spec) as a properly typed structure.
 
 Given an event name and series of event parameters, we split them into two sub-series: those which are indexed and those which are not. Those which are indexed, which may number up to 3, are used alongside the Keccak hash of the event signature to form the topics of the log entry. Those which are not indexed form the byte array of the event.
 
 In effect, a log entry using this ABI is described as:
 
-- ``address``: the address of the contract (intrinsically provided by Ethereum);
+- ``address``: the address of the contract (intrinsically provided by Tron);
 - ``topics[0]``: ``keccak(EVENT_NAME+"("+EVENT_ARGS.map(canonical_type_of).join(",")+")")`` (``canonical_type_of`` is a function that simply returns the canonical type of a given argument, e.g. for ``uint indexed foo``, it would return ``uint256``). If the event is declared as ``anonymous`` the ``topics[0]`` is not generated;
 - ``topics[n]``: ``abi_encode(EVENT_INDEXED_ARGS[n - 1])`` (``EVENT_INDEXED_ARGS`` is the series of ``EVENT_ARGS`` that are indexed);
 - ``data``: ABI encoding of ``EVENT_NON_INDEXED_ARGS`` (``EVENT_NON_INDEXED_ARGS`` is the series of ``EVENT_ARGS`` that are not indexed, ``abi_encode`` is the ABI encoding function used for returning a series of typed values from a function, as described above).
@@ -444,17 +444,17 @@ JSON
 The JSON format for a contract's interface is given by an array of function and/or event descriptions.
 A function description is a JSON object with the fields:
 
-- ``type``: ``"function"``, ``"constructor"``, or ``"fallback"`` (the :ref:`unnamed "default" function <fallback-function>`);
-- ``name``: the name of the function;
+- ``type``: ``"function"``, ``"constructor"``, or ``"fallback"`` (the :ref:`unnamed "default" function <fallback-function>`).
+- ``name``: the name of the function.
 - ``inputs``: an array of objects, each of which contains:
 
-  * ``name``: the name of the parameter;
+  * ``name``: the name of the parameter.
   * ``type``: the canonical type of the parameter (more below).
   * ``components``: used for tuple types (more below).
 
-- ``outputs``: an array of objects similar to ``inputs``, can be omitted if function doesn't return anything;
-- ``stateMutability``: a string with one of the following values: ``pure`` (:ref:`specified to not read blockchain state <pure-functions>`), ``view`` (:ref:`specified to not modify the blockchain state <view-functions>`), ``nonpayable`` (function does not accept Trx) and ``payable`` (function accepts Trx);
-- ``payable``: ``true`` if function accepts Ether, ``false`` otherwise;
+- ``outputs``: an array of objects similar to ``inputs``.
+- ``stateMutability``: a string with one of the following values: ``pure`` (:ref:`specified to not read blockchain state <pure-functions>`), ``view`` (:ref:`specified to not modify the blockchain state <view-functions>`), ``nonpayable`` (function does not accept Trx) and ``payable`` (function accepts Trx).
+- ``payable``: ``true`` if function accepts Trx, ``false`` otherwise.
 - ``constant``: ``true`` if function is either ``pure`` or ``view``, ``false`` otherwise.
 
 ``type`` can be omitted, defaulting to ``"function"``, likewise ``payable`` and ``constant`` can be omitted, both defaulting to ``false``.
@@ -470,10 +470,10 @@ Constructor and fallback function never have ``name`` or ``outputs``. Fallback f
 An event description is a JSON object with fairly similar fields:
 
 - ``type``: always ``"event"``
-- ``name``: the name of the event;
+- ``name``: the name of the event.
 - ``inputs``: an array of objects, each of which contains:
 
-  * ``name``: the name of the parameter;
+  * ``name``: the name of the parameter.
   * ``type``: the canonical type of the parameter (more below).
   * ``components``: used for tuple types (more below).
   * ``indexed``: ``true`` if the field is part of the log's topics, ``false`` if it one of the log's data segment.

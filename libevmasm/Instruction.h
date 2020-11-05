@@ -90,6 +90,8 @@ enum class Instruction: uint8_t
 	NUMBER,				///< get the block's number
 	DIFFICULTY,			///< get the block's difficulty
 	GASLIMIT,			///< get the block's gas limit
+	CHAINID,			///< get the config's chainid param
+	SELFBALANCE,		///< get balance of the current account
 
 	POP = 0x50,			///< remove item from stack
 	MLOAD,				///< load word from memory
@@ -193,6 +195,17 @@ enum class Instruction: uint8_t
 	CALLTOKENVALUE,
 	CALLTOKENID,
 	ISCONTRACT,
+    NATIVESTAKE,
+	NATIVEUNSTAKE,
+	NATIVEWITHDRAWREWARD,
+	REWARDBALANCE,
+    ISSRCANDIDATE,
+	TOKENISSUE,
+	UPDATEASSET,
+// todo freeze unfreeze vote
+//	NATIVEFREEZE,
+//	NATIVEUNFREEZE,
+//  NATIVEVOTE,
 
 	CREATE = 0xf0,		///< create a new account with associated code
 	CALL,				///< message-call into an account
@@ -204,7 +217,7 @@ enum class Instruction: uint8_t
 
 	REVERT = 0xfd,		///< halt execution, revert state and return output data
 	INVALID = 0xfe,		///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
-	SELFDESTRUCT = 0xff	///< halt execution and register account for later deletion
+	SELFDESTRUCT = 0xff ///< halt execution and register account for later deletion
 };
 
 /// @returns true if the instruction is a PUSH

@@ -61,9 +61,19 @@ std::map<std::string, Instruction> const dev::eth::c_instructions =
 	{ "KECCAK256", Instruction::KECCAK256 },
 	{ "ADDRESS", Instruction::ADDRESS },
 	{ "BALANCE", Instruction::BALANCE },
+	{ "REWARDBALANCE", Instruction::REWARDBALANCE },
 	{ "TOKENBALANCE", Instruction::TOKENBALANCE },
 	{ "ISCONTRACT", Instruction::ISCONTRACT },
+	{ "ISSRCANDIDATE", Instruction::ISSRCANDIDATE },
 	{ "ORIGIN", Instruction::ORIGIN },
+//	{ "NATIVEFREEZE", Instruction::NATIVEFREEZE },
+//	{ "NATIVEUNFREEZE", Instruction::NATIVEUNFREEZE },
+//  { "NATIVEVOTE", Instruction::NATIVEVOTE },
+    { "NATIVESTAKE", Instruction::NATIVESTAKE },
+    { "NATIVEUNSTAKE", Instruction::NATIVEUNSTAKE },
+	{ "NATIVEWITHDRAWREWARD", Instruction::NATIVEWITHDRAWREWARD },
+	{ "TOKENISSUE", Instruction::TOKENISSUE },
+	{ "UPDATEASSET", Instruction::UPDATEASSET },
 	{ "CALLER", Instruction::CALLER },
 	{ "CALLVALUE", Instruction::CALLVALUE },
 	{ "CALLTOKENVALUE", Instruction::CALLTOKENVALUE },
@@ -85,6 +95,8 @@ std::map<std::string, Instruction> const dev::eth::c_instructions =
 	{ "NUMBER", Instruction::NUMBER },
 	{ "DIFFICULTY", Instruction::DIFFICULTY },
 	{ "GASLIMIT", Instruction::GASLIMIT },
+	{ "CHAINID", Instruction::CHAINID },
+	{ "SELFBALANCE", Instruction::SELFBALANCE },
 	{ "POP", Instruction::POP },
 	{ "MLOAD", Instruction::MLOAD },
 	{ "MSTORE", Instruction::MSTORE },
@@ -210,12 +222,23 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 	{ Instruction::KECCAK256,	{ "KECCAK256",			0, 2, 1, true, Tier::Special } },
 	{ Instruction::ADDRESS,		{ "ADDRESS",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::BALANCE,		{ "BALANCE",		0, 1, 1, false, Tier::Balance } },
-	{ Instruction::TOKENBALANCE,{ "TOKENBALANCE",	0, 2, 1, false, Tier::Balance } },
-	{ Instruction::ISCONTRACT,{ "ISCONTRACT",	0, 1, 1, false, Tier::Balance } },
+	{ Instruction::REWARDBALANCE,	{ "REWARDBALANCE",	0, 1, 1, false, Tier::Balance } },
+	{ Instruction::TOKENBALANCE,	{ "TOKENBALANCE",	0, 2, 1, false, Tier::Balance } },
+	{ Instruction::ISCONTRACT,	{ "ISCONTRACT",	0, 1, 1, false, Tier::Balance } },
+	{ Instruction::ISSRCANDIDATE,	{ "ISSRCANDIDATE",	0, 1, 1, false, Tier::Balance } },
 	{ Instruction::ORIGIN,		{ "ORIGIN",			0, 0, 1, false, Tier::Base } },
+	// todo freeze unfreeze vote
+//	{ Instruction::NATIVEFREEZE,		{ "NATIVEFREEZE",			0, 4, 1, true, Tier::Ext } },
+//	{ Instruction::NATIVEUNFREEZE,		{ "NATIVEUNFREEZE",			0, 2, 1, true, Tier::Ext } },
+//	{ Instruction::NATIVEVOTE,		{ "NATIVEVOTE",			0, 4, 1, true, Tier::Ext } },
+    { Instruction::NATIVESTAKE,		{ "NATIVESTAKE",			0, 2, 1, true, Tier::Ext } },
+	{ Instruction::NATIVEUNSTAKE,		{ "NATIVEUNSTAKE",			0, 0, 1, true, Tier::Ext } },
+	{ Instruction::NATIVEWITHDRAWREWARD,		{ "NATIVEWITHDRAWREWARD",			0, 0, 1, true, Tier::Ext } },
 	{ Instruction::CALLER,		{ "CALLER",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLVALUE,	{ "CALLVALUE",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLTOKENVALUE,	{ "CALLTOKENVALUE",		0, 0, 1, false, Tier::Base } },
+	{ Instruction::TOKENISSUE,  { "TOKENISSUE",	    0, 4, 1, true, Tier::High } },
+	{ Instruction::UPDATEASSET,  { "UPDATEASSET",	    0, 3, 1, true, Tier::High } },
 	{ Instruction::CALLTOKENID,		{ "CALLTOKENID",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::CALLDATALOAD,{ "CALLDATALOAD",	0, 1, 1, false, Tier::VeryLow } },
 	{ Instruction::CALLDATASIZE,{ "CALLDATASIZE",	0, 0, 1, false, Tier::Base } },
@@ -234,6 +257,8 @@ static std::map<Instruction, InstructionInfo> const c_instructionInfo =
 	{ Instruction::NUMBER,		{ "NUMBER",			0, 0, 1, false, Tier::Base } },
 	{ Instruction::DIFFICULTY,	{ "DIFFICULTY",		0, 0, 1, false, Tier::Base } },
 	{ Instruction::GASLIMIT,	{ "GASLIMIT",		0, 0, 1, false, Tier::Base } },
+	{ Instruction::CHAINID,		{ "CHAINID",		0, 0, 1, false, Tier::Base } },
+	{ Instruction::SELFBALANCE,	{ "SELFBALANCE",	0, 0, 1, false, Tier::Low } },
 	{ Instruction::POP,			{ "POP",			0, 1, 0, false, Tier::Base } },
 	{ Instruction::MLOAD,		{ "MLOAD",			0, 1, 1, true, Tier::VeryLow } },
 	{ Instruction::MSTORE,		{ "MSTORE",			0, 2, 0, true, Tier::VeryLow } },
@@ -362,13 +387,13 @@ string dev::eth::disassemble(bytes const& _mem)
 	stringstream ret;
 	eachInstruction(_mem, [&](Instruction _instr, u256 const& _data) {
 		if (!isValidInstruction(_instr))
-			ret << "0x" << hex << int(_instr) << " ";
+			ret << "0x" << std::uppercase << std::hex << int(_instr) << " ";
 		else
 		{
 			InstructionInfo info = instructionInfo(_instr);
 			ret << info.name << " ";
 			if (info.additional)
-				ret << "0x" << hex << _data << " ";
+				ret << "0x" << std::uppercase << std::hex << _data << " ";
 		}
 	});
 	return ret.str();

@@ -53,8 +53,9 @@
 #include <liblangutil/Common.h>
 #include <liblangutil/Exceptions.h>
 #include <liblangutil/Scanner.h>
-#include <boost/optional.hpp>
+
 #include <algorithm>
+#include <optional>
 #include <ostream>
 #include <tuple>
 
@@ -187,7 +188,7 @@ bool Scanner::scanHexByte(char& o_scannedByte)
 	return true;
 }
 
-boost::optional<unsigned> Scanner::scanUnicode()
+std::optional<unsigned> Scanner::scanUnicode()
 {
 	unsigned x = 0;
 	for (int i = 0; i < 4; i++)
@@ -280,6 +281,29 @@ Token Scanner::skipSingleLineComment()
 	return Token::Whitespace;
 }
 
+bool Scanner::atEndOfLine() const
+{
+	return m_char == '\n' || m_char == '\r';
+}
+
+bool Scanner::tryScanEndOfLine()
+{
+	if (m_char == '\n')
+	{
+		advance();
+		return true;
+	}
+
+	if (m_char == '\r')
+	{
+		if (advance() && m_char == '\n')
+			advance();
+		return true;
+	}
+
+	return false;
+}
+
 Token Scanner::scanSingleLineDocComment()
 {
 	LiteralScope literal(this, LITERAL_TYPE_COMMENT);
@@ -289,7 +313,7 @@ Token Scanner::scanSingleLineDocComment()
 
 	while (!isSourcePastEndOfInput())
 	{
-		if (isLineTerminator(m_char))
+		if (tryScanEndOfLine())
 		{
 			// check if next line is also a documentation comment
 			skipWhitespace();
@@ -303,7 +327,6 @@ Token Scanner::scanSingleLineDocComment()
 			}
 			else
 				break; // next line is not a documentation comment, we are done
-
 		}
 		else if (isUnicodeLinebreak())
 			// Any line terminator that is not '\n' is considered to end the
@@ -343,13 +366,13 @@ Token Scanner::scanMultiLineDocComment()
 	bool endFound = false;
 	bool charsAdded = false;
 
-	while (isWhiteSpace(m_char) && !isLineTerminator(m_char))
+	while (isWhiteSpace(m_char) && !atEndOfLine())
 		advance();
 
 	while (!isSourcePastEndOfInput())
 	{
 		//handle newlines in multline comments
-		if (isLineTerminator(m_char))
+		if (atEndOfLine())
 		{
 			skipWhitespace();
 			if (!m_source->isPastEndOfInput(1) && m_source->get(0) == '*' && m_source->get(1) == '*')
@@ -664,10 +687,12 @@ void Scanner::scanToken()
 bool Scanner::scanEscape()
 {
 	char c = m_char;
-	advance();
+
 	// Skip escaped newlines.
-	if (isLineTerminator(c))
+	if (tryScanEndOfLine())
 		return true;
+	advance();
+
 	switch (c)
 	{
 	case '\'':  // fall through
@@ -694,7 +719,7 @@ bool Scanner::scanEscape()
 		break;
 	case 'u':
 	{
-		if (boost::optional<unsigned> codepoint = scanUnicode())
+		if (auto const codepoint = scanUnicode(); codepoint.has_value())
 			addUnicodeAsUTF8(*codepoint);
 		else
 			return false;

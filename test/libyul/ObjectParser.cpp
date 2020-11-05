@@ -27,11 +27,11 @@
 
 #include <libsolidity/interface/OptimiserSettings.h>
 
-#include <boost/optional.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include <string>
 #include <memory>
+#include <optional>
+#include <string>
 
 using namespace std;
 using namespace langutil;
@@ -63,7 +63,7 @@ std::pair<bool, ErrorList> parse(string const& _source)
 	return {false, {}};
 }
 
-boost::optional<Error> parseAndReturnFirstError(string const& _source, bool _allowWarnings = true)
+std::optional<Error> parseAndReturnFirstError(string const& _source, bool _allowWarnings = true)
 {
 	bool success;
 	ErrorList errors;
@@ -276,6 +276,19 @@ BOOST_AUTO_TEST_CASE(args_to_datacopy_are_arbitrary)
 		}
 	)";
 	BOOST_CHECK(successParse(code));
+}
+
+
+BOOST_AUTO_TEST_CASE(non_existing_objects)
+{
+	BOOST_CHECK(successParse(
+		"object \"main\" { code { pop(datasize(\"main\")) } }"
+	));
+	CHECK_ERROR(
+		"object \"main\" { code { pop(datasize(\"abc\")) } }",
+		TypeError,
+		"Unknown data object"
+	);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

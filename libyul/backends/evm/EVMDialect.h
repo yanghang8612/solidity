@@ -47,7 +47,7 @@ struct BuiltinContext
 
 struct BuiltinFunctionForEVM: BuiltinFunction
 {
-	boost::optional<dev::eth::Instruction> instruction;
+	std::optional<dev::eth::Instruction> instruction;
 	/// Function to generate code for the given function call and append it to the abstract
 	/// assembly. The fourth parameter is called to visit (and generate code for) the arguments
 	/// from right to left.
@@ -70,6 +70,7 @@ struct EVMDialect: public Dialect
 
 	BuiltinFunctionForEVM const* discardFunction() const override { return builtin("pop"_yulstring); }
 	BuiltinFunctionForEVM const* equalityFunction() const override { return builtin("eq"_yulstring); }
+	BuiltinFunctionForEVM const* booleanNegationFunction() const override { return builtin("iszero"_yulstring); }
 
 	static EVMDialect const& looseAssemblyForEVM(langutil::EVMVersion _version);
 	static EVMDialect const& strictAssemblyForEVM(langutil::EVMVersion _version);
@@ -79,6 +80,8 @@ struct EVMDialect: public Dialect
 	langutil::EVMVersion evmVersion() const { return m_evmVersion; }
 
 	bool providesObjectAccess() const { return m_objectAccess; }
+
+	static SideEffects sideEffectsOfInstruction(dev::eth::Instruction _instruction);
 
 protected:
 	bool const m_objectAccess;

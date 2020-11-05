@@ -48,10 +48,10 @@ void CVC4Interface::pop()
 	m_solver.pop();
 }
 
-void CVC4Interface::declareVariable(string const& _name, Sort const& _sort)
+void CVC4Interface::declareVariable(string const& _name, SortPointer const& _sort)
 {
-	if (!m_variables.count(_name))
-		m_variables.insert({_name, m_context.mkVar(_name.c_str(), cvc4Sort(_sort))});
+	solAssert(_sort, "");
+	m_variables[_name] = m_context.mkVar(_name.c_str(), cvc4Sort(*_sort));
 }
 
 void CVC4Interface::addAssertion(Expression const& _expr)
@@ -137,6 +137,8 @@ CVC4::Expr CVC4Interface::toCVC4Expr(Expression const& _expr)
 				return m_context.mkConst(true);
 			else if (n == "false")
 				return m_context.mkConst(false);
+			else if (auto sortSort = dynamic_pointer_cast<SortSort>(_expr.sort))
+				return m_context.mkVar(n, cvc4Sort(*sortSort->inner));
 			else
 				try
 				{
@@ -187,6 +189,12 @@ CVC4::Expr CVC4Interface::toCVC4Expr(Expression const& _expr)
 			return m_context.mkExpr(CVC4::kind::SELECT, arguments[0], arguments[1]);
 		else if (n == "store")
 			return m_context.mkExpr(CVC4::kind::STORE, arguments[0], arguments[1], arguments[2]);
+		else if (n == "const_array")
+		{
+			shared_ptr<SortSort> sortSort = std::dynamic_pointer_cast<SortSort>(_expr.arguments[0].sort);
+			solAssert(sortSort, "");
+			return m_context.mkConst(CVC4::ArrayStoreAll(cvc4Sort(*sortSort->inner), arguments[1]));
+		}
 
 		solAssert(false, "");
 	}

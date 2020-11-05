@@ -390,11 +390,13 @@ bool TypeChecker::visit(FunctionDefinition const& _function)
 	set<Declaration const*> modifiers;
 	for (ASTPointer<ModifierInvocation> const& modifier: _function.modifiers())
 	{
+		auto baseContracts = dynamic_cast<ContractDefinition const&>(*_function.scope()).annotation().linearizedBaseContracts;
+		// Delete first base which is just the main contract itself
+		baseContracts.erase(baseContracts.begin());
+
 		visitManually(
 			*modifier,
-			_function.isConstructor() ?
-			dynamic_cast<ContractDefinition const&>(*_function.scope()).annotation().linearizedBaseContracts :
-			vector<ContractDefinition const*>()
+			_function.isConstructor() ? baseContracts : vector<ContractDefinition const*>()
 		);
 		Declaration const* decl = &dereference(*modifier->name());
 		if (modifiers.count(decl))
@@ -448,6 +450,9 @@ bool TypeChecker::visit(VariableDeclaration const& _variable)
 	TypePointer varType = _variable.annotation().type;
 	solAssert(!!varType, "Variable type not provided.");
 
+	if (auto contractType = dynamic_cast<ContractType const*>(varType))
+		if (contractType->contractDefinition().isLibrary())
+			m_errorReporter.typeError(_variable.location(), "The type of a variable cannot be a library.");
 	if (_variable.value())
 		expectType(*_variable.value(), *varType);
 	if (_variable.isConstant())
@@ -522,7 +527,12 @@ void TypeChecker::visitManually(
 		_modifier.arguments() ? *_modifier.arguments() : std::vector<ASTPointer<Expression>>();
 	for (ASTPointer<Expression> const& argument: arguments)
 		argument->accept(*this);
-	_modifier.name()->accept(*this);
+
+	{
+		m_insideModifierInvocation = true;
+		ScopeGuard resetFlag{[&] () { m_insideModifierInvocation = false; }};
+		_modifier.name()->accept(*this);
+	}
 
 	auto const* declaration = &dereference(*_modifier.name());
 	vector<ASTPointer<VariableDeclaration>> emptyParameterList;
@@ -631,10 +641,32 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 			solAssert(var->type(), "Expected variable type!");
 			if (var->isConstant())
 			{
-				m_errorReporter.typeError(_identifier.location, "Constant variables not supported by inline assembly.");
-				return size_t(-1);
+				if (!var->value())
+				{
+					m_errorReporter.typeError(_identifier.location, "Constant has no value.");
+					return size_t(-1);
+				}
+				else if (!type(*var)->isValueType() || (
+					dynamic_cast<Literal const*>(var->value().get()) == nullptr &&
+					type(*var->value())->category() != Type::Category::RationalNumber
+				))
+				{
+					m_errorReporter.typeError(_identifier.location, "Only direct number constants are supported by inline assembly.");
+					return size_t(-1);
+				}
+				else if (_context == yul::IdentifierContext::LValue)
+				{
+					m_errorReporter.typeError(_identifier.location, "Constant variables cannot be assigned to.");
+					return size_t(-1);
+				}
+				else if (requiresStorage)
+				{
+					m_errorReporter.typeError(_identifier.location, "The suffixes _offset and _slot can only be used on non-constant storage variables.");
+					return size_t(-1);
+				}
 			}
-			else if (requiresStorage)
+
+			if (requiresStorage)
 			{
 				if (!var->isStateVariable() && !var->type()->dataStoredIn(DataLocation::Storage))
 				{
@@ -647,7 +679,7 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 					return size_t(-1);
 				}
 			}
-			else if (!var->isLocalVariable())
+			else if (!var->isConstant() && var->isStateVariable())
 			{
 				m_errorReporter.typeError(_identifier.location, "Only local variables are supported. To access storage variables, use the _slot and _offset suffixes.");
 				return size_t(-1);
@@ -673,6 +705,9 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 		}
 		else if (_context == yul::IdentifierContext::LValue)
 		{
+			if (dynamic_cast<MagicVariableDeclaration const*>(declaration))
+				return size_t(-1);
+
 			m_errorReporter.typeError(_identifier.location, "Only local variables can be assigned to in inline assembly.");
 			return size_t(-1);
 		}
@@ -2320,12 +2355,30 @@ bool TypeChecker::visit(Identifier const& _identifier)
 				if (functionType->canTakeArguments(*annotation.arguments))
 					candidates.push_back(declaration);
 			}
-			if (candidates.empty())
-				m_errorReporter.fatalTypeError(_identifier.location(), "No matching declaration found after argument-dependent lookup.");
-			else if (candidates.size() == 1)
+			if (candidates.size() == 1)
 				annotation.referencedDeclaration = candidates.front();
 			else
-				m_errorReporter.fatalTypeError(_identifier.location(), "No unique declaration found after argument-dependent lookup.");
+			{
+				SecondarySourceLocation ssl;
+
+				for (Declaration const* declaration: annotation.overloadedDeclarations)
+					if (declaration->location().isEmpty())
+					{
+						// Try to re-construct function definition
+						string description;
+						for (auto const& param: declaration->functionType(true)->parameterTypes())
+							description += (description.empty() ? "" : ", ") + param->toString(false);
+						description = "function " + _identifier.name() + "(" + description + ")";
+
+						ssl.append("Candidate: " + description, declaration->location());
+					}
+					else
+						ssl.append("Candidate:", declaration->location());
+				if (candidates.empty())
+					m_errorReporter.fatalTypeError(_identifier.location(), ssl, "No matching declaration found after argument-dependent lookup.");
+				else
+					m_errorReporter.fatalTypeError(_identifier.location(), ssl, "No unique declaration found after argument-dependent lookup.");
+			}
 		}
 	}
 	solAssert(
@@ -2354,14 +2407,23 @@ bool TypeChecker::visit(Identifier const& _identifier)
 		if (_identifier.name() == "sha3" && fType->kind() == FunctionType::Kind::KECCAK256)
 			m_errorReporter.typeError(
 				_identifier.location(),
-				"\"sha3\" has been deprecated in favour of \"keccak256\""
+				"\"sha3\" has been deprecated in favour of \"keccak256\"."
 			);
 		else if (_identifier.name() == "suicide" && fType->kind() == FunctionType::Kind::Selfdestruct)
 			m_errorReporter.typeError(
 				_identifier.location(),
-				"\"suicide\" has been deprecated in favour of \"selfdestruct\""
+				"\"suicide\" has been deprecated in favour of \"selfdestruct\"."
 			);
 	}
+
+	if (!m_insideModifierInvocation)
+		if (ModifierType const* type = dynamic_cast<decltype(type)>(_identifier.annotation().type))
+		{
+			m_errorReporter.typeError(
+				_identifier.location(),
+				"Modifier can only be referenced in function headers."
+			);
+		}
 
 	return false;
 }
@@ -2493,8 +2555,47 @@ void TypeChecker::requireLValue(Expression const& _expression)
 	_expression.annotation().lValueRequested = true;
 	_expression.accept(*this);
 
-	if (_expression.annotation().isConstant)
-		m_errorReporter.typeError(_expression.location(), "Cannot assign to a constant variable.");
-	else if (!_expression.annotation().isLValue)
-		m_errorReporter.typeError(_expression.location(), "Expression has to be an lvalue.");
+	if (_expression.annotation().isLValue)
+		return;
+
+	return m_errorReporter.typeError(_expression.location(), [&]() {
+		if (_expression.annotation().isConstant)
+			return "Cannot assign to a constant variable.";
+
+		if (auto indexAccess = dynamic_cast<IndexAccess const*>(&_expression))
+		{
+			if (type(indexAccess->baseExpression())->category() == Type::Category::FixedBytes)
+				return "Single bytes in fixed bytes arrays cannot be modified.";
+			else if (auto arrayType = dynamic_cast<ArrayType const*>(type(indexAccess->baseExpression())))
+				if (arrayType->dataStoredIn(DataLocation::CallData))
+					return "Calldata arrays are read-only.";
+		}
+
+		if (auto memberAccess = dynamic_cast<MemberAccess const*>(&_expression))
+		{
+			if (auto structType = dynamic_cast<StructType const*>(type(memberAccess->expression())))
+			{
+				if (structType->dataStoredIn(DataLocation::CallData))
+					return "Calldata structs are read-only.";
+			}
+			else if (auto arrayType = dynamic_cast<ArrayType const*>(type(memberAccess->expression())))
+				if (memberAccess->memberName() == "length")
+					switch (arrayType->location())
+					{
+						case DataLocation::Memory:
+							return "Memory arrays cannot be resized.";
+						case DataLocation::CallData:
+							return "Calldata arrays cannot be resized.";
+						case DataLocation::Storage:
+							break;
+					}
+		}
+
+		if (auto identifier = dynamic_cast<Identifier const*>(&_expression))
+			if (auto varDecl = dynamic_cast<VariableDeclaration const*>(identifier->annotation().referencedDeclaration))
+				if (varDecl->isExternalCallableParameter() && dynamic_cast<ReferenceType const*>(identifier->annotation().type))
+					return "External function arguments of reference type are read-only.";
+
+		return "Expression has to be an lvalue.";
+	}());
 }

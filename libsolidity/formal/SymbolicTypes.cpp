@@ -19,6 +19,7 @@
 
 #include <libsolidity/ast/TypeProvider.h>
 #include <libsolidity/ast/Types.h>
+#include <libdevcore/CommonData.h>
 #include <memory>
 
 using namespace std;
@@ -63,6 +64,13 @@ SortPointer smtSort(solidity::Type const& _type)
 			auto mapType = dynamic_cast<solidity::MappingType const*>(&_type);
 			solAssert(mapType, "");
 			return make_shared<ArraySort>(smtSort(*mapType->keyType()), smtSort(*mapType->valueType()));
+		}
+		else if (isStringLiteral(_type.category()))
+		{
+			auto stringLitType = dynamic_cast<solidity::StringLiteralType const*>(&_type);
+			solAssert(stringLitType, "");
+			auto intSort = make_shared<Sort>(Kind::Int);
+			return make_shared<ArraySort>(intSort, intSort);
 		}
 		else
 		{
@@ -118,7 +126,7 @@ bool isSupportedTypeDeclaration(solidity::Type::Category _category)
 pair<bool, shared_ptr<SymbolicVariable>> newSymbolicVariable(
 	solidity::Type const& _type,
 	std::string const& _uniqueName,
-	SolverInterface& _solver
+	EncodingContext& _context
 )
 {
 	bool abstract = false;
@@ -127,39 +135,65 @@ pair<bool, shared_ptr<SymbolicVariable>> newSymbolicVariable(
 	if (!isSupportedTypeDeclaration(_type))
 	{
 		abstract = true;
-		var = make_shared<SymbolicIntVariable>(solidity::TypeProvider::uint256(), _uniqueName, _solver);
+		var = make_shared<SymbolicIntVariable>(solidity::TypeProvider::uint256(), type, _uniqueName, _context);
 	}
 	else if (isBool(_type.category()))
-		var = make_shared<SymbolicBoolVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicBoolVariable>(type, _uniqueName, _context);
 	else if (isFunction(_type.category()))
-		var = make_shared<SymbolicFunctionVariable>(type, _uniqueName, _solver);
+	{
+		auto const& fType = dynamic_cast<FunctionType const*>(type);
+		auto const& paramsIn = fType->parameterTypes();
+		auto const& paramsOut = fType->returnParameterTypes();
+		auto findFunctionParam = [&](auto&& params) {
+			return find_if(
+				begin(params),
+				end(params),
+				[&](TypePointer _paramType) { return _paramType->category() == solidity::Type::Category::Function; }
+			);
+		};
+		if (
+			findFunctionParam(paramsIn) != end(paramsIn) ||
+			findFunctionParam(paramsOut) != end(paramsOut)
+		)
+		{
+			abstract = true;
+			var = make_shared<SymbolicIntVariable>(TypeProvider::uint256(), type, _uniqueName, _context);
+		}
+		else
+			var = make_shared<SymbolicFunctionVariable>(type, _uniqueName, _context);
+	}
 	else if (isInteger(_type.category()))
-		var = make_shared<SymbolicIntVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicIntVariable>(type, type, _uniqueName, _context);
 	else if (isFixedBytes(_type.category()))
 	{
 		auto fixedBytesType = dynamic_cast<solidity::FixedBytesType const*>(type);
 		solAssert(fixedBytesType, "");
-		var = make_shared<SymbolicFixedBytesVariable>(fixedBytesType->numBytes(), _uniqueName, _solver);
+		var = make_shared<SymbolicFixedBytesVariable>(type, fixedBytesType->numBytes(), _uniqueName, _context);
 	}
 	else if (isAddress(_type.category()) || isContract(_type.category()))
-		var = make_shared<SymbolicAddressVariable>(_uniqueName, _solver);
+		var = make_shared<SymbolicAddressVariable>(_uniqueName, _context);
 	else if (isEnum(_type.category()))
-		var = make_shared<SymbolicEnumVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicEnumVariable>(type, _uniqueName, _context);
 	else if (isRational(_type.category()))
 	{
 		auto rational = dynamic_cast<solidity::RationalNumberType const*>(&_type);
 		solAssert(rational, "");
 		if (rational->isFractional())
-			var = make_shared<SymbolicIntVariable>(solidity::TypeProvider::uint256(), _uniqueName, _solver);
+			var = make_shared<SymbolicIntVariable>(solidity::TypeProvider::uint256(), type, _uniqueName, _context);
 		else
-			var = make_shared<SymbolicIntVariable>(type, _uniqueName, _solver);
+			var = make_shared<SymbolicIntVariable>(type, type, _uniqueName, _context);
 	}
 	else if (isMapping(_type.category()))
-		var = make_shared<SymbolicMappingVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicMappingVariable>(type, _uniqueName, _context);
 	else if (isArray(_type.category()))
-		var = make_shared<SymbolicArrayVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicArrayVariable>(type, type, _uniqueName, _context);
 	else if (isTuple(_type.category()))
-		var = make_shared<SymbolicTupleVariable>(type, _uniqueName, _solver);
+		var = make_shared<SymbolicTupleVariable>(type, _uniqueName, _context);
+	else if (isStringLiteral(_type.category()))
+	{
+		auto stringType = TypeProvider::stringMemory();
+		var = make_shared<SymbolicArrayVariable>(stringType, type, _uniqueName, _context);
+	}
 	else
 		solAssert(false, "");
 	return make_pair(abstract, var);
@@ -232,12 +266,18 @@ bool isMapping(solidity::Type::Category _category)
 
 bool isArray(solidity::Type::Category _category)
 {
-	return _category == solidity::Type::Category::Array;
+	return _category == solidity::Type::Category::Array ||
+		_category == solidity::Type::Category::StringLiteral;
 }
 
 bool isTuple(solidity::Type::Category _category)
 {
 	return _category == solidity::Type::Category::Tuple;
+}
+
+bool isStringLiteral(solidity::Type::Category _category)
+{
+	return _category == solidity::Type::Category::StringLiteral;
 }
 
 Expression minValue(solidity::IntegerType const& _type)
@@ -250,41 +290,61 @@ Expression maxValue(solidity::IntegerType const& _type)
 	return Expression(_type.maxValue());
 }
 
-void setSymbolicZeroValue(SymbolicVariable const& _variable, SolverInterface& _interface)
+void setSymbolicZeroValue(SymbolicVariable const& _variable, EncodingContext& _context)
 {
-	setSymbolicZeroValue(_variable.currentValue(), _variable.type(), _interface);
+	setSymbolicZeroValue(_variable.currentValue(), _variable.type(), _context);
 }
 
-void setSymbolicZeroValue(Expression _expr, solidity::TypePointer const& _type, SolverInterface& _interface)
+void setSymbolicZeroValue(Expression _expr, solidity::TypePointer const& _type, EncodingContext& _context)
 {
 	solAssert(_type, "");
-	if (isInteger(_type->category()))
-		_interface.addAssertion(_expr == 0);
-	else if (isBool(_type->category()))
-		_interface.addAssertion(_expr == Expression(false));
+	_context.addAssertion(_expr == zeroValue(_type));
 }
 
-void setSymbolicUnknownValue(SymbolicVariable const& _variable, SolverInterface& _interface)
+Expression zeroValue(solidity::TypePointer const& _type)
 {
-	setSymbolicUnknownValue(_variable.currentValue(), _variable.type(), _interface);
+	solAssert(_type, "");
+	if (isSupportedType(_type->category()))
+	{
+		if (isNumber(_type->category()))
+			return 0;
+		if (isBool(_type->category()))
+			return Expression(false);
+		if (isArray(_type->category()) || isMapping(_type->category()))
+		{
+			if (auto arrayType = dynamic_cast<ArrayType const*>(_type))
+				return Expression::const_array(Expression(arrayType), zeroValue(arrayType->baseType()));
+			auto mappingType = dynamic_cast<MappingType const*>(_type);
+			solAssert(mappingType, "");
+			return Expression::const_array(Expression(mappingType), zeroValue(mappingType->valueType()));
+		}
+		solAssert(false, "");
+	}
+	// Unsupported types are abstracted as Int.
+	return 0;
 }
 
-void setSymbolicUnknownValue(Expression _expr, solidity::TypePointer const& _type, SolverInterface& _interface)
+void setSymbolicUnknownValue(SymbolicVariable const& _variable, EncodingContext& _context)
+{
+	setSymbolicUnknownValue(_variable.currentValue(), _variable.type(), _context);
+}
+
+void setSymbolicUnknownValue(Expression _expr, solidity::TypePointer const& _type, EncodingContext& _context)
 {
 	solAssert(_type, "");
 	if (isEnum(_type->category()))
 	{
 		auto enumType = dynamic_cast<solidity::EnumType const*>(_type);
 		solAssert(enumType, "");
-		_interface.addAssertion(_expr >= 0);
-		_interface.addAssertion(_expr < enumType->numberOfMembers());
+		_context.addAssertion(_expr >= 0);
+		_context.addAssertion(_expr < enumType->numberOfMembers());
 	}
 	else if (isInteger(_type->category()))
 	{
 		auto intType = dynamic_cast<solidity::IntegerType const*>(_type);
 		solAssert(intType, "");
-		_interface.addAssertion(_expr >= minValue(*intType));
-		_interface.addAssertion(_expr <= maxValue(*intType));
+		_context.addAssertion(_expr >= minValue(*intType));
+		_context.addAssertion(_expr <= maxValue(*intType));
 	}
 }
 

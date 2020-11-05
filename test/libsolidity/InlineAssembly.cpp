@@ -34,11 +34,11 @@
 
 #include <libevmasm/Assembly.h>
 
-#include <boost/optional.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include <string>
 #include <memory>
+#include <optional>
+#include <string>
 
 using namespace std;
 using namespace langutil;
@@ -54,7 +54,7 @@ namespace test
 namespace
 {
 
-boost::optional<Error> parseAndReturnFirstError(
+std::optional<Error> parseAndReturnFirstError(
 	string const& _source,
 	bool _assemble = false,
 	bool _allowWarnings = true,
@@ -834,6 +834,20 @@ BOOST_AUTO_TEST_CASE(shift_constantinople_warning)
 	CHECK_PARSE_WARNING("{ pop(shl(10, 32)) }", TypeError, "The \"shl\" instruction is only available for Constantinople-compatible VMs");
 	CHECK_PARSE_WARNING("{ pop(shr(10, 32)) }", TypeError, "The \"shr\" instruction is only available for Constantinople-compatible VMs");
 	CHECK_PARSE_WARNING("{ pop(sar(10, 32)) }", TypeError, "The \"sar\" instruction is only available for Constantinople-compatible VMs");
+}
+
+BOOST_AUTO_TEST_CASE(chainid_instanbul_warning)
+{
+	if (dev::test::Options::get().evmVersion().hasChainID())
+		return;
+	CHECK_PARSE_WARNING("{ pop(chainid()) }", TypeError, "The \"chainid\" instruction is only available for Istanbul-compatible VMs");
+}
+
+BOOST_AUTO_TEST_CASE(selfbalance_instanbul_warning)
+{
+	if (dev::test::Options::get().evmVersion().hasSelfBalance())
+		return;
+	CHECK_PARSE_WARNING("{ pop(selfbalance()) }", TypeError, "The \"selfbalance\" instruction is only available for Istanbul-compatible VMs");
 }
 
 BOOST_AUTO_TEST_CASE(jump_warning)

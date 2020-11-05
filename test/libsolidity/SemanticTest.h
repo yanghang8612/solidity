@@ -44,9 +44,9 @@ class SemanticTest: public SolidityExecutionFramework, public EVMVersionRestrict
 {
 public:
 	static std::unique_ptr<TestCase> create(Config const& _options)
-	{ return std::make_unique<SemanticTest>(_options.filename, _options.ipcPath, _options.evmVersion); }
+	{ return std::make_unique<SemanticTest>(_options.filename, _options.evmVersion); }
 
-	explicit SemanticTest(std::string const& _filename, std::string const& _ipcPath, langutil::EVMVersion _evmVersion);
+	explicit SemanticTest(std::string const& _filename, langutil::EVMVersion _evmVersion);
 
 	TestResult run(std::ostream& _stream, std::string const& _linePrefix = "", bool _formatted = false) override;
 	void printSource(std::ostream &_stream, std::string const& _linePrefix = "", bool _formatted = false) const override;
@@ -60,10 +60,11 @@ public:
 
 	/// Compiles and deploys currently held source.
 	/// Returns true if deployment was successful, false otherwise.
-	bool deploy(std::string const& _contractName, u256 const& _value, bytes const& _arguments);
+	bool deploy(std::string const& _contractName, u256 const& _value, bytes const& _arguments, std::map<std::string, dev::test::Address> const& _libraries = {});
 
 private:
 	std::string m_source;
+	std::size_t m_lineOffset;
 	std::vector<TestFunctionCall> m_tests;
 	bool m_runWithYul = false;
 	bool m_runWithoutYul = true;

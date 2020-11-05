@@ -24,6 +24,7 @@
 #include <libdevcore/CommonData.h>
 
 #include <array>
+#include <map>
 
 using namespace std;
 using namespace dev;
@@ -62,7 +63,7 @@ void WordSizeTransform::operator()(If& _if)
 
 void WordSizeTransform::operator()(Switch&)
 {
-	yulAssert(false, "Switch statement not implemented.");
+	yulAssert(false, "Switch statement has to be handled inside the containing block.");
 }
 
 void WordSizeTransform::operator()(ForLoop& _for)
@@ -81,11 +82,35 @@ void WordSizeTransform::operator()(Block& _block)
 {
 	iterateReplacing(
 		_block.statements,
-		[&](Statement& _s) -> boost::optional<vector<Statement>>
+		[&](Statement& _s) -> std::optional<vector<Statement>>
 		{
 			if (_s.type() == typeid(VariableDeclaration))
 			{
 				VariableDeclaration& varDecl = boost::get<VariableDeclaration>(_s);
+
+				// Special handling for datasize and dataoffset - they will only need one variable.
+				if (varDecl.value && varDecl.value->type() == typeid(FunctionCall))
+					if (BuiltinFunction const* f = m_inputDialect.builtin(boost::get<FunctionCall>(*varDecl.value).functionName.name))
+						if (f->literalArguments)
+						{
+							yulAssert(f->name == "datasize"_yulstring || f->name == "dataoffset"_yulstring, "");
+							yulAssert(varDecl.variables.size() == 1, "");
+							auto newLhs = generateU64IdentifierNames(varDecl.variables[0].name);
+							vector<Statement> ret;
+							for (int i = 0; i < 3; i++)
+								ret.push_back(VariableDeclaration{
+									varDecl.location,
+									{TypedName{varDecl.location, newLhs[i], "u64"_yulstring}},
+									make_unique<Expression>(Literal{locationOf(*varDecl.value), LiteralKind::Number, "0"_yulstring, "u64"_yulstring})
+								});
+							ret.push_back(VariableDeclaration{
+								varDecl.location,
+								{TypedName{varDecl.location, newLhs[3], "u64"_yulstring}},
+								std::move(varDecl.value)
+							});
+							return {std::move(ret)};
+						}
+
 				if (
 					!varDecl.value ||
 					varDecl.value->type() == typeid(FunctionalInstruction) ||
@@ -94,7 +119,7 @@ void WordSizeTransform::operator()(Block& _block)
 				{
 					if (varDecl.value) visit(*varDecl.value);
 					rewriteVarDeclList(varDecl.variables);
-					return boost::none;
+					return std::nullopt;
 				}
 				else if (
 					varDecl.value->type() == typeid(Identifier) ||
@@ -113,7 +138,7 @@ void WordSizeTransform::operator()(Block& _block)
 								std::move(newRhs[i])
 							}
 						);
-					return ret;
+					return {std::move(ret)};
 				}
 				else
 					yulAssert(false, "");
@@ -122,6 +147,30 @@ void WordSizeTransform::operator()(Block& _block)
 			{
 				Assignment& assignment = boost::get<Assignment>(_s);
 				yulAssert(assignment.value, "");
+
+				// Special handling for datasize and dataoffset - they will only need one variable.
+				if (assignment.value->type() == typeid(FunctionCall))
+					if (BuiltinFunction const* f = m_inputDialect.builtin(boost::get<FunctionCall>(*assignment.value).functionName.name))
+						if (f->literalArguments)
+						{
+							yulAssert(f->name == "datasize"_yulstring || f->name == "dataoffset"_yulstring, "");
+							yulAssert(assignment.variableNames.size() == 1, "");
+							auto newLhs = generateU64IdentifierNames(assignment.variableNames[0].name);
+							vector<Statement> ret;
+							for (int i = 0; i < 3; i++)
+								ret.push_back(Assignment{
+									assignment.location,
+									{Identifier{assignment.location, newLhs[i]}},
+									make_unique<Expression>(Literal{locationOf(*assignment.value), LiteralKind::Number, "0"_yulstring, "u64"_yulstring})
+								});
+							ret.push_back(Assignment{
+								assignment.location,
+								{Identifier{assignment.location, newLhs[3]}},
+								std::move(assignment.value)
+							});
+							return {std::move(ret)};
+						}
+
 				if (
 					assignment.value->type() == typeid(FunctionalInstruction) ||
 					assignment.value->type() == typeid(FunctionCall)
@@ -129,7 +178,7 @@ void WordSizeTransform::operator()(Block& _block)
 				{
 					if (assignment.value) visit(*assignment.value);
 					rewriteIdentifierList(assignment.variableNames);
-					return boost::none;
+					return std::nullopt;
 				}
 				else if (
 					assignment.value->type() == typeid(Identifier) ||
@@ -148,14 +197,16 @@ void WordSizeTransform::operator()(Block& _block)
 								std::move(newRhs[i])
 							}
 						);
-					return ret;
+					return {std::move(ret)};
 				}
 				else
 					yulAssert(false, "");
 			}
+			else if (_s.type() == typeid(Switch))
+				return handleSwitch(boost::get<Switch>(_s));
 			else
 				visit(_s);
-			return boost::none;
+			return std::nullopt;
 		}
 	);
 }
@@ -171,7 +222,7 @@ void WordSizeTransform::rewriteVarDeclList(TypedNameList& _nameList)
 {
 	iterateReplacing(
 		_nameList,
-		[&](TypedName const& _n) -> boost::optional<TypedNameList>
+		[&](TypedName const& _n) -> std::optional<TypedNameList>
 		{
 			TypedNameList ret;
 			for (auto newName: generateU64IdentifierNames(_n.name))
@@ -185,7 +236,7 @@ void WordSizeTransform::rewriteIdentifierList(vector<Identifier>& _ids)
 {
 	iterateReplacing(
 		_ids,
-		[&](Identifier const& _id) -> boost::optional<vector<Identifier>>
+		[&](Identifier const& _id) -> std::optional<vector<Identifier>>
 		{
 			vector<Identifier> ret;
 			for (auto newId: m_variableMapping.at(_id.name))
@@ -199,12 +250,116 @@ void WordSizeTransform::rewriteFunctionCallArguments(vector<Expression>& _args)
 {
 	iterateReplacing(
 		_args,
-		[&](Expression& _e) -> boost::optional<vector<Expression>>
+		[&](Expression& _e) -> std::optional<vector<Expression>>
 		{
 			return expandValueToVector(_e);
 		}
 	);
 }
+
+vector<Statement> WordSizeTransform::handleSwitchInternal(
+	langutil::SourceLocation const& _location,
+	vector<YulString> const& _splitExpressions,
+	vector<Case> _cases,
+	YulString _runDefaultFlag,
+	size_t _depth
+)
+{
+	if (_depth == 4)
+	{
+		yulAssert(_cases.size() == 1, "");
+		return std::move(_cases.front().body.statements);
+	}
+
+	// Extract current 64 bit segment and group by it.
+	map<u256, vector<Case>> cases;
+	for (Case& c: _cases)
+	{
+		yulAssert(c.value, "Default case still present.");
+		cases[
+			(valueOfLiteral(*c.value) >> (256 - 64 * (_depth + 1)))	&
+			std::numeric_limits<uint64_t>::max()
+		].emplace_back(std::move(c));
+	}
+
+	Switch ret{
+		_location,
+		make_unique<Expression>(Identifier{_location, _splitExpressions.at(_depth)}),
+		{}
+	};
+
+	for (auto& c: cases)
+	{
+		Literal label{_location, LiteralKind::Number, YulString(c.first.str()), "u64"_yulstring};
+		ret.cases.emplace_back(Case{
+			c.second.front().location,
+			make_unique<Literal>(std::move(label)),
+			Block{_location, handleSwitchInternal(
+				_location,
+				_splitExpressions,
+				std::move(c.second),
+				_runDefaultFlag,
+				_depth + 1
+			)}
+		});
+	}
+	if (!_runDefaultFlag.empty())
+		ret.cases.emplace_back(Case{
+			_location,
+			nullptr,
+			Block{_location, make_vector<Statement>(
+				Assignment{
+					_location,
+					{{_location, _runDefaultFlag}},
+					make_unique<Expression>(Literal{_location, LiteralKind::Number, "1"_yulstring, "u64"_yulstring})
+				}
+			)}
+		});
+	return make_vector<Statement>(std::move(ret));
+}
+
+std::vector<Statement> WordSizeTransform::handleSwitch(Switch& _switch)
+{
+	for (auto& c: _switch.cases)
+		(*this)(c.body);
+
+	// Turns the switch into a quadruply-nested switch plus
+	// a flag that tells to execute the default case after all the switches.
+	vector<Statement> ret;
+
+	YulString runDefaultFlag;
+	Case defaultCase;
+	if (!_switch.cases.back().value)
+	{
+		runDefaultFlag = m_nameDispenser.newName("run_default"_yulstring);
+		defaultCase = std::move(_switch.cases.back());
+		_switch.cases.pop_back();
+		ret.emplace_back(VariableDeclaration{
+			_switch.location,
+			{TypedName{_switch.location, runDefaultFlag, "u64"_yulstring}},
+			{}
+		});
+	}
+	vector<YulString> splitExpressions;
+	for (auto const& expr: expandValue(*_switch.expression))
+		splitExpressions.emplace_back(boost::get<Identifier>(*expr).name);
+
+	ret += handleSwitchInternal(
+		_switch.location,
+		splitExpressions,
+		std::move(_switch.cases),
+		runDefaultFlag,
+		0
+	);
+	if (!runDefaultFlag.empty())
+		ret.emplace_back(If{
+			_switch.location,
+			make_unique<Expression>(Identifier{_switch.location, runDefaultFlag}),
+			std::move(defaultCase.body)
+		});
+	return ret;
+}
+
 
 array<YulString, 4> WordSizeTransform::generateU64IdentifierNames(YulString const& _s)
 {
@@ -242,7 +397,7 @@ array<unique_ptr<Expression>, 4> WordSizeTransform::expandValue(Expression const
 		}
 	}
 	else
-		yulAssert(false, "");
+		yulAssert(false, "Invalid expression to split.");
 	return ret;
 }
 

@@ -31,16 +31,13 @@ struct AsmAnalysisInfo;
 class EWasmToText: public boost::static_visitor<std::string>
 {
 public:
-	std::string run(
-		std::vector<wasm::GlobalVariableDeclaration> const& _globals,
-		std::vector<wasm::FunctionDefinition> const& _functions
-	);
+	std::string run(wasm::Module const& _module);
 
 public:
 	std::string operator()(wasm::Literal const& _literal);
+	std::string operator()(wasm::StringLiteral const& _literal);
 	std::string operator()(wasm::LocalVariable const& _identifier);
 	std::string operator()(wasm::GlobalVariable const& _identifier);
-	std::string operator()(wasm::Label const& _label);
 	std::string operator()(wasm::BuiltinCall const& _builinCall);
 	std::string operator()(wasm::FunctionCall const& _functionCall);
 	std::string operator()(wasm::LocalAssignment const& _assignment);
@@ -48,7 +45,7 @@ public:
 	std::string operator()(wasm::If const& _if);
 	std::string operator()(wasm::Loop const& _loop);
 	std::string operator()(wasm::Break const& _break);
-	std::string operator()(wasm::Continue const& _continue);
+	std::string operator()(wasm::BreakIf const& _break);
 	std::string operator()(wasm::Block const& _block);
 
 private:
@@ -57,7 +54,10 @@ private:
 	std::string transform(wasm::FunctionDefinition const& _function);
 
 	std::string visit(wasm::Expression const& _expression);
-	std::string joinTransformed(std::vector<wasm::Expression> const& _expressions);
+	std::string joinTransformed(
+		std::vector<wasm::Expression> const& _expressions,
+		char _separator = ' '
+	);
 };
 
 }

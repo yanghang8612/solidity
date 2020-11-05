@@ -21,6 +21,7 @@
 #pragma once
 
 #include <libyul/optimiser/ASTWalker.h>
+#include <libyul/optimiser/OptimiserStep.h>
 #include <libyul/YulString.h>
 
 #include <map>
@@ -29,10 +30,16 @@
 namespace yul
 {
 struct Dialect;
+struct SideEffects;
 
 /**
  * Optimisation stage that removes unused variables and functions and also
  * removes side-effect-free expression statements.
+ *
+ * If msize is used, we cannot remove any statements that access memory.
+ * Because of that, the Unused Pruner should only be invoked on full ASTs,
+ * such that it can check for the presence of msize itself, or
+ * the `_allowMSizeOptimization` needs to be passed.
  *
  * Note that this does not remove circular references.
  *
@@ -41,18 +48,11 @@ struct Dialect;
 class UnusedPruner: public ASTModifier
 {
 public:
-	UnusedPruner(
-		Dialect const& _dialect,
-		Block& _ast,
-		bool _allowMSizeOptimization,
-		std::set<YulString> const& _externallyUsedFunctions = {}
-	);
-	UnusedPruner(
-		Dialect const& _dialect,
-		FunctionDefinition& _function,
-		bool _allowMSizeOptimization,
-		std::set<YulString> const& _externallyUsedFunctions = {}
-	);
+	static constexpr char const* name{"UnusedPruner"};
+	static void run(OptimiserStepContext& _context, Block& _ast) {
+		UnusedPruner::runUntilStabilisedOnFullAST(_context.dialect, _ast, _context.reservedIdentifiers);
+	}
+
 
 	using ASTModifier::operator();
 	void operator()(Block& _block) override;
@@ -64,11 +64,25 @@ public:
 	static void runUntilStabilised(
 		Dialect const& _dialect,
 		Block& _ast,
-		bool _allowMSizeOptization,
+		bool _allowMSizeOptimization,
+		std::map<YulString, SideEffects> const* _functionSideEffects = nullptr,
 		std::set<YulString> const& _externallyUsedFunctions = {}
 	);
 
-	static void runUntilStabilised(
+	static void run(
+		Dialect const& _dialect,
+		Block& _ast,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	)
+	{
+		runUntilStabilisedOnFullAST(_dialect, _ast, _externallyUsedFunctions);
+	}
+
+	/// Run the pruner until the code does not change anymore.
+	/// The provided block has to be a full AST.
+	/// The pruner itself determines if msize is used and which user-defined functions
+	/// are side-effect free.
+	static void runUntilStabilisedOnFullAST(
 		Dialect const& _dialect,
 		Block& _ast,
 		std::set<YulString> const& _externallyUsedFunctions = {}
@@ -87,11 +101,26 @@ public:
 	);
 
 private:
+	UnusedPruner(
+		Dialect const& _dialect,
+		Block& _ast,
+		bool _allowMSizeOptimization,
+		std::map<YulString, SideEffects> const* _functionSideEffects = nullptr,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+	UnusedPruner(
+		Dialect const& _dialect,
+		FunctionDefinition& _function,
+		bool _allowMSizeOptimization,
+		std::set<YulString> const& _externallyUsedFunctions = {}
+	);
+
 	bool used(YulString _name) const;
 	void subtractReferences(std::map<YulString, size_t> const& _subtrahend);
 
 	Dialect const& m_dialect;
 	bool m_allowMSizeOptimization = false;
+	std::map<YulString, SideEffects> const* m_functionSideEffects = nullptr;
 	bool m_shouldRunAgain = false;
 	std::map<YulString, size_t> m_references;
 };

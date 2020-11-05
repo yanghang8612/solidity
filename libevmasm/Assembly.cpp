@@ -258,7 +258,7 @@ Json::Value Assembly::createJsonValue(string _name, int _begin, int _end, string
 string Assembly::toStringInHex(u256 _value)
 {
 	std::stringstream hexStr;
-	hexStr << hex << _value;
+	hexStr << std::uppercase << hex << _value;
 	return hexStr.str();
 }
 
@@ -596,12 +596,14 @@ LinkerObject const& Assembly::assemble() const
 			ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
 			break;
 		case PushSub:
+			assertThrow(i.data() <= size_t(-1), AssemblyException, "");
 			ret.bytecode.push_back(dataRefPush);
 			subRef.insert(make_pair(size_t(i.data()), ret.bytecode.size()));
 			ret.bytecode.resize(ret.bytecode.size() + bytesPerDataRef);
 			break;
 		case PushSubSize:
 		{
+			assertThrow(i.data() <= size_t(-1), AssemblyException, "");
 			auto s = m_subs.at(size_t(i.data()))->assemble().bytecode.size();
 			i.setPushedValue(u256(s));
 			uint8_t b = max<unsigned>(1, dev::bytesRequired(s));

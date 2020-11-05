@@ -36,6 +36,7 @@
 #include <json/json.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -79,13 +80,15 @@ public:
 	static void listAccept(std::vector<T> const& _list, ASTVisitor& _visitor)
 	{
 		for (T const& element: _list)
-			element->accept(_visitor);
+			if (element)
+				element->accept(_visitor);
 	}
 	template <class T>
 	static void listAccept(std::vector<T> const& _list, ASTConstVisitor& _visitor)
 	{
 		for (T const& element: _list)
-			element->accept(_visitor);
+			if (element)
+				element->accept(_visitor);
 	}
 
 	/// @returns a copy of the vector containing only the nodes which derive from T.
@@ -184,7 +187,7 @@ public:
 
 	static std::string visibilityToString(Declaration::Visibility _visibility)
 	{
-		switch(_visibility)
+		switch (_visibility)
 		{
 		case Declaration::Visibility::Public:
 			return "public";
@@ -278,22 +281,31 @@ private:
 class ImportDirective: public Declaration
 {
 public:
+	struct SymbolAlias
+	{
+		ASTPointer<Identifier> symbol;
+		ASTPointer<ASTString> alias;
+		SourceLocation location;
+	};
+
+	using SymbolAliasList = std::vector<SymbolAlias>;
+
 	ImportDirective(
 		SourceLocation const& _location,
 		ASTPointer<ASTString> const& _path,
 		ASTPointer<ASTString> const& _unitAlias,
-		std::vector<std::pair<ASTPointer<Identifier>, ASTPointer<ASTString>>>&& _symbolAliases
+		SymbolAliasList _symbolAliases
 	):
 		Declaration(_location, _unitAlias),
 		m_path(_path),
-		m_symbolAliases(_symbolAliases)
+		m_symbolAliases(move(_symbolAliases))
 	{ }
 
 	void accept(ASTVisitor& _visitor) override;
 	void accept(ASTConstVisitor& _visitor) const override;
 
 	ASTString const& path() const { return *m_path; }
-	std::vector<std::pair<ASTPointer<Identifier>, ASTPointer<ASTString>>> const& symbolAliases() const
+	SymbolAliasList const& symbolAliases() const
 	{
 		return m_symbolAliases;
 	}
@@ -304,9 +316,9 @@ public:
 private:
 	ASTPointer<ASTString> m_path;
 	/// The aliases for the specific symbols to import. If non-empty import the specific symbols.
-	/// If the second component is empty, import the identifier unchanged.
+	/// If the `alias` component is empty, import the identifier unchanged.
 	/// If both m_unitAlias and m_symbolAlias are empty, import all symbols into the current scope.
-	std::vector<std::pair<ASTPointer<Identifier>, ASTPointer<ASTString>>> m_symbolAliases;
+	SymbolAliasList m_symbolAliases;
 };
 
 /**
@@ -394,6 +406,7 @@ public:
 	std::vector<StructDefinition const*> definedStructs() const { return filteredNodes<StructDefinition>(m_subNodes); }
 	std::vector<EnumDefinition const*> definedEnums() const { return filteredNodes<EnumDefinition>(m_subNodes); }
 	std::vector<VariableDeclaration const*> stateVariables() const { return filteredNodes<VariableDeclaration>(m_subNodes); }
+	std::vector<VariableDeclaration const*> stateVariablesIncludingInherited() const;
 	std::vector<ModifierDefinition const*> functionModifiers() const { return filteredNodes<ModifierDefinition>(m_subNodes); }
 	std::vector<FunctionDefinition const*> definedFunctions() const { return filteredNodes<FunctionDefinition>(m_subNodes); }
 	std::vector<EventDefinition const*> events() const { return filteredNodes<EventDefinition>(m_subNodes); }
@@ -900,10 +913,10 @@ public:
 	ElementaryTypeName(
 		SourceLocation const& _location,
 		ElementaryTypeNameToken const& _elem,
-		boost::optional<StateMutability> _stateMutability = {}
+		std::optional<StateMutability> _stateMutability = {}
 	): TypeName(_location), m_type(_elem), m_stateMutability(_stateMutability)
 	{
-		solAssert(!_stateMutability.is_initialized() || _elem.token() == Token::Address, "");
+		solAssert(!_stateMutability.has_value() || _elem.token() == Token::Address, "");
 	}
 
 	void accept(ASTVisitor& _visitor) override;
@@ -911,11 +924,11 @@ public:
 
 	ElementaryTypeNameToken const& typeName() const { return m_type; }
 
-	boost::optional<StateMutability> const& stateMutability() const { return m_stateMutability; }
+	std::optional<StateMutability> const& stateMutability() const { return m_stateMutability; }
 
 private:
 	ElementaryTypeNameToken m_type;
-	boost::optional<StateMutability> m_stateMutability; ///< state mutability for address type
+	std::optional<StateMutability> m_stateMutability; ///< state mutability for address type
 };
 
 /**

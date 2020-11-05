@@ -19,6 +19,7 @@
  */
 
 #include <test/libsolidity/AnalysisFramework.h>
+#include <test/Options.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -108,20 +109,22 @@ BOOST_AUTO_TEST_CASE(division)
 			}
 		}
 	)";
-	CHECK_SUCCESS_NO_WARNINGS(text);
+	CHECK_SUCCESS_OR_WARNING(text, "might happen");
 	text = R"(
 		contract C {
 			function mul(uint256 a, uint256 b) internal pure returns (uint256) {
 				if (a == 0) {
 					return 0;
 				}
+				// TODO remove when SMTChecker sees that this code is the `else` of the `return`.
+				require(a != 0);
 				uint256 c = a * b;
 				require(c / a == b);
 				return c;
 			}
 		}
 	)";
-	CHECK_WARNING(text, "Division by zero");
+	CHECK_SUCCESS_OR_WARNING(text, "might happen");
 	text = R"(
 		contract C {
 			function div(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -209,7 +212,7 @@ BOOST_AUTO_TEST_CASE(compound_assignment_division)
 			uint[] array;
 			function f(uint x, uint p) public {
 				require(x == 2);
-				require(array[p] == 10);
+				array[p] = 10;
 				array[p] /= array[p] / x;
 				assert(array[p] == x);
 				assert(array[p] == 0);
@@ -222,7 +225,7 @@ BOOST_AUTO_TEST_CASE(compound_assignment_division)
 			mapping (uint => uint) map;
 			function f(uint x, uint p) public {
 				require(x == 2);
-				require(map[p] == 10);
+				map[p] = 10;
 				map[p] /= map[p] / x;
 				assert(map[p] == x);
 				assert(map[p] == 0);
@@ -247,6 +250,89 @@ BOOST_AUTO_TEST_CASE(mod)
 	)";
 	CHECK_SUCCESS_NO_WARNINGS(text);
 }
+
+BOOST_AUTO_TEST_CASE(import_base)
+{
+	CompilerStack c;
+	c.setSources({
+	{"base", R"(
+		pragma solidity >=0.0;
+		contract Base {
+			uint x;
+			address a;
+			function f() internal returns (uint) {
+				a = address(this);
+				++x;
+				return 2;
+			}
+		}
+	)"},
+	{"der", R"(
+		pragma solidity >=0.0;
+		pragma experimental SMTChecker;
+		import "base";
+		contract Der is Base {
+			function g(uint y) public {
+				x += f();
+				assert(y > x);
+			}
+		}
+	)"}
+	});
+	c.setEVMVersion(dev::test::Options::get().evmVersion());
+	BOOST_CHECK(c.compile());
+
+	unsigned asserts = 0;
+	for (auto const& e: c.errors())
+	{
+		string const* msg = e->comment();
+		BOOST_REQUIRE(msg);
+		if (msg->find("Assertion violation") != string::npos)
+			++asserts;
+	}
+	BOOST_CHECK_EQUAL(asserts, 1);
+}
+
+BOOST_AUTO_TEST_CASE(import_library)
+{
+	CompilerStack c;
+	c.setSources({
+	{"lib", R"(
+		pragma solidity >=0.0;
+		library L {
+			uint constant one = 1;
+			function f() internal pure returns (uint) {
+				return one;
+			}
+		}
+	)"},
+	{"c", R"(
+		pragma solidity >=0.0;
+		pragma experimental SMTChecker;
+		import "lib";
+		contract C {
+			function g(uint x) public pure {
+				uint y = L.f();
+				assert(x > y);
+			}
+		}
+	)"}
+	});
+	c.setEVMVersion(dev::test::Options::get().evmVersion());
+	BOOST_CHECK(c.compile());
+
+	unsigned asserts = 0;
+	for (auto const& e: c.errors())
+	{
+		string const* msg = e->comment();
+		BOOST_REQUIRE(msg);
+		if (msg->find("Assertion violation") != string::npos)
+			++asserts;
+	}
+	BOOST_CHECK_EQUAL(asserts, 1);
+
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -38,6 +38,11 @@ using namespace std;
 using namespace dev;
 using namespace yul;
 
+void FullInliner::run(OptimiserStepContext& _context, Block& _ast)
+{
+	FullInliner{_ast, _context.dispenser}.run();
+}
+
 FullInliner::FullInliner(Block& _ast, NameDispenser& _dispenser):
 	m_ast(_ast), m_nameDispenser(_dispenser)
 {
@@ -142,14 +147,14 @@ bool FullInliner::recursive(FunctionDefinition const& _fun) const
 
 void InlineModifier::operator()(Block& _block)
 {
-	function<boost::optional<vector<Statement>>(Statement&)> f = [&](Statement& _statement) -> boost::optional<vector<Statement>> {
+	function<std::optional<vector<Statement>>(Statement&)> f = [&](Statement& _statement) -> std::optional<vector<Statement>> {
 		visit(_statement);
 		return tryInlineStatement(_statement);
 	};
 	iterateReplacing(_block.statements, f);
 }
 
-boost::optional<vector<Statement>> InlineModifier::tryInlineStatement(Statement& _statement)
+std::optional<vector<Statement>> InlineModifier::tryInlineStatement(Statement& _statement)
 {
 	// Only inline for expression statements, assignments and variable declarations.
 	Expression* e = boost::apply_visitor(GenericFallbackReturnsVisitor<Expression*, ExpressionStatement, Assignment, VariableDeclaration>(

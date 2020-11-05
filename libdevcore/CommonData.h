@@ -25,14 +25,14 @@
 
 #include <libdevcore/Common.h>
 
-#include <boost/optional.hpp>
-
 #include <vector>
 #include <type_traits>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <set>
 #include <functional>
+#include <utility>
 
 /// Operators need to stay in the global namespace.
 
@@ -96,6 +96,14 @@ inline std::set<T> operator+(std::set<T>&& _a, U&& _b)
 	std::set<T> ret(std::move(_a));
 	ret += std::forward<U>(_b);
 	return ret;
+}
+/// Remove one set from another one.
+template <class T>
+inline std::set<T>& operator-=(std::set<T>& _a, std::set<T> const& _b)
+{
+	for (auto const& x: _b)
+		_a.erase(x);
+	return _a;
 }
 
 namespace dev
@@ -268,7 +276,7 @@ void iterateReplacing(std::vector<T>& _vector, F const& _f)
 	std::vector<T> modifiedVector;
 	for (size_t i = 0; i < _vector.size(); ++i)
 	{
-		if (boost::optional<std::vector<T>> r = _f(_vector[i]))
+		if (std::optional<std::vector<T>> r = _f(_vector[i]))
 		{
 			if (!useModified)
 			{
@@ -296,7 +304,7 @@ void iterateReplacingWindow(std::vector<T>& _vector, F const& _f, std::index_seq
 	size_t i = 0;
 	for (; i + sizeof...(I) <= _vector.size(); ++i)
 	{
-		if (boost::optional<std::vector<T>> r = _f(_vector[i + I]...))
+		if (std::optional<std::vector<T>> r = _f(_vector[i + I]...))
 		{
 			if (!useModified)
 			{

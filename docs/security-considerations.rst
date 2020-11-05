@@ -254,6 +254,61 @@ if you want all overflows to cause a revert.
 
 Code such as ``require((balanceOf[_to] + _value) >= balanceOf[_to])`` can also help you check if values are what you expect.
 
+.. _clearing-mappings:
+
+Clearing Mappings
+=================
+
+The Solidity type ``mapping`` (see :ref:`mapping-types`) is a storage-only key-value data structure that
+does not keep track of the keys that were assigned a non-zero value.
+Because of that, cleaning a mapping without extra information about the written
+keys is not possible.
+If a ``mapping`` is used as the base type of a dynamic storage array, deleting
+or popping the array will have no effect over the ``mapping`` elements.
+The same happens, for example, if a ``mapping`` is used as the type of a member
+field of a ``struct`` that is the base type of a dynamic storage array.
+The ``mapping`` is also ignored in assignments of structs or arrays containing
+a ``mapping``.
+
+::
+
+    pragma solidity >=0.5.0 <0.7.0;
+
+    contract Map {
+        mapping (uint => uint)[] array;
+
+        function allocate(uint _newMaps) public {
+            array.length += _newMaps;
+        }
+
+        function writeMap(uint _map, uint _key, uint _value) public {
+            array[_map][_key] = _value;
+        }
+
+        function readMap(uint _map, uint _key) public view returns (uint) {
+            return array[_map][_key];
+        }
+
+        function eraseMaps() public {
+            delete array;
+        }
+    }
+
+Consider the example above and the following sequence of calls: ``allocate(10)``,
+``writeMap(4, 128, 256)``.
+At this point, calling ``readMap(4, 128)`` returns 256.
+If we call ``eraseMaps``, the length of state variable ``array`` is zeroed, but
+since its ``mapping`` elements cannot be zeroed, their information stays alive
+in the contract's storage.
+After deleting ``array``, calling ``allocate(5)`` allows us to access
+``array[4]`` again, and calling ``readMap(4, 128)`` returns 256 even without
+another call to ``writeMap``.
+
+If your ``mapping`` information must be deleted, consider using a library similar to
+`iterable mapping <https://github.com/ethereum/dapp-bin/blob/master/library/iterable_mapping.sol>`_,
+allowing you to traverse the keys and delete their values in the appropriate
+``mapping``.
+
 Minor Details
 =============
 
@@ -444,26 +499,26 @@ not mean loss of proving power.
 
 ::
 
-   pragma solidity >=0.5.0;
-   pragma experimental SMTChecker;
+    pragma solidity >=0.5.0;
+    pragma experimental SMTChecker;
 
-   contract Recover
-   {
-           function f(
-                   bytes32 hash,
-                   uint8 _v1, uint8 _v2,
-                   bytes32 _r1, bytes32 _r2,
-                   bytes32 _s1, bytes32 _s2
-           ) public pure returns (address) {
-                   address a1 = ecrecover(hash, _v1, _r1, _s1);
-                   require(_v1 == _v2);
-                   require(_r1 == _r2);
-                   require(_s1 == _s2);
-                   address a2 = ecrecover(hash, _v2, _r2, _s2);
-                   assert(a1 == a2);
-                   return a1;
-           }
-   }
+    contract Recover
+    {
+        function f(
+            bytes32 hash,
+            uint8 _v1, uint8 _v2,
+            bytes32 _r1, bytes32 _r2,
+            bytes32 _s1, bytes32 _s2
+        ) public pure returns (address) {
+            address a1 = ecrecover(hash, _v1, _r1, _s1);
+            require(_v1 == _v2);
+            require(_r1 == _r2);
+            require(_s1 == _s2);
+            address a2 = ecrecover(hash, _v2, _r2, _s2);
+            assert(a1 == a2);
+            return a1;
+        }
+    }
 
 In the example above, the SMTChecker is not expressive enough to actually
 compute ``ecrecover``, but by modelling the function calls as uninterpreted
@@ -497,34 +552,34 @@ types.
 
 ::
 
-   pragma solidity >=0.5.0;
-   pragma experimental SMTChecker;
-   // This will not compile
-   contract Aliasing
-   {
-      uint[] array;
-      function f(
-         uint[] memory a,
-         uint[] memory b,
-         uint[][] memory c,
-         uint[] storage d
-      ) internal view {
-         require(array[0] == 42);
-         require(a[0] == 2);
-         require(c[0][0] == 2);
-         require(d[0] == 2);
-         b[0] = 1;
-         // Erasing knowledge about memory references should not
-         // erase knowledge about state variables.
-         assert(array[0] == 42);
-         // Fails because `a == b` is possible.
-         assert(a[0] == 2);
-         // Fails because `c[i] == b` is possible.
-         assert(c[0][0] == 2);
-         assert(d[0] == 2);
-         assert(b[0] == 1);
-      }
-   }
+    pragma solidity >=0.5.0;
+    pragma experimental SMTChecker;
+    // This will report a warning
+    contract Aliasing
+    {
+        uint[] array;
+        function f(
+            uint[] memory a,
+            uint[] memory b,
+            uint[][] memory c,
+            uint[] storage d
+        ) internal view {
+            require(array[0] == 42);
+            require(a[0] == 2);
+            require(c[0][0] == 2);
+            require(d[0] == 2);
+            b[0] = 1;
+            // Erasing knowledge about memory references should not
+            // erase knowledge about state variables.
+            assert(array[0] == 42);
+            // Fails because `a == b` is possible.
+            assert(a[0] == 2);
+            // Fails because `c[i] == b` is possible.
+            assert(c[0][0] == 2);
+            assert(d[0] == 2);
+            assert(b[0] == 1);
+        }
+    }
 
 After the assignment to ``b[0]``, we need to clear knowledge about ``a`` since
 it has the same type (``uint[]``) and data location (memory).  We also need to

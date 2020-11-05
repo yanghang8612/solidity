@@ -31,11 +31,11 @@
 #include <liblangutil/Scanner.h>
 #include <liblangutil/ErrorReporter.h>
 
-#include <boost/optional.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include <string>
 #include <memory>
+#include <optional>
+#include <string>
 
 using namespace std;
 using namespace dev;
@@ -61,7 +61,7 @@ bool parse(string const& _source, Dialect const& _dialect, ErrorReporter& errorR
 			return (yul::AsmAnalyzer(
 				analysisInfo,
 				errorReporter,
-				boost::none,
+				std::nullopt,
 				_dialect
 			)).analyze(*parserResult);
 		}
@@ -73,7 +73,7 @@ bool parse(string const& _source, Dialect const& _dialect, ErrorReporter& errorR
 	return false;
 }
 
-boost::optional<Error> parseAndReturnFirstError(string const& _source, Dialect const& _dialect, bool _allowWarnings = true)
+std::optional<Error> parseAndReturnFirstError(string const& _source, Dialect const& _dialect, bool _allowWarnings = true)
 {
 	ErrorList errors;
 	ErrorReporter errorReporter(errors);
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE(builtins_analysis)
 		{
 			return _name == "builtin"_yulstring ? &f : nullptr;
 		}
-		BuiltinFunction f{"builtin"_yulstring, vector<Type>(2), vector<Type>(3), false, false};
+		BuiltinFunction f{"builtin"_yulstring, vector<Type>(2), vector<Type>(3), {}};
 	};
 
 	SimpleDialect dialect;
@@ -573,6 +573,7 @@ BOOST_AUTO_TEST_CASE(builtins_analysis)
 	CHECK_ERROR_DIALECT("{ let a, b, c := builtin(1) }", TypeError, "Function expects 2 arguments but got 1", dialect);
 	CHECK_ERROR_DIALECT("{ let a, b := builtin(1, 2) }", DeclarationError, "Variable count mismatch: 2 variables and 3 values.", dialect);
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

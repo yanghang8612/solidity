@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <libsolidity/ast/Types.h>
 #include <libsolidity/interface/ReadFile.h>
 #include <liblangutil/Exceptions.h>
 #include <libdevcore/Common.h>
@@ -45,7 +46,8 @@ enum class Kind
 	Int,
 	Bool,
 	Function,
-	Array
+	Array,
+	Sort
 };
 
 struct Sort
@@ -110,12 +112,33 @@ struct ArraySort: public Sort
 	SortPointer range;
 };
 
+struct SortSort: public Sort
+{
+	SortSort(SortPointer _inner): Sort(Kind::Sort), inner(std::move(_inner)) {}
+	bool operator==(Sort const& _other) const override
+	{
+		if (!Sort::operator==(_other))
+			return false;
+		auto _otherSort = dynamic_cast<SortSort const*>(&_other);
+		solAssert(_otherSort, "");
+		solAssert(_otherSort->inner, "");
+		solAssert(inner, "");
+		return *inner == *_otherSort->inner;
+	}
+
+	SortPointer inner;
+};
+
+// Forward declaration.
+SortPointer smtSort(solidity::Type const& _type);
+
 /// C++ representation of an SMTLIB2 expression.
 class Expression
 {
 	friend class SolverInterface;
 public:
 	explicit Expression(bool _v): Expression(_v ? "true" : "false", Kind::Bool) {}
+	explicit Expression(solidity::TypePointer _type): Expression(_type->toString(), {}, std::make_shared<SortSort>(smtSort(*_type))) {}
 	Expression(size_t _number): Expression(std::to_string(_number), Kind::Int) {}
 	Expression(u256 const& _number): Expression(_number.str(), Kind::Int) {}
 	Expression(s256 const& _number): Expression(_number.str(), Kind::Int) {}
@@ -145,7 +168,8 @@ public:
 			{"/", 2},
 			{"mod", 2},
 			{"select", 2},
-			{"store", 3}
+			{"store", 3},
+			{"const_array", 2}
 		};
 		return operatorsArity.count(name) && operatorsArity.at(name) == arguments.size();
 	}
@@ -198,6 +222,21 @@ public:
 		return Expression(
 			"store",
 			std::vector<Expression>{std::move(_array), std::move(_index), std::move(_element)},
+			arraySort
+		);
+	}
+
+	static Expression const_array(Expression _sort, Expression _value)
+	{
+		solAssert(_sort.sort->kind == Kind::Sort, "");
+		auto sortSort = std::dynamic_pointer_cast<SortSort>(_sort.sort);
+		auto arraySort = std::dynamic_pointer_cast<ArraySort>(sortSort->inner);
+		solAssert(sortSort && arraySort, "");
+		solAssert(_value.sort, "");
+		solAssert(*arraySort->range == *_value.sort, "");
+		return Expression(
+			"const_array",
+			std::vector<Expression>{std::move(_sort), std::move(_value)},
 			arraySort
 		);
 	}
@@ -299,13 +338,13 @@ public:
 	virtual void push() = 0;
 	virtual void pop() = 0;
 
-	virtual void declareVariable(std::string const& _name, Sort const& _sort) = 0;
-	Expression newVariable(std::string _name, SortPointer _sort)
+	virtual void declareVariable(std::string const& _name, SortPointer const& _sort) = 0;
+	Expression newVariable(std::string _name, SortPointer const& _sort)
 	{
 		// Subclasses should do something here
 		solAssert(_sort, "");
-		declareVariable(_name, *_sort);
-		return Expression(std::move(_name), {}, std::move(_sort));
+		declareVariable(_name, _sort);
+		return Expression(std::move(_name), {}, _sort);
 	}
 
 	virtual void addAssertion(Expression const& _expr) = 0;
