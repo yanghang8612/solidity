@@ -671,6 +671,15 @@ function create2(
 	// TODO: not part of current Ewasm spec
 	unreachable()
 }
+function create3(
+	a1, a2, a3, a4,
+	b1, b2, b3, b4,
+	c1, c2, c3, c4,
+	d1, d2, d3, d4
+) -> x1, x2, x3, x4 {
+	// TODO: not part of current Ewasm spec
+	unreachable()
+}
 function selfdestruct(a1, a2, a3, a4) {
 	mstore(0, 0, 0, 0, a1, a2, a3, a4)
 	// In EVM, addresses are padded to 32 bytes, so discard the first 12.

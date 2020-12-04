@@ -83,6 +83,8 @@ public:
 	bool hasStaticCall() const { return *this >= byzantium(); }
 	bool hasBitwiseShifting() const { return *this >= constantinople(); }
 	bool hasCreate2() const { return *this >= constantinople(); }
+	/// TODO how to TVMVersion for CREATE3?
+	bool hasCreate3() const { return *this >= constantinople(); }
 	bool hasExtCodeHash() const { return *this >= constantinople(); }
 	bool hasChainID() const { return *this >= istanbul(); }
 	bool hasSelfBalance() const { return *this >= istanbul(); }

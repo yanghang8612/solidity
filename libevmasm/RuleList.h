@@ -633,6 +633,17 @@ std::vector<SimplificationRule<Pattern>> simplificationRuleListPart9(
 		[=]() -> Pattern { return Builtins::CREATE2(W, X, Y, Z); },
 		false
 	});
+	// CREATE3
+	rules.push_back({
+		Builtins::AND(Builtins::CREATE3(W, X, Y, Z), mask),
+		[=]() -> Pattern { return Builtins::CREATE3(W, X, Y, Z); },
+		false
+	});
+	rules.push_back({
+		Builtins::AND(mask, Builtins::CREATE3(W, X, Y, Z)),
+		[=]() -> Pattern { return Builtins::CREATE3(W, X, Y, Z); },
+		false
+	});
 
 	return rules;
 }

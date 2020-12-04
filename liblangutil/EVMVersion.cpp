@@ -38,6 +38,8 @@ bool EVMVersion::hasOpcode(Instruction _opcode) const
 		return hasBitwiseShifting();
 	case Instruction::CREATE2:
 		return hasCreate2();
+	case Instruction::CREATE3:
+		return hasCreate3();
 	case Instruction::EXTCODEHASH:
 		return hasExtCodeHash();
 	case Instruction::CHAINID:

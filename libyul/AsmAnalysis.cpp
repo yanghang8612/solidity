@@ -707,6 +707,10 @@ bool AsmAnalyzer::warnOnInstructions(dev::eth::Instruction _instr, SourceLocatio
 	{
 		errorForVM("only available for Constantinople-compatible");
 	}
+	else if (_instr == dev::eth::Instruction::CREATE3 && !m_evmVersion.hasCreate3())
+	{
+		errorForVM("only available for XXX-compatible");
+	}
 	else if (_instr == dev::eth::Instruction::EXTCODEHASH && !m_evmVersion.hasExtCodeHash())
 	{
 		errorForVM("only available for Constantinople-compatible");
