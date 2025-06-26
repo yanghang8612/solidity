@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       # Note: this step requires that the INTERNAL_CONTRIBUTORS environment variable
       # is already defined in the repository with the current json list of internal contributors.
