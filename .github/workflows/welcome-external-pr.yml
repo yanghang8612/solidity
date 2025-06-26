@@ -16,6 +16,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Debug git status
+        run: |
+          ls -la
+          git status || echo "git status failed"
 
       # Note: this step requires that the INTERNAL_CONTRIBUTORS environment variable
       # is already defined in the repository with the current json list of internal contributors.
