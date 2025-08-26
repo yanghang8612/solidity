@@ -52,11 +52,14 @@ then
   brew untap homebrew/homebrew-cask-versions
   brew update
   brew upgrade
-  brew install cmake
+#  brew install cmake
   brew install wget
   brew install coreutils
   brew install diffutils
   brew install grep
+
+  chmod +x install_cmake.sh
+  ./install_cmake.sh 3.28.3
 
   # boost
   boost_version="1.84.0"
