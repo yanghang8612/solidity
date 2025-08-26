@@ -51,7 +51,7 @@ include_directories(SYSTEM ${JSONCPP_INCLUDE_DIR})
 find_package(Threads)
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    if (CMAKE_VERSION VERSION_EQUAL "4.0.3" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "15.0.0.15000040")
+    if (CMAKE_VERSION VERSION_EQUAL "4.1.0" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL "15.0.0.15000040")
         # for Apple clang 15 under cmake 4.0.0, disable pedantic warnings explicitly as it fails to treat boost properly as
         # system library, warnings propagate
         set(PEDANTIC OFF)
