@@ -58,8 +58,9 @@ then
   brew install diffutils
   brew install grep
 
-  chmod +x install_cmake.sh
-  ./install_cmake.sh 3.28.3
+  # install cmake
+  chmod +x .circleci/install_cmake.sh
+  .circleci/install_cmake.sh 3.28.3
 
   # boost
   boost_version="1.84.0"
