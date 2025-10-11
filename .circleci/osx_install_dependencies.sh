@@ -52,7 +52,10 @@ then
   brew untap homebrew/homebrew-cask-versions
   brew update
   brew upgrade
-#  brew install cmake
+  # brew install cmake
+  # install historical cmake
+  chmod +x .circleci/install_cmake.sh
+  .circleci/install_cmake.sh 3.29.3
   brew install wget
   brew install coreutils
   brew install diffutils
@@ -60,10 +63,6 @@ then
   # JRE is required to run eldarica solver
   brew install openjdk@11
   brew install unzip
-
-  # install historical cmake
-  chmod +x .circleci/install_cmake.sh
-  .circleci/install_cmake.sh 3.28.3
 
   # boost
   boost_version="1.84.0"
