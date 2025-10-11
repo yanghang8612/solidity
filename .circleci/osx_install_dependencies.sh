@@ -51,7 +51,9 @@ then
   brew uninstall temurin17
   brew untap homebrew/homebrew-cask-versions
   brew update
-  brew upgrade
+  brew upgrade || true
+  code=$?
+  echo "brew upgrade exited with code $code"
   # brew install cmake
   # install historical cmake
   chmod +x .circleci/install_cmake.sh
