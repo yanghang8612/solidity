@@ -1,0 +1,14 @@
+name: macOS build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-14  # 或 macos-15，避免 macos-latest 带来的漂移
+    steps:
+      - uses: actions/checkout@v4
+
+      # 可选：选择你需要的 Xcode（以 image 自带版本为准）
+      # - run: sudo xcode-select -s "/Applications/Xcode_16.0.app"
+
+      - name: Build
+        run: sh scripts/build.sh
