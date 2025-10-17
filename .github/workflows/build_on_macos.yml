@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: macos-14  # 或 macos-15，避免 macos-latest 带来的漂移
+    runs-on: self-hosted  # 或 macos-15，避免 macos-latest 带来的漂移
     steps:
       - uses: actions/checkout@v4
 
