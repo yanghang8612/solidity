@@ -3,14 +3,20 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: self-hosted  # 或 macos-15，避免 macos-latest 带来的漂移
+    runs-on: b_win
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # 可选：选择你需要的 Xcode（以 image 自带版本为准）
-      # - run: sudo xcode-select -s "/Applications/Xcode_16.0.app"
-
-      - name: Build
+      - name: Show workspace path
         run: |
-          sh .circleci/osx_install_dependencies.sh
-          sh scripts/build.sh
+          echo "Current path: $PWD"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la
+
+      - name: Run build script
+        shell: bash
+        run: |
+          WINPATH=$(cygpath -w "$(pwd)/.circleci/build_win.ps1")
+          powershell.exe -ExecutionPolicy Bypass -File "$WINPATH"
