@@ -11,8 +11,8 @@ jobs:
 
       - name: Prepare deps
         shell: bash
-        run: powershell.exe .circleci\install_deps_win.ps1
+        run: powershell.exe .circleci/install_deps_win.ps1
 
       - name: Run build script
         shell: bash
-        run: powershell.exe .circleci\build_win.ps1
+        run: powershell.exe .circleci/build_win.ps1
