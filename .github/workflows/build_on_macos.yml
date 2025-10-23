@@ -12,5 +12,4 @@ jobs:
       - name: Run build script
         shell: bash
         run: |
-          WINPATH=$(cygpath -w "$(pwd)/.circleci/build_win.ps1")
-          powershell.exe -ExecutionPolicy Bypass -File "$WINPATH"
+          powershell.exe .circleci/build_win.ps1
