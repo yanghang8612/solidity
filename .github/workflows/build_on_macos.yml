@@ -9,12 +9,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show workspace path
-        run: |
-          echo "Current path: $PWD"
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          ls -la
-
       - name: Run build script
         shell: bash
         run: |
