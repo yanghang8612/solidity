@@ -10,7 +10,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare deps
-        shell: bash
         run: powershell.exe scripts/install_deps.ps1
 
       - name: Run build script
