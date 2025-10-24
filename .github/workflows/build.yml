@@ -31,6 +31,7 @@ jobs:
 
     container:
       image: solbuildpackpusher/solidity-buildpack-deps@sha256:84a1fb8771236e8d9aa5c615a425b8929e56a6e4f150a60078c8d74a1ceaa6c2
+      options: --user root
 
     steps:
       - name: Checkout code
