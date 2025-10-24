@@ -1,5 +1,8 @@
-name: macOS build
-on: [push, pull_request]
+name: Build binaries on multi platform
+on:
+  push:
+    branches:
+      - develop
 
 jobs:
   b_windows:
@@ -26,18 +29,30 @@ jobs:
         shell: bash
         run: powershell.exe .github/workflows/build_on_win.ps1
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: build\solc\Release\solc.exe
+
   b_macos:
     runs-on: [ self-hosted, macOS ]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run build script
         run: scripts/ci/build.sh
 
-  b_ubuntu:
-    runs-on: [ self-hosted, Linux ]
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binary
+          path: build/solc/solc
+
+  b_linux:
+    runs-on: [ self-hosted, Linux, for-linux ]
 
     env:
       CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DUSE_Z3_DLOPEN=ON -DUSE_CVC4=OFF -DSOLC_STATIC_STDLIBS=ON
@@ -49,10 +64,91 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Fix git safe directory
         run: git config --global --add safe.directory '*'
 
       - name: Run build script
         run: scripts/ci/build.sh
+
+      - name: Rename solc
+        run: mv build/solc/solc build/solc/solc-static-linux
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: build/solc/solc-static-linux
+
+  b_ems:
+    runs-on: [ self-hosted, Linux, for-ems ]
+
+    env:
+      MAKEFLAGS: -j 10
+      CPUs: 5
+
+    container:
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:c57f2bfb8c15d70fe290629358dd1c73dc126e3760f443b54764797556b887d4
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Run build script
+        run: scripts/ci/build_emscripten.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-binary
+          path: upload/soljson.js
+
+  upload-to-s3:
+    needs: [ b_windows, b_macos, b_linux, b_ems ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List artifacts
+        run: |
+          ls -R artifacts/
+
+      - name: Gather and rename binaries from dependent jobs
+        run: |
+          mkdir github/
+          cp artifacts/build/solc/solc-static-linux github/solc-static-linux
+          cp artifacts/build/solc/solc              github/solc-macos
+          cp artifacts/build/solc/Release/solc.exe  github/solc-windows.exe
+          cp artifacts/upload/soljson.js            github/soljson.js
+
+          cd github/
+          tar --create --file ../github-binaries.tar *
+
+      - name: Rename binaries to solc-bin naming convention
+        run: |
+          full_version=$(
+            github/solc-static-linux --version |
+            sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
+          )
+
+          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
+
+          mv github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
+          mv github/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
+          mv github/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
+          mv github/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
+
+          cd solc-bin/
+          tar --create --file ../solc-bin-binaries.tar *
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp github/github-binaries.tar s3://soliditry/${{ github.sha }}/
+          aws s3 cp solc-bin/solc-bin-binaries.tar s3://soliditry/${{ github.sha }}/
