@@ -1,0 +1,31 @@
+name: macOS build
+on: [push, pull_request]
+
+jobs:
+  b_windows:
+    runs-on: [ self-hosted, Windows ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare deps
+        run: powershell.exe scripts/install_deps.ps1
+
+      - name: Run build script
+        shell: bash
+        run: powershell.exe .github/workflows/build_on_win.ps1
+
+  b_macos:
+    runs-on: [ self-hosted, macOS ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+          cmake .. && make
