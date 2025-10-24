@@ -23,9 +23,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build
-        shell: bash
-        run: |
-          mkdir build
-          cd build
-          cmake .. && make
+      - name: Run build script
+        run: scripts/ci/build.sh
+
+  b_ubuntu:
+    runs-on: [ self-hosted, Linux ]
+
+    container:
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:84a1fb8771236e8d9aa5c615a425b8929e56a6e4f150a60078c8d74a1ceaa6c2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run build script
+        run: scripts/ci/build.sh
