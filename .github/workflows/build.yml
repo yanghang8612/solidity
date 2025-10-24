@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Run build script
-        run: ./github/workflows/build.sh
+        run: .github/workflows/build.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -70,7 +70,7 @@ jobs:
         run: git config --global --add safe.directory '*'
 
       - name: Run build script
-        run: ./github/workflows/build.sh
+        run: .github/workflows/build.sh
 
       - name: Rename solc
         run: mv build/solc/solc build/solc/solc-static-linux
@@ -99,7 +99,7 @@ jobs:
         run: git config --global --add safe.directory '*'
 
       - name: Run build script
-        run: ./github/workflows/build_ems.sh
+        run: .github/workflows/build_ems.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
