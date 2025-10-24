@@ -109,7 +109,7 @@ jobs:
 
   upload-to-s3:
     needs: [ b_windows, b_macos, b_linux, b_ems ]
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, Linux ]
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
