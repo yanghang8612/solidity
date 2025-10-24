@@ -27,8 +27,8 @@ fi
 # TODO: This can be removed if and when all usages of `move()` in our codebase use the `std::` qualifier.
 CMAKE_CXX_FLAGS="-Wno-unqualified-std-cast-call"
 
-mkdir -p build_dir
-cd build_dir
+mkdir -p build
+cd build
 emcmake cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DBoost_USE_STATIC_LIBS=1 \
@@ -40,7 +40,7 @@ make soljson
 
 cd ..
 mkdir -p upload
-scripts/ci/pack_soljson.sh "$build_dir/libsolc/soljson.js" "$build_dir/libsolc/soljson.wasm" upload/soljson.js
+scripts/ci/pack_soljson.sh "build/libsolc/soljson.js" "build/libsolc/soljson.wasm" upload/soljson.js
 cp upload/soljson.js ./
 
 OUTPUT_SIZE=$(ls -la soljson.js)
