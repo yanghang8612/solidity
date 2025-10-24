@@ -7,10 +7,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Prepare deps
-        run: powershell.exe scripts/install_deps.ps1
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: .\deps
+          key: dependencies-win-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
+          restore-keys: dependencies-win-${{ runner.arch }}-
+
+      - name: Installing dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: powershell
+        run: .\scripts\install_deps.ps1
 
       - name: Run build script
         shell: bash
@@ -28,6 +38,11 @@ jobs:
 
   b_ubuntu:
     runs-on: [ self-hosted, Linux ]
+
+    env:
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DUSE_Z3_DLOPEN=ON -DUSE_CVC4=OFF -DSOLC_STATIC_STDLIBS=ON
+      MAKEFLAGS: -j 10
+      CPUs: 10
 
     container:
       image: solbuildpackpusher/solidity-buildpack-deps@sha256:84a1fb8771236e8d9aa5c615a425b8929e56a6e4f150a60078c8d74a1ceaa6c2
