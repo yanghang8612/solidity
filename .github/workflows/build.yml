@@ -29,15 +29,12 @@ jobs:
         shell: bash
         run: powershell.exe .github/workflows/build_win.ps1
 
-      - name: Rename binary
-        run: mv build\solc\Release\solc.exe build\solc\Release\solc-windows.exe
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: build\solc\Release\solc-windows.exe
+          name: solc-windows
+          path: build\solc\Release\solc.exe
           compression-level: 0
-          overwrite: true
 
   b_macos:
     runs-on: [ self-hosted, macOS ]
@@ -49,15 +46,12 @@ jobs:
       - name: Run build script
         run: .github/workflows/build.sh
 
-      - name: Rename binary
-        run: mv build/solc/solc build/solc/solc-macos
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: build/solc/solc-macos
+          name: solc-macos
+          path: build/solc/solc
           compression-level: 0
-          overwrite: true
 
   b_linux:
     runs-on: [ self-hosted, Linux, for-linux ]
@@ -80,15 +74,12 @@ jobs:
       - name: Run build script
         run: .github/workflows/build.sh
 
-      - name: Rename binary
-        run: mv build/solc/solc build/solc/solc-static-linux
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: build/solc/solc-static-linux
+          name: solc-linux
+          path: build/solc/solc
           compression-level: 0
-          overwrite: true
 
   b_ems:
     runs-on: [ self-hosted, Linux, for-ems ]
@@ -113,9 +104,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+          name: solc-ems
           path: upload/soljson.js
           compression-level: 0
-          overwrite: true
 
   upload-to-s3:
     needs: [ b_windows, b_macos, b_linux, b_ems ]
@@ -123,29 +114,37 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-      - name: Create solidity tarball for github release
+      - name: List all artifacts
         run: |
-          cd artifact
+          ls -R artifacts/
+
+      - name: Gather and rename binaries from dependent jobs
+        run: |
+          mkdir github/
+          cp artifacts/solc-linux/solc        github/solc-static-linux
+          cp artifacts/solc-macos/solc        github/solc-macos
+          cp artifacts/solc-windows/solc.exe  github/solc-windows.exe
+          cp artifacts/solc-ems/soljson.js    github/soljson.js
+            
+          cd github
           tar --create --file ../github-binaries.tar *
-
-      - name: List artifact
-        run: |
-          ls -R artifact/
 
       - name: Rename binaries to solc-bin naming convention
         run: |
           full_version=$(
-            artifact/solc-static-linux --version |
+            github/solc-static-linux --version |
             sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
           )
 
           mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
 
-          mv artifact/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
-          mv artifact/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
-          mv artifact/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
-          mv artifact/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
+          mv github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
+          mv github/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
+          mv github/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
+          mv github/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
 
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *
