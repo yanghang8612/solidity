@@ -129,6 +129,10 @@ jobs:
           cd artifact
           tar --create --file ../github-binaries.tar *
 
+      - name: List artifact
+        run: |
+          ls -R artifact/
+
       - name: Rename binaries to solc-bin naming convention
         run: |
           full_version=$(
