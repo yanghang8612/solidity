@@ -37,6 +37,7 @@ jobs:
         with:
           path: build\solc\Release\solc-windows.exe
           compression-level: 0
+          overwrite: true
 
   b_macos:
     runs-on: [ self-hosted, macOS ]
@@ -54,8 +55,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: build/solc/solc
+          path: build/solc/solc-macos
           compression-level: 0
+          overwrite: true
 
   b_linux:
     runs-on: [ self-hosted, Linux, for-linux ]
@@ -86,6 +88,7 @@ jobs:
         with:
           path: build/solc/solc-static-linux
           compression-level: 0
+          overwrite: true
 
   b_ems:
     runs-on: [ self-hosted, Linux, for-ems ]
@@ -112,6 +115,7 @@ jobs:
         with:
           path: upload/soljson.js
           compression-level: 0
+          overwrite: true
 
   upload-to-s3:
     needs: [ b_windows, b_macos, b_linux, b_ems ]
