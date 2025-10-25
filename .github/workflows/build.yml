@@ -151,5 +151,5 @@ jobs:
 
       - name: Upload to S3
         run: |
-          aws s3 cp github-binaries.tar s3://solidity/${{ github.sha }}/
-          aws s3 cp solc-bin-binaries.tar s3://solidity/${{ github.sha }}/
+          aws s3 cp github-binaries.tar s3://tron-chain-test/solidity/${{ github.sha }}/
+          aws s3 cp solc-bin-binaries.tar s3://tron-chain-test/solidity/${{ github.sha }}/
