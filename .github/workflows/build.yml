@@ -18,6 +18,7 @@ jobs:
             release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
           esac
           echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "Bucket resolved to: $BUCKET"
 
   b_windows:
     runs-on: [ self-hosted, Windows ]
