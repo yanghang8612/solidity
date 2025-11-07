@@ -178,4 +178,3 @@ jobs:
         run: |
           aws s3 cp github-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
           aws s3 cp solc-bin-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
-
