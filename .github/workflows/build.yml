@@ -3,8 +3,22 @@ on:
   push:
     branches:
       - develop
+      - "release_*"
 
 jobs:
+  print_sercret:
+    runs-on: [ ubuntu-latest ]
+
+    steps:
+      - name: Pick bucket by branch
+        id: pick
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop)  echo "bucket=${{ secrets.S3_BUCKET_PROD }}" >> $GITHUB_OUTPUT ;;
+            release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
+          esac
+          echo $BUCKET
+
   b_windows:
     runs-on: [ self-hosted, Windows ]
 
@@ -149,8 +163,19 @@ jobs:
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *
 
+      - name: Pick bucket by branch
+        id: pick
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop)  echo "bucket=${{ secrets.S3_BUCKET_PROD }}" >> $GITHUB_OUTPUT ;;
+            release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Mask bucket
+        run: echo "::add-mask::${{ steps.pick.outputs.bucket }}"
+
       - name: Upload to S3
         run: |
-          aws s3 cp github-binaries.tar s3://tron-chain-test/solidity/${{ github.sha }}/
-          aws s3 cp solc-bin-binaries.tar s3://tron-chain-test/solidity/${{ github.sha }}/
+          aws s3 cp github-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-bin-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
 
