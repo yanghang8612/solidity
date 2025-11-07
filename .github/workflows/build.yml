@@ -10,18 +10,11 @@ jobs:
     runs-on: [ ubuntu-latest ]
 
     steps:
-      - name: Pick bucket by branch
-        id: pick
-        run: |
-          case "${GITHUB_REF_NAME}" in
-            develop)  echo "bucket=${{ secrets.S3_BUCKET_PROD }}" >> $GITHUB_OUTPUT ;;
-            release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
-          esac
-
-          echo "Bucket(partial): ${BUCKET:0:4}…${BUCKET: -3} (len=${#BUCKET})"
-
       - name: Debug bucket
-        run: echo "REAL BUCKET = ${{ steps.pick.outputs.bucket }}"
+        env:
+          BUCKET: ${{ secrets.S3_BUCKET_PROD }}
+        run: |
+          echo "Bucket(partial): ${BUCKET:0:4}…${BUCKET: -3} (len=${#BUCKET})"
 
   b_windows:
     runs-on: [ self-hosted, Windows ]
@@ -167,18 +160,15 @@ jobs:
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *
 
-      - name: Pick bucket by branch
-        id: pick
+      - name: Upload to S3
+        env:
+          S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
+          S3_BUCKET_TEST: ${{ secrets.S3_BUCKET_TEST }}
         run: |
           case "${GITHUB_REF_NAME}" in
-            develop)  echo "bucket=${{ secrets.S3_BUCKET_PROD }}" >> $GITHUB_OUTPUT ;;
-            release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
+            develop)   bucket="${S3_BUCKET_PROD}" ;;
+            release_*) bucket="${S3_BUCKET_TEST}" ;;
           esac
-
-      - name: Mask bucket
-        run: echo "::add-mask::${{ steps.pick.outputs.bucket }}"
-
-      - name: Upload to S3
-        run: |
-          aws s3 cp github-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-bin-binaries.tar "s3://${{ steps.pick.outputs.bucket }}/${{ github.sha }}/" --only-show-errors
+          
+          aws s3 cp github-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-bin-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
