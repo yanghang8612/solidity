@@ -6,16 +6,6 @@ on:
       - "release_*"
 
 jobs:
-  print_sercret:
-    runs-on: [ ubuntu-latest ]
-
-    steps:
-      - name: Debug bucket
-        env:
-          BUCKET: ${{ secrets.S3_BUCKET_PROD }}
-        run: |
-          echo "Bucket(partial): ${BUCKET:0:4}…${BUCKET: -3} (len=${#BUCKET})"
-
   b_windows:
     runs-on: [ self-hosted, Windows ]
 
