@@ -17,8 +17,9 @@ jobs:
             develop)  echo "bucket=${{ secrets.S3_BUCKET_PROD }}" >> $GITHUB_OUTPUT ;;
             release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
           esac
-          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
-          echo "Bucket resolved to: $BUCKET"
+
+      - name: Debug bucket
+        run: echo "REAL BUCKET = ${{ steps.pick.outputs.bucket }}"
 
   b_windows:
     runs-on: [ self-hosted, Windows ]
