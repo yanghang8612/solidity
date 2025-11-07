@@ -18,6 +18,8 @@ jobs:
             release_*) echo "bucket=${{ secrets.S3_BUCKET_TEST }}" >> $GITHUB_OUTPUT ;;
           esac
 
+          echo "Bucket(partial): ${BUCKET:0:4}…${BUCKET: -3} (len=${#BUCKET})"
+
       - name: Debug bucket
         run: echo "REAL BUCKET = ${{ steps.pick.outputs.bucket }}"
 
