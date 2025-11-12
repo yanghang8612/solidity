@@ -1,0 +1,35 @@
+name: test cache
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  save_file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: write test file
+        run: |
+          mkdir build/
+          echo "shabi" >> build/test.txt
+
+      - name: Save file to cache
+        uses: actions/cache/save@v4
+        with:
+          path: build/test.txt
+          key: test-${{ github.run_id }}
+
+  restore_file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore test
+        uses: actions/cache/restore@v4
+        with:
+          path: artifacts/test.txt
+          key: test-${{ github.run_id }}
+
+      - name: Cat file
+        run: |
+          cat artifacts/test.txt
