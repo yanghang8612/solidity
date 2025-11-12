@@ -1,39 +1,15 @@
-name: test cache
+name: test aws
 on:
   push:
     branches:
       - develop
 
 jobs:
-  save_file:
-    runs-on: ubuntu-latest
+  test_aws:
+    runs-on: [ self-hosted, macOS ]
 
     steps:
-      - name: write test file
+      - name: test aws
+        shell: zsh -el {0}
         run: |
-          mkdir build/
-          echo "shabi" >> build/test.txt
-
-      - name: Save file to cache
-        uses: actions/cache/save@v4
-        with:
-          path: build/test.txt
-          key: test-${{ github.run_id }}
-
-  restore_file:
-    runs-on: ubuntu-latest
-
-    permissions:
-      actions: read
-      contents: read
-
-    steps:
-      - name: Restore test
-        uses: actions/cache/restore@v4
-        with:
-          path: shabi/test.txt
-          key: test-${{ github.run_id }}
-
-      - name: Cat file
-        run: |
-          cat shabi/test.txt
+          aws --version

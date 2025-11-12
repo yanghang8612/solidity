@@ -38,7 +38,7 @@ jobs:
           compression-level: 0
 
   b_macos:
-    runs-on: [ self-hosted, macOS ]
+    runs-on: [ self-hosted ]
 
     steps:
       - name: Checkout code
