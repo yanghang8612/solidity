@@ -31,9 +31,9 @@ jobs:
       - name: Restore test
         uses: actions/cache/restore@v4
         with:
-          path: build/test.txt
+          path: shabi/test.txt
           key: test-${{ github.run_id }}
 
       - name: Cat file
         run: |
-          cat build/test.txt
+          cat shabi/test.txt
