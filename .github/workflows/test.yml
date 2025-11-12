@@ -23,6 +23,10 @@ jobs:
   restore_file:
     runs-on: ubuntu-latest
 
+    permissions:
+      actions: read
+      contents: read
+
     steps:
       - name: Restore test
         uses: actions/cache/restore@v4
