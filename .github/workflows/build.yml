@@ -13,9 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
       - name: Cache dependencies
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .\deps
           key: dependencies-win-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
@@ -37,7 +40,7 @@ jobs:
           cp build/solc/Release/solc.exe github/solc-windows.exe
 
       - name: Save artifact to cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: github/solc-windows.exe
           key: solc-windows-${{ github.run_id }}
@@ -67,7 +70,7 @@ jobs:
           cp build/solc/solc github/solc-macos
 
       - name: Save artifact to cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: github/solc-macos
           key: solc-macos-${{ github.run_id }}
@@ -100,7 +103,7 @@ jobs:
           cp build/solc/solc github/solc-static-linux
 
       - name: Save artifact to cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: github/solc-static-linux
           key: solc-linux-${{ github.run_id }}
@@ -131,7 +134,7 @@ jobs:
           cp upload/soljson.js github/soljson.js
 
       - name: Save artifact to cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: github/soljson.js
           key: solc-ems-${{ github.run_id }}
@@ -147,27 +150,27 @@ jobs:
 
     steps:
       - name: Restore solc-windows
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: github/solc-windows.exe
           key: solc-windows-${{ github.run_id }}
           enableCrossOsArchive: true
 
       - name: Restore solc-macos
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: github/solc-macos
           key: solc-macos-${{ github.run_id }}
           enableCrossOsArchive: true
 
       - name: Restore solc-linux
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: github/solc-static-linux
           key: solc-linux-${{ github.run_id }}
 
       - name: Restore solc-ems
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: github/soljson.js
           key: solc-ems-${{ github.run_id }}

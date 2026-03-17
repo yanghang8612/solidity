@@ -177,6 +177,12 @@ namespace GasCosts
 		return _evmVersion >= langutil::EVMVersion::istanbul() ? 16 : 68;
 	}
 	static unsigned const copyGas = 3;
+
+	static unsigned const freezeV1Gas = 20000;
+	static unsigned const expireTimeGas = 50;
+	static unsigned const freezeV2Gas = 10000;
+	static unsigned const withdrawGas = 20000;
+	static unsigned const voteGas = 30000;
 }
 
 /**
