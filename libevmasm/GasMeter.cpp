@@ -169,8 +169,11 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 					valueSize = 0;
 				else if (!classes.knownZero(m_state->relativeStackElement(-1 - valueSize)))
 					gas += GasCosts::callValueTransferGas;
-				gas += memoryGas(-2 - valueSize, -3 - valueSize);
-				gas += memoryGas(-4 - valueSize, -5 - valueSize);
+				int tokenIdSize = 0;
+				if (_item.instruction() == Instruction::CALLTOKEN)
+					tokenIdSize = 1;
+				gas += memoryGas(-2 - valueSize - tokenIdSize, -3 - valueSize - tokenIdSize);
+				gas += memoryGas(-4 - valueSize - tokenIdSize, -5 - valueSize - tokenIdSize);
 			}
 			break;
 		}
@@ -208,38 +211,29 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::ISCONTRACT:
 			gas = GasCosts::balanceGas(m_evmVersion);
 			break;
-        case Instruction::NATIVEFREEZE:
-            gas = runGas(Instruction::NATIVEFREEZE, m_evmVersion);
-            break;
-        case Instruction::NATIVEUNFREEZE:
-            gas = runGas(Instruction::NATIVEUNFREEZE, m_evmVersion);
-            break;
-        case Instruction::NATIVEFREEZEEXPIRETIME:
-            gas = runGas(Instruction::NATIVEFREEZEEXPIRETIME, m_evmVersion);
-            break;
+		case Instruction::NATIVEFREEZE:
+			gas = GasCosts::freezeV1Gas;
+			gas += GasCosts::callNewAccountGas;
+			break;
+		case Instruction::NATIVEUNFREEZE:
+			gas = GasCosts::freezeV1Gas;
+			break;
+		case Instruction::NATIVEFREEZEEXPIRETIME:
+			gas = GasCosts::expireTimeGas;
+			break;
 		case Instruction::NATIVEVOTE:
-			gas = runGas(Instruction::NATIVEVOTE, m_evmVersion);
+			gas = GasCosts::voteGas;
 			break;
 		case Instruction::NATIVEWITHDRAWREWARD:
-			gas = runGas(Instruction::NATIVEWITHDRAWREWARD, m_evmVersion);
+			gas = GasCosts::withdrawGas;
 			break;
 		case Instruction::NATIVEFREEZEBALANCEV2:
-			gas = runGas(Instruction::NATIVEFREEZEBALANCEV2, m_evmVersion);
-			break;
 		case Instruction::NATIVEUNFREEZEBALANCEV2:
-			gas = runGas(Instruction::NATIVEUNFREEZEBALANCEV2, m_evmVersion);
-			break;
-        case Instruction::NATIVECANCELALLUNFREEZEV2:
-            gas = runGas(Instruction::NATIVECANCELALLUNFREEZEV2, m_evmVersion);
-            break;
+		case Instruction::NATIVECANCELALLUNFREEZEV2:
 		case Instruction::NATIVEWITHDRAWEXPIREUNFREEZE:
-			gas = runGas(Instruction::NATIVEWITHDRAWEXPIREUNFREEZE, m_evmVersion);
-			break;
 		case Instruction::NATIVEDELEGATERESOURCE:
-			gas = runGas(Instruction::NATIVEDELEGATERESOURCE, m_evmVersion);
-			break;
 		case Instruction::NATIVEUNDELEGATERESOURCE:
-			gas = runGas(Instruction::NATIVEUNDELEGATERESOURCE, m_evmVersion);
+			gas = GasCosts::freezeV2Gas;
 			break;
 		case Instruction::CHAINID:
 			gas = runGas(Instruction::CHAINID, m_evmVersion);
