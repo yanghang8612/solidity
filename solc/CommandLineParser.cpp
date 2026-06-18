@@ -1450,7 +1450,7 @@ void CommandLineParser::processArgs()
 			"The --" + g_strViaIR + " is currently experimental for TRON solidity compiler. Use --" + g_strExperimentalViaIR + " instead."
 		);
 	}
-	m_options.output.viaIR = (m_args.count(g_strExperimentalViaIR) > 0 || m_args.count(g_strViaIR) > 0);
+	m_options.output.viaIR = (m_args.count(g_strExperimentalViaIR) > 0);
 
 	solAssert(
 		m_options.input.mode == InputMode::Compiler ||
