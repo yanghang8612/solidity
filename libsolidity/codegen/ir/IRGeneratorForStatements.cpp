@@ -1904,7 +1904,22 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		solAssert(!_functionCall.annotation().tryCall);
 		solAssert(!functionType->valueSet());
 		solAssert(!functionType->gasSet());
-		if (functionType->kind() < FunctionType::Kind::AvailableUnfreezeV2Size)
+		// Only the address-member reads in this block carry a bound first argument (the address).
+		// Match them by kind rather than by enum ordering so that reordering FunctionType::Kind
+		// in Types.h cannot silently invalidate this consistency check.
+		static std::set<FunctionType::Kind> const boundFirstArgumentKinds = {
+			FunctionType::Kind::AvailableUnfreezeV2Size,
+			FunctionType::Kind::UnfreezableBalanceV2,
+			FunctionType::Kind::ExpireUnfreezeBalanceV2,
+			FunctionType::Kind::DelegatableResource,
+			FunctionType::Kind::ResourceV2,
+			FunctionType::Kind::CheckUnDelegateResource,
+			FunctionType::Kind::ResourceUsage,
+			FunctionType::Kind::TotalResource,
+			FunctionType::Kind::TotalDelegatedResource,
+			FunctionType::Kind::TotalAcquiredResource,
+		};
+		if (!boundFirstArgumentKinds.count(functionType->kind()))
 			solAssert(!functionType->hasBoundFirstArgument());
 
 		static std::map<FunctionType::Kind, u256> precompiles = {
