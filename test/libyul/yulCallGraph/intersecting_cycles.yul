@@ -9,4 +9,4 @@
 // <main>: non-recursive
 // alpha: recursive
 // beta: recursive
-// gamma: non-recursive
+// gamma: recursive
