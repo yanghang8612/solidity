@@ -3,8 +3,7 @@
     // so {alpha, beta, gamma} is a single strongly-connected component (all three are recursive).
     //
     // The old call-graph cycle finder mis-classified gamma as non-recursive (SOL-2026-2), but the
-    // side-effect result is unaffected: gamma still calls into the (correctly detected) alpha/beta
-    // cycle, so "can loop" is propagated to it along the call edges regardless of the recursion flag.
+    // side-effect result is unaffected.
     function alpha() { beta() gamma() }
     function beta() { alpha() }
     function gamma() { beta() }
