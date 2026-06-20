@@ -6,7 +6,7 @@
     function rim() { spoke() }
 }
 // ----
-// <main>: non-recursive
-// hub: recursive
-// spoke: recursive
-// rim: recursive
+// <main>
+// hub -> spoke, rim (recursive)
+// spoke -> hub (recursive)
+// rim -> spoke (recursive)
