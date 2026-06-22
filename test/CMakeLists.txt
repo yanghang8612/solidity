@@ -43,6 +43,7 @@ set(libsolutil_sources
     libsolutil/LEB128.cpp
     libsolutil/StringUtils.cpp
     libsolutil/SwarmHash.cpp
+    libsolutil/TarjanSCC.cpp
     libsolutil/TemporaryDirectoryTest.cpp
     libsolutil/UTF8.cpp
     libsolutil/Whiskers.cpp
