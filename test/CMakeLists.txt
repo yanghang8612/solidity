@@ -144,6 +144,8 @@ detect_stray_source_files("${libsolidity_util_sources}" "libsolidity/util/")
 set(libyul_sources
     libyul/Common.cpp
     libyul/Common.h
+    libyul/CallGraphTest.cpp
+    libyul/CallGraphTest.h
     libyul/CompilabilityChecker.cpp
     libyul/ControlFlowGraphTest.cpp
     libyul/ControlFlowGraphTest.h
