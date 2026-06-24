@@ -191,9 +191,12 @@ std::vector<SemanticInformation::Operation> SemanticInformation::readWriteOperat
 	case Instruction::NATIVEVOTE:
 	{
 		size_t paramCount = static_cast<size_t>(instructionInfo(_instruction, langutil::EVMVersion()).args);
+		solAssert(paramCount >= 4, "");
 		std::vector<Operation> operations{
-			Operation{Location::Memory, Effect::Read, paramCount - 1, paramCount - 2, {}},
-			Operation{Location::Memory, Effect::Read, paramCount - 3, paramCount - 4, {}},
+			// The length parameters address array element counts, not byte lengths, so we
+			// conservatively treat the read areas as having an unknown length.
+			Operation{Location::Memory, Effect::Read, paramCount - 1, {}, {}},
+			Operation{Location::Memory, Effect::Read, paramCount - 3, {}, {}},
 		};
 		return operations;
 	}
@@ -365,6 +368,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::SELFBALANCE: // depends on previous calls
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
+	case Instruction::ISCONTRACT:
 	case Instruction::RETURNDATACOPY: // depends on previous calls
 	case Instruction::RETURNDATASIZE:
 	case Instruction::CALLTOKEN:
@@ -400,6 +404,7 @@ bool SemanticInformation::movable(Instruction _instruction)
 	case Instruction::BALANCE:
 	case Instruction::TOKENBALANCE:
 	case Instruction::ISCONTRACT:
+	case Instruction::NATIVEFREEZEEXPIRETIME:
 	case Instruction::SELFBALANCE:
 	case Instruction::EXTCODESIZE:
 	case Instruction::EXTCODEHASH:
@@ -476,9 +481,11 @@ bool SemanticInformation::movableApartFromEffects(Instruction _instruction)
 	{
 	case Instruction::EXTCODEHASH:
 	case Instruction::EXTCODESIZE:
+	case Instruction::ISCONTRACT:
 	case Instruction::RETURNDATASIZE:
 	case Instruction::BALANCE:
 	case Instruction::TOKENBALANCE:
+	case Instruction::NATIVEFREEZEEXPIRETIME:
 	case Instruction::SELFBALANCE:
 	case Instruction::SLOAD:
 	case Instruction::TLOAD:
