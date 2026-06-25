@@ -1692,7 +1692,6 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::WithdrawReward:
 		{
-			_functionCall.expression().accept(*this);
 			m_context << Instruction::NATIVEWITHDRAWREWARD;
 			break;
 		}
@@ -1720,13 +1719,11 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
         case FunctionType::Kind::CancelAllUnfreezeV2:
         {
-            _functionCall.expression().accept(*this);
             m_context << Instruction::NATIVECANCELALLUNFREEZEV2;
             break;
         }
 		case FunctionType::Kind::WithdrawExpireUnfreeze:
 		{
-			_functionCall.expression().accept(*this);
 			m_context << Instruction::NATIVEWITHDRAWEXPIREUNFREEZE;
 			break;
 		}
@@ -2180,7 +2177,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 		}
 		else if ((std::set<std::string>{"tokenBalance", "call", "callcode", "delegatecall", "staticcall",
-							  "freezeExpireTime", "totalFrozenBalance", "frozenBalance", "frozenBalanceUsage"}).count(member))
+							  "freezeExpireTime"}).count(member))
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
 				*TypeProvider::address(),
