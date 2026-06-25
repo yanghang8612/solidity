@@ -3161,6 +3161,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		|| _functionType.kind() == FunctionType::Kind::TotalVoteCount
 		|| _functionType.kind() == FunctionType::Kind::ReceivedVoteCount
 		|| _functionType.kind() == FunctionType::Kind::UsedVoteCount
+		|| _functionType.kind() == FunctionType::Kind::GetChainParameter
 		|| _functionType.kind() == FunctionType::Kind::AvailableUnfreezeV2Size
 		|| _functionType.kind() == FunctionType::Kind::UnfreezableBalanceV2
 		|| _functionType.kind() == FunctionType::Kind::ExpireUnfreezeBalanceV2
