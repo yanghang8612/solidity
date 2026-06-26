@@ -1225,6 +1225,10 @@ Literal::SubDenomination ASTJsonImporter::subdenomination(Json const& _node)
 		return Literal::SubDenomination::Gwei;
 	else if (subDenStr == "ether")
 		return Literal::SubDenomination::Ether;
+	else if (subDenStr == "sun")
+		return Literal::SubDenomination::Sun;
+	else if (subDenStr == "trx")
+		return Literal::SubDenomination::Trx;
 	else if (subDenStr == "seconds")
 		return Literal::SubDenomination::Second;
 	else if (subDenStr == "minutes")
