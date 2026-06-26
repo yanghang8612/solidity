@@ -286,8 +286,8 @@ void ViewPureChecker::reportMutability(
 					5887_error,
 					_location,
 					m_currentFunction->isConstructor()  ?
-						"\"msg.value\" and \"callvalue()\" can only be used in payable constructors. Make the constructor \"payable\" to avoid this error."
-						: "\"msg.value\" and \"callvalue()\" can only be used in payable public functions. Make the function \"payable\" or use an internal function to avoid this error."
+						"\"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" and \"callvalue()\" can only be used in payable constructors. Make the constructor \"payable\" to avoid this error."
+						: "\"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" and \"callvalue()\" can only be used in payable public functions. Make the function \"payable\" or use an internal function to avoid this error."
 				);
 			m_errors = true;
 		}
