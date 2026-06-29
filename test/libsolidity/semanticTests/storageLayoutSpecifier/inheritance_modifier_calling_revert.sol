@@ -34,5 +34,5 @@ contract F {
     }
 }
 // ----
-// withSpecifier() -> FAILURE, hex"08c379a0", 0x20, 1, "A"
+// withSpecifier() -> FAILURE, hex"08c379a0", 0x20, 1, "C"
 // withoutSpecifier() -> FAILURE, hex"08c379a0", 0x20, 1, "C"

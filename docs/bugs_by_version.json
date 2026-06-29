@@ -2047,6 +2047,7 @@
     },
     "0.8.29": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion",
             "TransientStorageClearingHelperCollision",
             "LostStorageArrayWriteOnSlotOverflow"
@@ -2070,6 +2071,7 @@
     },
     "0.8.30": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion",
             "TransientStorageClearingHelperCollision",
             "LostStorageArrayWriteOnSlotOverflow"
@@ -2078,6 +2080,7 @@
     },
     "0.8.31": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion",
             "TransientStorageClearingHelperCollision",
             "LostStorageArrayWriteOnSlotOverflow"
@@ -2086,6 +2089,7 @@
     },
     "0.8.32": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion",
             "TransientStorageClearingHelperCollision"
         ],
@@ -2093,6 +2097,7 @@
     },
     "0.8.33": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion",
             "TransientStorageClearingHelperCollision"
         ],
@@ -2100,12 +2105,14 @@
     },
     "0.8.34": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion"
         ],
         "released": "2026-02-18"
     },
     "0.8.35": {
         "bugs": [
+            "InheritanceOrderReversalOnStorageEndWarning",
             "UnsoundSpillInMutualRecursion"
         ],
         "released": "2026-04-29"

@@ -11,8 +11,8 @@ contract F {
     }
 }
 // ----
-// withSpecifier() -> 5
-// gas legacy: 76868
+// withSpecifier() -> 15
+// gas legacy: 77592
 // gas legacy code: 30000
 // withoutSpecifier() -> 15
 // gas legacy: 77502
