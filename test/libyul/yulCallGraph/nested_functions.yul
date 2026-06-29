@@ -10,7 +10,7 @@
     a()
 }
 // ----
-// <main>: non-recursive
-// a: recursive
-// b: recursive
-// c: recursive
+// <main> -> a
+// a (recursive) -> b
+// b (recursive) -> c
+// c (recursive) -> a

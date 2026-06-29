@@ -7,6 +7,6 @@
 }
 // ----
 // <main>
-// hub -> spoke, rim (recursive)
-// spoke -> hub (recursive)
-// rim -> spoke (recursive)
+// hub (recursive) -> spoke, rim
+// spoke (recursive) -> hub
+// rim (recursive) -> spoke
