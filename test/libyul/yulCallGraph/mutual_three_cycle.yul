@@ -4,7 +4,7 @@
     function h() { f() }
 }
 // ----
-// <main>: non-recursive
-// f: recursive
-// g: recursive
-// h: recursive
+// <main>
+// f (recursive) -> g
+// g (recursive) -> h
+// h (recursive) -> f

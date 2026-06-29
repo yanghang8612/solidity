@@ -25,14 +25,21 @@
 #include <libyul/optimiser/CallGraphGenerator.h>
 
 #include <libyul/AST.h>
+#include <libyul/Builtins.h>
+#include <libyul/Dialect.h>
+#include <libyul/Exceptions.h>
 #include <libyul/Object.h>
+#include <libyul/Utilities.h>
 #include <libyul/YulStack.h>
 
 #include <liblangutil/Exceptions.h>
 
+#include <libsolutil/StringUtils.h>
+
 #include <sstream>
 
 using namespace solidity;
+using namespace solidity::util;
 using namespace solidity::langutil;
 using namespace solidity::yul;
 using namespace solidity::yul::test;
@@ -87,23 +94,42 @@ TestCase::TestResult CallGraphTest::run(std::ostream& _stream, std::string const
 	try
 	{
 		CallGraph const callGraph = CallGraphGenerator::callGraph(root);
-		std::set<FunctionHandle> const recursive = callGraph.recursiveFunctions();
+		std::set<FunctionHandle> const recursiveFunctionHandles = callGraph.recursiveFunctions();
+		Dialect const& dialect = yulStack.dialect();
 
-		auto classification = [&](FunctionHandle const& _function) {
-			return recursive.contains(_function) ? "recursive" : "non-recursive";
+		auto printNode = [&](YulName const _name) {
+			FunctionHandle const handle{_name};
+			out << (_name == YulName{} ? "<main>" : _name.str());
+
+			std::vector<std::string> annotations;
+			if (recursiveFunctionHandles.contains(handle))
+				annotations.emplace_back("recursive");
+			if (callGraph.functionsWithLoops.contains(_name))
+				annotations.emplace_back("loops");
+			if (!annotations.empty())
+				out << " (" << joinHumanReadable(annotations) << ")";
+
+			std::vector<std::string> renderedCallees;
+			for (FunctionHandle const& callee: callGraph.functionCalls.at(handle))
+				renderedCallees.emplace_back(resolveFunctionName(callee, dialect));
+			if (!renderedCallees.empty())
+				out << " -> " << joinHumanReadable(renderedCallees);
+
+			out << "\n";
 		};
 
 		FunctionNameCollector collector;
 		collector(root);
 
-		// The outermost (non-function) context is denoted by the empty name in the call graph.
-		out << "<main>: " << classification(YulName{}) << "\n";
+		printNode(YulName{});
 		for (YulName const& name: collector.names)
-			out << name.str() << ": " << classification(name) << "\n";
+			printNode(name);
+
+		yulAssert(!recursiveFunctionHandles.contains(YulName{}), "main cannot be recursive");
 	}
-	catch (langutil::InternalCompilerError const& _error)
+	catch (YulAssertion const& _error)
 	{
-		out << "InternalCompilerError: " << (_error.comment() ? *_error.comment() : "") << "\n";
+		out << "YulAssertion: " << (_error.comment() ? *_error.comment() : "") << "\n";
 	}
 	m_obtainedResult = out.str();
 

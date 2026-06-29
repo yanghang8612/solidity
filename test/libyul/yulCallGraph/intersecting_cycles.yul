@@ -6,7 +6,7 @@
     function gamma() { beta() }
 }
 // ----
-// <main>: non-recursive
-// alpha: recursive
-// beta: recursive
-// gamma: recursive
+// <main>
+// alpha (recursive) -> beta, gamma
+// beta (recursive) -> alpha
+// gamma (recursive) -> beta

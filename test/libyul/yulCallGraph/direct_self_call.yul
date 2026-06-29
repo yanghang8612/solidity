@@ -2,5 +2,5 @@
     function f() { f() }
 }
 // ----
-// <main>: non-recursive
-// f: recursive
+// <main>
+// f (recursive) -> f

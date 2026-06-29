@@ -6,6 +6,6 @@
     function g() {}
 }
 // ----
-// <main>: non-recursive
-// f: recursive
-// g: non-recursive
+// <main>
+// f (recursive) -> f, g
+// g

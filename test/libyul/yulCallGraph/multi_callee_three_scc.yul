@@ -7,7 +7,7 @@
     function c() { b() }
 }
 // ----
-// <main>: non-recursive
-// a: recursive
-// b: recursive
-// c: recursive
+// <main>
+// a (recursive) -> b, c
+// b (recursive) -> a
+// c (recursive) -> b
