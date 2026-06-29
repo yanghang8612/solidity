@@ -223,10 +223,6 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		case Instruction::NATIVEVOTE:
 			gas = GasCosts::voteGas;
-			// NATIVEVOTE reads two memory ranges (see SemanticInformation::readWriteOperations).
-			// With args == 4, the ranges are (offset, size) = (-3, -2) and (-1, 0) on the stack.
-			gas += memoryGas(-3, -2);
-			gas += memoryGas(-1, 0);
 			break;
 		case Instruction::NATIVEWITHDRAWREWARD:
 			gas = GasCosts::withdrawGas;
@@ -235,12 +231,9 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::NATIVEUNFREEZEBALANCEV2:
 		case Instruction::NATIVECANCELALLUNFREEZEV2:
 		case Instruction::NATIVEWITHDRAWEXPIREUNFREEZE:
-			gas = GasCosts::freezeV2Gas;
-			break;
 		case Instruction::NATIVEDELEGATERESOURCE:
 		case Instruction::NATIVEUNDELEGATERESOURCE:
 			gas = GasCosts::freezeV2Gas;
-			gas += GasCosts::callNewAccountGas; // Delegating to a non-existent address may create a new account.
 			break;
 		case Instruction::CHAINID:
 			gas = runGas(Instruction::CHAINID, m_evmVersion);
