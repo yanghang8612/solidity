@@ -17,6 +17,8 @@
 // SPDX-License-Identifier: GPL-3.0
 /**
  * Specific AST walker that generates the call graph.
+ *
+ * Prerequisites: Disambiguator
  */
 
 #pragma once
