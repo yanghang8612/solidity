@@ -253,6 +253,8 @@ private:
 	/// @returns the memory gas for accessing the memory at a specific offset for a number of bytes
 	/// given as values on the stack at the given relative positions.
 	GasConsumption memoryGas(int _stackPosOffset, int _stackPosSize);
+	/// @returns the memory gas for accessing a Solidity memory array whose element count is on the stack.
+	GasConsumption memoryGasForWordArray(int _stackPosOffset, int _stackPosElementCount);
 
 	std::shared_ptr<KnownState> m_state;
 	langutil::EVMVersion m_evmVersion;
