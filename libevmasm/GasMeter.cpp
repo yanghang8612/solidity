@@ -300,12 +300,10 @@ GasMeter::GasConsumption GasMeter::memoryGas(int _stackPosOffset, int _stackPosS
 GasMeter::GasConsumption GasMeter::memoryGasForWordArray(int _stackPosOffset, int _stackPosElementCount)
 {
 	ExpressionClasses& classes = m_state->expressionClasses();
-	ExpressionClasses::Id elementCount = m_state->relativeStackElement(_stackPosElementCount);
-	if (classes.knownZero(elementCount))
-		return GasConsumption(0);
-
+	// The TVM reads and charges the 32-byte length slot even for empty arrays,
+	// so unlike memoryGas(int, int) there is no zero-size shortcut here.
 	ExpressionClasses::Id byteSize = classes.find(Instruction::MUL, {
-		elementCount,
+		m_state->relativeStackElement(_stackPosElementCount),
 		classes.find(u256(32))
 	});
 	ExpressionClasses::Id byteSizeWithLengthSlot = classes.find(Instruction::ADD, {
