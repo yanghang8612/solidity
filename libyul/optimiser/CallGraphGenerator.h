@@ -40,6 +40,9 @@ struct CallGraph
 	/// @returns the set of functions contained in cycles in the call graph, i.e.
 	/// functions that are part of a (mutual) recursion.
 	/// Note that this does not include functions that merely call recursive functions.
+	/// Postcondition: the result never contains a builtin. At Yul level builtins cannot call other
+	/// functions, so they have no outgoing call-graph edges and can be neither mutually nor directly
+	/// recursive.
 	std::set<FunctionHandle> recursiveFunctions() const;
 };
 
