@@ -127,9 +127,9 @@ TestCase::TestResult CallGraphTest::run(std::ostream& _stream, std::string const
 
 		yulAssert(!recursiveFunctionHandles.contains(YulName{}), "main cannot be recursive");
 	}
-	catch (YulAssertion const& _error)
+	catch (CallGraphGenerator::InputNotDisambiguatedException const& _exception)
 	{
-		out << "YulAssertion: " << (_error.comment() ? *_error.comment() : "") << "\n";
+		out << "InputNotDisambiguatedException: " << (_exception.comment() ? *_exception.comment() : "") << "\n";
 	}
 	m_obtainedResult = out.str();
 
