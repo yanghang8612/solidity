@@ -145,8 +145,9 @@ void CallGraphGenerator::operator()(ForLoop const& _forLoop)
 
 void CallGraphGenerator::operator()(FunctionDefinition const& _functionDefinition)
 {
-	yulAssert(
+	solRequire(
 		!m_callGraph.functionCalls.contains(_functionDefinition.name),
+		InputNotDisambiguatedException,
 		"CallGraphGenerator requires a disambiguated AST: duplicate function name " + _functionDefinition.name.str() + "."
 	);
 	YulName previousFunction = m_currentFunction;

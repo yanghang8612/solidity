@@ -9,4 +9,4 @@
     }
 }
 // ----
-// YulAssertion: CallGraphGenerator requires a disambiguated AST: duplicate function name g.
+// InputNotDisambiguatedException: CallGraphGenerator requires a disambiguated AST: duplicate function name g.

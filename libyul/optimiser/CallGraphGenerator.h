@@ -52,10 +52,14 @@ struct CallGraph
  * It also generates information about which functions contain for loops.
  *
  * The outermost (non-function) context is denoted by the empty string.
+ *
+ * @throws InputNotDisambiguatedException if input is not disambiguated
  */
 class CallGraphGenerator: public ASTWalker
 {
 public:
+	struct InputNotDisambiguatedException: virtual YulException {};
+
 	static CallGraph callGraph(Block const& _ast);
 
 	using ASTWalker::operator();

@@ -3,4 +3,4 @@
     { function f() {} }
 }
 // ----
-// YulAssertion: CallGraphGenerator requires a disambiguated AST: duplicate function name f.
+// InputNotDisambiguatedException: CallGraphGenerator requires a disambiguated AST: duplicate function name f.
