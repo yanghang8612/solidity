@@ -113,6 +113,8 @@ std::set<FunctionHandle> CallGraph::recursiveFunctions() const
 	}
 
 	yulAssert(!recursiveFunctionHandleSet.contains(YulName{}), "the top-level block cannot be recursive");
+	for (FunctionHandle const& recursiveFunction: recursiveFunctionHandleSet)
+		yulAssert(std::holds_alternative<YulName>(recursiveFunction), "a builtin cannot be recursive");
 	return recursiveFunctionHandleSet;
 }
 
