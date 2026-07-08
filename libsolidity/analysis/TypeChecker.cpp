@@ -785,7 +785,7 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 				}
 				else if (identifierInfo.suffix == "slot" || identifierInfo.suffix == "offset")
 				{
-					m_errorReporter.typeError(6617_error, nativeLocationOf(_identifier), "The suffixes .offset and .slot can only be used on non-constant storage variables.");
+					m_errorReporter.typeError(6617_error, nativeLocationOf(_identifier), "The suffixes .offset and .slot can only be used on non-constant storage or transient storage variables.");
 					return false;
 				}
 				else if (var && var->value() && !var->value()->annotation().type && !dynamic_cast<Literal const*>(var->value().get()))
@@ -824,7 +824,7 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 					{
 						if (var->isStateVariable())
 						{
-							m_errorReporter.typeError(4713_error, nativeLocationOf(_identifier), "State variables cannot be assigned to - you have to use \"sstore()\".");
+							m_errorReporter.typeError(4713_error, nativeLocationOf(_identifier), "State variables cannot be assigned to - you have to use \"sstore()\" or \"tstore()\".");
 							return false;
 						}
 						else if (suffix != "slot")
@@ -869,7 +869,7 @@ bool TypeChecker::visit(InlineAssembly const& _inlineAssembly)
 				m_errorReporter.typeError(
 					1408_error,
 					nativeLocationOf(_identifier),
-					"Only local variables are supported. To access storage variables, use the \".slot\" and \".offset\" suffixes."
+					"Only local variables are supported. To access state variables, use the \".slot\" and \".offset\" suffixes."
 				);
 				return false;
 			}
@@ -3139,14 +3139,22 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 			else if (auto const* addressType = dynamic_cast<AddressType const*>(exprType))
 			{
 				// Trigger error when using send or transfer with a non-payable fallback function.
-				if (memberName == "send" || memberName == "transfer" || memberName == "transferToken")
+				if (
+					memberName == "send" ||
+					memberName == "transfer" ||
+					memberName == "transferToken" ||
+					memberName == "freeze" ||
+					memberName == "unfreeze" ||
+					memberName == "delegateResource" ||
+					memberName == "unDelegateResource"
+				)
 				{
 					solAssert(
 						addressType->stateMutability() != StateMutability::Payable,
 						"Expected address not-payable as members were not found"
 					);
 
-					return { 9862_error, "\"send\", \"transfer\" and \"transferToken\" are only available for objects of type \"address payable\", not \"" + exprType->humanReadableName() + "\"." };
+					return { 9862_error, "\"send\", \"transfer\", \"transferToken\", \"freeze\", \"unfreeze\", \"delegateResource\" and \"unDelegateResource\" are only available for objects of type \"address payable\", not \"" + exprType->humanReadableName() + "\"." };
 				}
 			}
 

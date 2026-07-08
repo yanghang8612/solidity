@@ -108,7 +108,10 @@ void ExpressionCompiler::appendStateVariableInitialization(VariableDeclaration c
 	if (_varDecl.immutable())
 		ImmutableItem(m_context, _varDecl).storeValue(*type, _varDecl.location(), true);
 	else
+	{
+		solAssert(_varDecl.referenceLocation() != VariableDeclaration::Location::Transient);
 		StorageItem(m_context, _varDecl).storeValue(*type, _varDecl.location(), true);
+	}
 }
 
 void ExpressionCompiler::appendConstStateVariableAccessor(VariableDeclaration const& _varDecl)
@@ -147,6 +150,7 @@ void ExpressionCompiler::appendStateVariableAccessor(VariableDeclaration const& 
 		if (auto mappingType = dynamic_cast<MappingType const*>(returnType))
 		{
 			solAssert(CompilerUtils::freeMemoryPointer >= 0x40, "");
+			solAssert(_varDecl.referenceLocation() != VariableDeclaration::Location::Transient);
 
 			// pop offset
 			m_context << Instruction::POP;
@@ -196,6 +200,8 @@ void ExpressionCompiler::appendStateVariableAccessor(VariableDeclaration const& 
 		}
 		else if (auto arrayType = dynamic_cast<ArrayType const*>(returnType))
 		{
+			solAssert(_varDecl.referenceLocation() != VariableDeclaration::Location::Transient);
+
 			// pop offset
 			m_context << Instruction::POP;
 			utils().copyToStackTop(static_cast<unsigned>(paramTypes.size() - i + 1), 1);
@@ -229,6 +235,7 @@ void ExpressionCompiler::appendStateVariableAccessor(VariableDeclaration const& 
 	solAssert(returnTypes.size() >= 1, "");
 	if (StructType const* structType = dynamic_cast<StructType const*>(returnType))
 	{
+		solAssert(_varDecl.referenceLocation() != VariableDeclaration::Location::Transient);
 		solAssert(!_varDecl.immutable(), "");
 		// remove offset
 		m_context << Instruction::POP;
@@ -258,6 +265,8 @@ void ExpressionCompiler::appendStateVariableAccessor(VariableDeclaration const& 
 		solAssert(returnTypes.size() == 1, "");
 		if (_varDecl.immutable())
 			ImmutableItem(m_context, _varDecl).retrieveValue(SourceLocation());
+		else if (_varDecl.referenceLocation() == VariableDeclaration::Location::Transient)
+			TransientStorageItem(m_context, *returnType).retrieveValue(SourceLocation(), true);
 		else
 			StorageItem(m_context, *returnType).retrieveValue(SourceLocation(), true);
 		utils().convertType(*returnType, *returnTypes.front());
@@ -1683,7 +1692,6 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::WithdrawReward:
 		{
-			_functionCall.expression().accept(*this);
 			m_context << Instruction::NATIVEWITHDRAWREWARD;
 			break;
 		}
@@ -1711,13 +1719,11 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
         case FunctionType::Kind::CancelAllUnfreezeV2:
         {
-            _functionCall.expression().accept(*this);
             m_context << Instruction::NATIVECANCELALLUNFREEZEV2;
             break;
         }
 		case FunctionType::Kind::WithdrawExpireUnfreeze:
 		{
-			_functionCall.expression().accept(*this);
 			m_context << Instruction::NATIVEWITHDRAWEXPIREUNFREEZE;
 			break;
 		}
@@ -2171,7 +2177,7 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			);
 		}
 		else if ((std::set<std::string>{"tokenBalance", "call", "callcode", "delegatecall", "staticcall",
-							  "freezeExpireTime", "totalFrozenBalance", "frozenBalance", "frozenBalanceUsage"}).count(member))
+							  "freezeExpireTime"}).count(member))
 			utils().convertType(
 				*_memberAccess.expression().annotation().type,
 				*TypeProvider::address(),
@@ -3152,6 +3158,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		|| _functionType.kind() == FunctionType::Kind::TotalVoteCount
 		|| _functionType.kind() == FunctionType::Kind::ReceivedVoteCount
 		|| _functionType.kind() == FunctionType::Kind::UsedVoteCount
+		|| _functionType.kind() == FunctionType::Kind::GetChainParameter
 		|| _functionType.kind() == FunctionType::Kind::AvailableUnfreezeV2Size
 		|| _functionType.kind() == FunctionType::Kind::UnfreezableBalanceV2
 		|| _functionType.kind() == FunctionType::Kind::ExpireUnfreezeBalanceV2
@@ -3407,7 +3414,12 @@ void ExpressionCompiler::setLValueFromDeclaration(Declaration const& _declaratio
 	if (m_context.isLocalVariable(&_declaration))
 		setLValue<StackVariable>(_expression, dynamic_cast<VariableDeclaration const&>(_declaration));
 	else if (m_context.isStateVariable(&_declaration))
-		setLValue<StorageItem>(_expression, dynamic_cast<VariableDeclaration const&>(_declaration));
+	{
+		if (dynamic_cast<VariableDeclaration const&>(_declaration).referenceLocation() == VariableDeclaration::Location::Transient)
+			setLValue<TransientStorageItem>(_expression, dynamic_cast<VariableDeclaration const&>(_declaration));
+		else
+			setLValue<StorageItem>(_expression, dynamic_cast<VariableDeclaration const&>(_declaration));
+	}
 	else
 		solAssert(false, "Identifier type not supported or identifier not found.");
 }

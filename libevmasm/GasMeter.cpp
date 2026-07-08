@@ -223,6 +223,10 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		case Instruction::NATIVEVOTE:
 			gas = GasCosts::voteGas;
+			// NATIVEVOTE reads two Solidity memory arrays. The stack length values are element
+			// counts, not byte lengths, so include the array length slot and 32 bytes per element.
+			gas += memoryGasForWordArray(-3, -2);
+			gas += memoryGasForWordArray(-1, 0);
 			break;
 		case Instruction::NATIVEWITHDRAWREWARD:
 			gas = GasCosts::withdrawGas;
@@ -291,6 +295,25 @@ GasMeter::GasConsumption GasMeter::memoryGas(int _stackPosOffset, int _stackPosS
 			m_state->relativeStackElement(_stackPosOffset),
 			m_state->relativeStackElement(_stackPosSize)
 		}));
+}
+
+GasMeter::GasConsumption GasMeter::memoryGasForWordArray(int _stackPosOffset, int _stackPosElementCount)
+{
+	ExpressionClasses& classes = m_state->expressionClasses();
+	// The TVM reads and charges the 32-byte length slot even for empty arrays,
+	// so unlike memoryGas(int, int) there is no zero-size shortcut here.
+	ExpressionClasses::Id byteSize = classes.find(Instruction::MUL, {
+		m_state->relativeStackElement(_stackPosElementCount),
+		classes.find(u256(32))
+	});
+	ExpressionClasses::Id byteSizeWithLengthSlot = classes.find(Instruction::ADD, {
+		byteSize,
+		classes.find(u256(32))
+	});
+	return memoryGas(classes.find(Instruction::ADD, {
+		m_state->relativeStackElement(_stackPosOffset),
+		byteSizeWithLengthSlot
+	}));
 }
 
 unsigned GasMeter::runGas(Instruction _instruction, langutil::EVMVersion _evmVersion)

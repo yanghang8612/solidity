@@ -276,18 +276,18 @@ void ViewPureChecker::reportMutability(
 				m_errorReporter.typeError(
 					4006_error,
 					_location,
-					SecondarySourceLocation().append("\"msg.value\" or \"callvalue()\" appear here inside the modifier.", *_nestedLocation),
+					SecondarySourceLocation().append("\"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" or \"callvalue()\" appear here inside the modifier.", *_nestedLocation),
 					m_currentFunction->isConstructor()  ?
-						"This modifier uses \"msg.value\" or \"callvalue()\" and thus the constructor has to be payable."
-						: "This modifier uses \"msg.value\" or \"callvalue()\" and thus the function has to be payable or internal."
+						"This modifier uses \"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" or \"callvalue()\" and thus the constructor has to be payable."
+						: "This modifier uses \"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" or \"callvalue()\" and thus the function has to be payable or internal."
 				);
 			else
 				m_errorReporter.typeError(
 					5887_error,
 					_location,
 					m_currentFunction->isConstructor()  ?
-						"\"msg.value\" and \"callvalue()\" can only be used in payable constructors. Make the constructor \"payable\" to avoid this error."
-						: "\"msg.value\" and \"callvalue()\" can only be used in payable public functions. Make the function \"payable\" or use an internal function to avoid this error."
+						"\"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" and \"callvalue()\" can only be used in payable constructors. Make the constructor \"payable\" to avoid this error."
+						: "\"msg.value\", \"msg.tokenid\", \"msg.tokenvalue\" and \"callvalue()\" can only be used in payable public functions. Make the function \"payable\" or use an internal function to avoid this error."
 				);
 			m_errors = true;
 		}

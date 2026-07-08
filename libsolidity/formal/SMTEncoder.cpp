@@ -670,12 +670,6 @@ void SMTEncoder::endVisit(FunctionCall const& _funCall)
 		break;
 	case FunctionType::Kind::KECCAK256:
 	case FunctionType::Kind::ECRecover:
-	case FunctionType::Kind::ValidateMultiSign:
-    case FunctionType::Kind::BatchValidateSign:
-    case FunctionType::Kind::VerifyBurnProof:
-    case FunctionType::Kind::VerifyTransferProof:
-    case FunctionType::Kind::VerifyMintProof:
-    case FunctionType::Kind::PedersenHash:
 	case FunctionType::Kind::SHA256:
 	case FunctionType::Kind::RIPEMD160:
 		visitCryptoFunction(_funCall);
@@ -731,6 +725,12 @@ void SMTEncoder::endVisit(FunctionCall const& _funCall)
 	case FunctionType::Kind::BareCallCode:
 	case FunctionType::Kind::BareDelegateCall:
 	default:
+		// The TRON-specific builtins (freeze/unfreeze, vote, the various V2 calls,
+		// validatemultisign/batchvalidatesign, the zk-proof verifiers, pedersenhash, ...)
+		// are not modeled here: we only emit the warning below. Their state side effects
+		// are not havoc'd in this branch; soundness for state mutation across unmodeled
+		// calls is instead handled by the engine-level reset logic (CHC::unknownFunctionCall
+		// / makeOutsideFunctionCall and BMC's resetStateVariables paths).
 		m_unsupportedErrors.warning(
 			4588_error,
 			_funCall.location(),
