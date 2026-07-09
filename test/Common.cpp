@@ -182,13 +182,7 @@ bool CommonOptions::parse(int argc, char const* const* argv)
 		po::store(parsedOptions, arguments);
 		po::notify(arguments);
 		if (arguments.count("eof-version"))
-		{
-			// Request as uint64_t, since uint8_t will be parsed as character by boost.
-			uint64_t eofVersion = arguments["eof-version"].as<uint64_t>();
-			if (eofVersion != 1)
-				BOOST_THROW_EXCEPTION(std::runtime_error("Invalid EOF version: " + std::to_string(eofVersion)));
-			m_eofVersion = 1;
-		}
+			BOOST_THROW_EXCEPTION(std::runtime_error("The --eof-version option is currently disabled for TRON solidity compiler."));
 
 		for (auto const& parsedOption: parsedOptions.options)
 			if (parsedOption.position_key >= 0)

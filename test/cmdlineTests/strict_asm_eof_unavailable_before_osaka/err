@@ -1,1 +1,1 @@
-Error: EOF is not supported by EVM versions earlier than osaka.
+Error: The --experimental-eof-version option is currently disabled for TRON solidity compiler.

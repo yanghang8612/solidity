@@ -241,6 +241,7 @@ void CompilerStack::setEVMVersion(langutil::EVMVersion _version)
 void CompilerStack::setEOFVersion(std::optional<uint8_t> _version)
 {
 	solAssert(m_stackState < CompilationSuccessful, "Must set EOF version before compiling.");
+	solUnimplementedAssert(!_version.has_value(), "EOF is currently disabled for TRON solidity compiler.");
 	solAssert(!_version || _version == 1, "Invalid EOF version.");
 	m_eofVersion = _version;
 }

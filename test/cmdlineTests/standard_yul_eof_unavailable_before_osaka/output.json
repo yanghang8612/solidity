@@ -2,8 +2,8 @@
     "errors": [
         {
             "component": "general",
-            "formattedMessage": "EOF is not supported by EVM versions earlier than osaka.",
-            "message": "EOF is not supported by EVM versions earlier than osaka.",
+            "formattedMessage": "\"settings.eofVersion\" is currently disabled for TRON solidity compiler.",
+            "message": "\"settings.eofVersion\" is currently disabled for TRON solidity compiler.",
             "severity": "error",
             "type": "JSONError"
         }
