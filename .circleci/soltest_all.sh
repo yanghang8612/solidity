@@ -40,7 +40,7 @@ IFS=" " read -ra EVM_VALUES <<< "${1:-${DEFAULT_EVM_VALUES[@]}}"
 
 DEFAULT_EVM=cancun
 OPTIMIZE_VALUES=(0 1)
-EOF_VERSIONS=(0 1)
+EOF_VERSIONS=(0)
 
 # Run for ABI encoder v1, without SMTChecker tests.
 EVM="${DEFAULT_EVM}" \

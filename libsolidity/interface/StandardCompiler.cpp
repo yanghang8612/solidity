@@ -838,14 +838,7 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 	}
 
 	if (settings.contains("eofVersion"))
-	{
-		if (!settings["eofVersion"].is_number_unsigned())
-			return formatFatalError(Error::Type::JSONError, "eofVersion must be an unsigned integer.");
-		auto eofVersion = settings["eofVersion"].get<uint8_t>();
-		if (eofVersion != 1)
-			return formatFatalError(Error::Type::JSONError, "Invalid EOF version requested.");
-		ret.eofVersion = 1;
-	}
+		return formatFatalError(Error::Type::JSONError, "\"settings.eofVersion\" is currently disabled for TRON solidity compiler.");
 
 	if (ret.eofVersion.has_value() && !ret.evmVersion.supportsEOF())
 		return formatFatalError(Error::Type::JSONError, "EOF is not supported by EVM versions earlier than " + EVMVersion::firstWithEOF().name() + ".");

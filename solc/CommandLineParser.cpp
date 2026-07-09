@@ -1244,13 +1244,10 @@ void CommandLineParser::processArgs()
 	}
 
 	if (m_args.count(g_strEOFVersion))
-	{
-		// Request as uint64_t, since uint8_t will be parsed as character by boost.
-		uint64_t versionOption = m_args[g_strEOFVersion].as<uint64_t>();
-		if (versionOption != 1)
-			solThrow(CommandLineValidationError, "Invalid option for --" + g_strEOFVersion + ": " + std::to_string(versionOption));
-		m_options.output.eofVersion = 1;
-	}
+		solThrow(
+			CommandLineValidationError,
+			"The --" + g_strEOFVersion + " option is currently disabled for TRON solidity compiler."
+		);
 
 	if (m_options.output.eofVersion.has_value() && !m_options.output.evmVersion.supportsEOF())
 		solThrow(CommandLineValidationError, "EOF is not supported by EVM versions earlier than " + EVMVersion::firstWithEOF().name() + ".");
