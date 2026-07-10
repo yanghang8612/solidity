@@ -80,12 +80,14 @@ jobs:
     runs-on: [ self-hosted, Linux, for-linux ]
 
     env:
-      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DUSE_Z3_DLOPEN=ON -DUSE_CVC4=OFF -DSOLC_STATIC_STDLIBS=ON
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
+      TERM: xterm
       MAKEFLAGS: -j 10
       CPUs: 10
 
     container:
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:84a1fb8771236e8d9aa5c615a425b8929e56a6e4f150a60078c8d74a1ceaa6c2
+      # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404-3
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
 
     steps:
       - name: Checkout code
@@ -112,11 +114,14 @@ jobs:
     runs-on: [ self-hosted, Linux, for-ems ]
 
     env:
+      TERM: xterm
       MAKEFLAGS: -j 10
       CPUs: 5
 
     container:
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:c57f2bfb8c15d70fe290629358dd1c73dc126e3760f443b54764797556b887d4
+      # solbuildpackpusher/solidity-buildpack-deps:emscripten-20
+      # NOTE: Keep in sync with the digest in scripts/build_emscripten.sh
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:98f963ed799a0d206ef8e7b5475f847e0dea53b7fdea9618bbc6106a62730bd2
 
     steps:
       - name: Checkout code
