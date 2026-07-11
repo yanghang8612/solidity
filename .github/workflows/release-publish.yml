@@ -1,0 +1,71 @@
+name: Release / publish
+
+# workflow_dispatch only. Never pull_request_target here: this job carries a
+# cross-repo write PAT (SOLC_BIN_TOKEN, see below) and performs the one
+# irreversible step in the whole release pipeline -- turning a draft release
+# into a public one is the moment GitHub actually creates the `tv_X` tag --
+# on a self-hosted runner. A write token reachable from an external pull
+# request would be a ready-made privilege-escalation surface. Only someone
+# who can already invoke a manual workflow_dispatch (a repo collaborator)
+# may trigger this.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Draft release tag to publish, e.g. tv_0.8.28"
+        required: true
+      solcbin_pr:
+        description: "solc-bin PR number to merge (optional)"
+        required: false
+      dry_run:
+        description: "Print what would happen, but do not publish the release or merge the solc-bin PR"
+        type: boolean
+        default: true
+
+# `permissions: contents: write` governs the built-in GITHUB_TOKEN. Unlike
+# `apply` (whose job permissions are `contents: read`, since none of its `gh`
+# calls use the built-in token), `publish` genuinely needs this: `gh release
+# edit --draft=false` against tronprotocol/solidity is a same-repo write the
+# built-in token could perform on its own. But `cmd_publish` also performs a
+# cross-repo write (`gh pr merge` against tronprotocol/solc-bin) in the same
+# process, and one GH_TOKEN has to cover both `gh` calls -- so GH_TOKEN is
+# scoped to the Publish step alone (not job-wide) and set to SOLC_BIN_TOKEN
+# rather than the built-in token:
+#
+#   SOLC_BIN_TOKEN must have write access to BOTH tronprotocol/solc-bin AND
+#   tronprotocol/solidity. `permissions: contents: write` alone covers only
+#   the solidity half -- stated here honestly rather than left implied.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: [ self-hosted, macOS ]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install python dependencies
+        run: python3 -m pip install --user -r scripts/release/requirements.txt
+
+      - name: Import the release signing public key
+        run: gpg --recv-keys 07B23298AEA4E006BD9A42DE785FB96D2C7C3CA5
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.SOLC_BIN_TOKEN }}
+          # Routed through env rather than interpolated directly into the
+          # run: script, so a crafted `tag`/`solcbin_pr` input can't break
+          # out of the shell command it is passed to.
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_SOLCBIN_PR: ${{ inputs.solcbin_pr }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=("$RELEASE_TAG")
+          if [ -n "$RELEASE_SOLCBIN_PR" ]; then
+            args+=("--solcbin-pr" "$RELEASE_SOLCBIN_PR")
+          fi
+          if [ "$RELEASE_DRY_RUN" = "true" ]; then
+            args+=("--dry-run")
+          fi
+          PYTHONPATH="$PWD/scripts" python3 -m release.cli publish "${args[@]}"

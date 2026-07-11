@@ -191,12 +191,12 @@ jobs:
             sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
           )
 
-          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
+          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,wasm}
 
           cp github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
           cp github/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
           cp github/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
-          cp github/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
+          cp github/soljson.js        "solc-bin/wasm/soljson-v${full_version}.js"
 
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *

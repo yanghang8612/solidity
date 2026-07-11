@@ -1,0 +1,84 @@
+name: Release / apply
+
+# workflow_dispatch only. Never pull_request_target here: this job carries a
+# cross-repo write PAT (SOLC_BIN_TOKEN, see below) and sends the release
+# request email from a self-hosted runner, so a write token reachable from an
+# external pull request would be a ready-made privilege-escalation surface.
+# Only someone who can already invoke a manual workflow_dispatch (a repo
+# collaborator) may trigger this.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Draft release tag, e.g. tv_0.8.28"
+        required: true
+      dry_run:
+        description: "Render the request email and commit the solc-bin branch locally, but do not push, open the PR for real, or send mail"
+        type: boolean
+        default: true
+
+# `permissions: contents: read` governs the built-in GITHUB_TOKEN -- which this
+# job does NOT use for any `gh` call. `cmd_apply` performs both same-repo reads
+# (`gh release download`, `gh release view` against tronprotocol/solidity) and a
+# cross-repo write (branch push + `gh pr create` against tronprotocol/solc-bin)
+# in one process, so a single GH_TOKEN must cover both. GH_TOKEN is therefore
+# scoped to the Apply step alone (not job-wide), and:
+#
+#   SOLC_BIN_TOKEN must have write access to tronprotocol/solc-bin AND read
+#   access to tronprotocol/solidity. tronprotocol/solidity is public, so a
+#   fine-grained PAT needs "Public repositories: read-only" for that half.
+#
+# Follow-up worth doing: split `apply` so the same-repo read and the cross-repo
+# write never share a token in one process. Out of scope for this workflow.
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: [ self-hosted, macOS ]
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install python dependencies
+        run: python3 -m pip install --user -r scripts/release/requirements.txt
+
+      - name: Import the release signing public key
+        run: gpg --recv-keys 07B23298AEA4E006BD9A42DE785FB96D2C7C3CA5
+
+      - name: Apply
+        env:
+          GH_TOKEN: ${{ secrets.SOLC_BIN_TOKEN }}
+          RELEASE_MAIL_RECIPIENTS: ${{ secrets.RELEASE_MAIL_RECIPIENTS }}
+          RELEASE_MAIL_HOST: ${{ secrets.RELEASE_MAIL_HOST }}
+          RELEASE_MAIL_PORT: ${{ secrets.RELEASE_MAIL_PORT }}
+          RELEASE_MAIL_USER: ${{ secrets.RELEASE_MAIL_USER }}
+          RELEASE_MAIL_PASSWORD: ${{ secrets.RELEASE_MAIL_PASSWORD }}
+          # Routed through env rather than interpolated directly into the
+          # run: script, so a crafted `tag` input can't break out of the
+          # shell command it is passed to.
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=("$RELEASE_TAG" "--workdir" "$RUNNER_TEMP/apply")
+          if [ "$RELEASE_DRY_RUN" = "true" ]; then
+            args+=("--dry-run")
+          fi
+          PYTHONPATH="$PWD/scripts" python3 -m release.cli apply "${args[@]}"
+
+      # The dry-run's rendered release-request email lives in the workdir on
+      # this ephemeral runner; upload it so a human can review the exact email
+      # (subject, body, recipients) before re-running apply with dry_run=false.
+      # The tgz bundle is uploaded too; the mail password is never written to
+      # either (it is read only on the real-send path, never in dry-run).
+      - name: Upload rendered email for review
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-request-email
+          path: |
+            ${{ runner.temp }}/apply/release-request.eml
+            ${{ runner.temp }}/apply/*.tgz
+          if-no-files-found: error

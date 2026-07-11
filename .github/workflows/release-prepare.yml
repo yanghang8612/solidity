@@ -1,0 +1,46 @@
+name: Release / prepare draft
+
+# workflow_dispatch only. Never pull_request_target here: this job carries
+# `contents: write` and shells out to `gh`/`aws` on a self-hosted runner, so a
+# write token reachable from an external pull request would be a ready-made
+# privilege-escalation surface. Only someone who can already invoke a manual
+# workflow_dispatch (a repo collaborator) may trigger this.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Merge commit on develop to release"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: [ self-hosted, macOS ]
+
+    env:
+      S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Fetch develop for ancestry check
+        run: git fetch origin develop:refs/remotes/origin/develop
+
+      - name: Install python dependencies
+        run: python3 -m pip install --user -r scripts/release/requirements.txt
+
+      - name: Prepare draft release
+        env:
+          # Routed through env rather than interpolated directly into the run:
+          # script, so a crafted `commit` input can't break out of the shell
+          # command it is passed to.
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        run: PYTHONPATH="$PWD/scripts" python3 -m release.cli prepare "$RELEASE_COMMIT"
