@@ -1,6 +1,6 @@
 {
-  "repo": "tronprotocol/solidity",
-  "solcBinRepo": "tronprotocol/solc-bin",
-  "signingKeyFingerprint": "07B23298AEA4E006BD9A42DE785FB96D2C7C3CA5",
-  "qaReviewers": []
+  "repo": "yanghang8612/solidity",
+  "solcBinRepo": "yanghang8612/solc-bin",
+  "signingKeyFingerprint": "E3673E008F6D506E",
+  "qaReviewers": ["yanghang8612", "lily309", "TonyStank911", "ouy95917"]
 }

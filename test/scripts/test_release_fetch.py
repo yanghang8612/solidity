@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import os
 import unittest
+from unittest import mock
 
 # pragma pylint: disable=import-error
 from release import fetch, gates
@@ -59,6 +61,56 @@ class TestDownload(unittest.TestCase):
         })
         fetch.download(run, BUCKET, COMMIT, ALL_FOUR, "/tmp/art")
         self.assertEqual(len(run.calls), 4)
+
+
+class TestForkTestReleaseSource(unittest.TestCase):
+    """`TRON_RELEASE_ARTIFACT_RELEASE=<owner>/<repo>@<tag>` makes fetch pull
+    from a published GitHub release instead of S3, so `prepare` can run on a
+    fork with no S3 bucket. Unset (production), fetch uses S3 -- the tests
+    above cover that path; these cover only the override.
+    """
+
+    SPEC = "tronprotocol/solidity@tv_0.8.27"
+
+    def test_unset_env_is_production_s3_path(self):
+        self.assertIsNone(fetch.artifact_release())
+
+    @mock.patch.dict(os.environ, {"TRON_RELEASE_ARTIFACT_RELEASE": SPEC})
+    def test_list_keys_reads_release_assets(self):
+        run = FakeRun({
+            ("gh", "release", "view", "tv_0.8.27", "--repo", "tronprotocol/solidity",
+             "--json", "assets", "--jq", ".assets[].name"):
+                "solc-macos\nsolc-static-linux\nsolc-windows.exe\nsoljson.js\n"
+                "shasum.txt\nkeccak256.txt\n",
+        })
+        # bucket/commit are ignored in override mode; pass placeholders.
+        self.assertEqual(
+            fetch.list_keys(run, "", "deadbeef"),
+            ["solc-macos", "solc-static-linux", "solc-windows.exe", "soljson.js",
+             "shasum.txt", "keccak256.txt"],
+        )
+
+    @mock.patch.dict(os.environ, {"TRON_RELEASE_ARTIFACT_RELEASE": SPEC})
+    def test_download_uses_gh_release_download_with_one_pattern_per_name(self):
+        patterns = []
+        for name in ALL_FOUR:
+            patterns += ["-p", name]
+        run = FakeRun({
+            tuple(["gh", "release", "download", "tv_0.8.27", "--repo",
+                   "tronprotocol/solidity", "-D", "/tmp/art", "--clobber"] + patterns): "",
+        })
+        fetch.download(run, "", "deadbeef", ALL_FOUR, "/tmp/art")
+        self.assertEqual(len(run.calls), 1)
+
+    @mock.patch.dict(os.environ, {"TRON_RELEASE_ARTIFACT_RELEASE": "no-at-sign"})
+    def test_malformed_spec_raises(self):
+        with self.assertRaisesRegex(ValueError, "owner"):
+            fetch.list_keys(FakeRun({}), "", "deadbeef")
+
+    @mock.patch.dict(os.environ, {"TRON_RELEASE_ARTIFACT_RELEASE": "norepo@tag"})
+    def test_spec_without_slash_in_repo_raises(self):
+        with self.assertRaisesRegex(ValueError, "owner"):
+            fetch.list_keys(FakeRun({}), "", "deadbeef")
 
 
 if __name__ == "__main__":

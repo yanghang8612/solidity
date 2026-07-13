@@ -40,7 +40,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: [ self-hosted, macOS ]
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v5
