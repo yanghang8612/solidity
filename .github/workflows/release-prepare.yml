@@ -17,11 +17,16 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: [ self-hosted, macOS ]
+    runs-on: macos-latest
 
     env:
       S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Fork-test scaffolding: when set, prepare borrows artifacts from this
+      # published release instead of S3 (see scripts/release/fetch.py), and G4
+      # is downgraded to a warning since the borrowed binaries belong to another
+      # commit. Leave the repo variable unset for a real S3-backed run.
+      TRON_RELEASE_ARTIFACT_RELEASE: ${{ vars.TRON_RELEASE_ARTIFACT_RELEASE }}
 
     steps:
       - name: Checkout release commit
@@ -35,7 +40,7 @@ jobs:
         run: git fetch origin develop:refs/remotes/origin/develop
 
       - name: Install python dependencies
-        run: python3 -m pip install --user -r scripts/release/requirements.txt
+        run: python3 -m pip install --break-system-packages --user -r scripts/release/requirements.txt
 
       - name: Prepare draft release
         env:

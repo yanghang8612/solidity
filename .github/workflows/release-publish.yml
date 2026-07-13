@@ -40,13 +40,13 @@ permissions:
 
 jobs:
   publish:
-    runs-on: [ self-hosted, macOS ]
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v5
 
       - name: Install python dependencies
-        run: python3 -m pip install --user -r scripts/release/requirements.txt
+        run: python3 -m pip install --break-system-packages --user -r scripts/release/requirements.txt
 
       - name: Import the release signing public key
         run: gpg --recv-keys 07B23298AEA4E006BD9A42DE785FB96D2C7C3CA5

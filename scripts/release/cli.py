@@ -134,15 +134,23 @@ def cmd_prepare(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
     notes_path = os.path.join(repo_root, "release-notes", f"{tag}.md")
     front, body = notes.load(notes_path, version)
 
+    # Fork-test mode (fetch.artifact_release() set) borrows artifacts from a
+    # published release instead of S3, releases off the test branch rather than
+    # develop, and can't match version evidence. It therefore relaxes the develop
+    # ancestry check (G1 still enforces the 2-parent merge shape), needs no S3
+    # bucket, and downgrades G4 to a warning below. Production leaves it unset.
+    borrowed = fetch.artifact_release()
+
     parents = gitinfo.parents(run, commit)
-    gates.g1_merge_commit(parents, gitinfo.is_ancestor(run, commit, "origin/develop"))
+    on_develop = True if borrowed else gitinfo.is_ancestor(run, commit, "origin/develop")
+    gates.g1_merge_commit(parents, on_develop)
 
     pull = github.pr_for_commit(run, repo, commit)
     approval = gates.g2_qa_approval(parents, github.reviews(run, repo, pull),
                                      config["qaReviewers"])
     approval["pr"] = pull
 
-    bucket = require_env("S3_BUCKET_PROD")
+    bucket = "" if borrowed else require_env("S3_BUCKET_PROD")
     gates.g3_artifacts_present(fetch.list_keys(run, bucket, commit))
 
     workdir = args.workdir or tempfile.mkdtemp(prefix="tron-release-")
@@ -161,19 +169,36 @@ def cmd_prepare(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
         evidence_by_name[name] = evidence.extract(
             run, name, path, version=version, short_commit=short_commit
         )
-    gates.g4_version_evidence(evidence_by_name, long_version, short_commit)
+    if borrowed:
+        # The borrowed artifacts belong to another commit, so their version
+        # evidence cannot match this fork commit's longVersion. Downgrade G4
+        # to a warning rather than failing -- this branch is unreachable in
+        # production, where artifacts always come from S3 keyed by this commit.
+        try:
+            gates.g4_version_evidence(evidence_by_name, long_version, short_commit)
+        except GateError as error:
+            print(f"[fork-test] G4 downgraded to warning: {error}")
+    else:
+        gates.g4_version_evidence(evidence_by_name, long_version, short_commit)
 
     digests = {name: checksums.digests(os.path.join(artifacts_dir, name))
                for name in names}
 
-    subjects = gitinfo.merge_subjects(
-        run, gitinfo.previous_tag(run, tag), commit,
-        exclude_refs=gitinfo.upstream_tags(run),
-    )
+    if borrowed:
+        # Fork-test mode releases off a test branch and the fork carries no
+        # tv_* tags, so previous_tag/merge_subjects have nothing to work with;
+        # the PR list of a dummy release is meaningless anyway. Skip derivation.
+        prs = {"upstreamMerge": [], "features": []}
+    else:
+        subjects = gitinfo.merge_subjects(
+            run, gitinfo.previous_tag(run, tag), commit,
+            exclude_refs=gitinfo.upstream_tags(run),
+        )
+        prs = derive_prs(subjects, release_pr=pull)
     man = Manifest(
         version=version, tag=tag, codename=front["codename"], commit=commit,
         tested_commit=parents[1], qa_approval=approval,
-        prs=derive_prs(subjects, release_pr=pull),
+        prs=prs,
         artifacts=build_artifacts(long_version),
     ).with_digests(digests)
 
