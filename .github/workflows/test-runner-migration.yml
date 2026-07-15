@@ -1,11 +1,11 @@
 name: TEST linux build speed (skip tests)
 
-# Throwaway workflow: measure linux build time with/without the test suite on a
-# GitHub-hosted ubuntu-latest runner. Three jobs run in parallel:
-#   linux_baseline  - current behaviour: TESTS defaults ON, `make` (all targets)
-#   linux_notests   - TESTS=OFF, `make` (all non-test targets)
-#   linux_solc_only - TESTS=OFF, only the `solc` target
-# No secrets, no self-hosted runners.
+# Throwaway workflow: verify that skipping test compilation does NOT change the
+# produced solc binary. Three jobs build the SAME commit three ways, hash the
+# resulting build/solc/solc, and upload it as an artifact for byte comparison.
+#   linux_baseline  - TESTS=ON,  make        (current behaviour)
+#   linux_notests   - TESTS=OFF, make        (skip test/ subdir)
+#   linux_solc_only - TESTS=OFF, make solc   (only the solc target)
 
 on:
   push:
@@ -21,7 +21,6 @@ jobs:
       MAKEFLAGS: -j 4
       CMAKE_OPTIONS: -DSOLC_LINK_STATIC=ON
     container:
-      # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404-3
       image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
     steps:
       - uses: actions/checkout@v5
@@ -33,7 +32,15 @@ jobs:
           start=$(date +%s)
           make
           echo "===> baseline (TESTS=ON, all) took $(( $(date +%s) - start )) s"
-      - run: ./build/solc/solc --version
+      - name: "Hash solc"
+        run: |
+          ./build/solc/solc --version
+          echo "SHA256_baseline: $(sha256sum build/solc/solc | awk '{print $1}')"
+          cp build/solc/solc solc-baseline
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solc-baseline
+          path: solc-baseline
 
   linux_notests:
     runs-on: ubuntu-latest
@@ -53,7 +60,15 @@ jobs:
           start=$(date +%s)
           make
           echo "===> notests (TESTS=OFF, all) took $(( $(date +%s) - start )) s"
-      - run: ./build/solc/solc --version
+      - name: "Hash solc"
+        run: |
+          ./build/solc/solc --version
+          echo "SHA256_notests: $(sha256sum build/solc/solc | awk '{print $1}')"
+          cp build/solc/solc solc-notests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solc-notests
+          path: solc-notests
 
   linux_solc_only:
     runs-on: ubuntu-latest
@@ -73,4 +88,12 @@ jobs:
           start=$(date +%s)
           make solc
           echo "===> solc-only (TESTS=OFF, target solc) took $(( $(date +%s) - start )) s"
-      - run: ./build/solc/solc --version
+      - name: "Hash solc"
+        run: |
+          ./build/solc/solc --version
+          echo "SHA256_solc_only: $(sha256sum build/solc/solc | awk '{print $1}')"
+          cp build/solc/solc solc-solc-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solc-solc-only
+          path: solc-solc-only
