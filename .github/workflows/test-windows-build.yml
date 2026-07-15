@@ -1,0 +1,97 @@
+name: TEST Windows build speed (skip tests)
+
+# Throwaway workflow: measure a GitHub-hosted Windows build with tests disabled
+# and only the solc target selected. No release storage is modified.
+
+on:
+  push:
+    branches:
+      - "ci-test/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows_solc_only:
+    name: Windows TESTS=OFF, target solc
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v5
+        with:
+          path: .\deps
+          key: hosted-dependencies-win-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: powershell
+        run: .\scripts\install_deps.ps1
+
+      - name: Configure and build solc only
+        id: build
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Set-Content -Path prerelease.txt -Value "" -NoNewline
+          New-Item -ItemType Directory -Force build | Out-Null
+          Set-Location build
+
+          $boostDir = Resolve-Path ..\deps\boost\lib\cmake\Boost-*
+          $configureStart = Get-Date
+          & ..\deps\cmake\bin\cmake `
+            -G "Visual Studio 17 2022" `
+            -DBoost_DIR="$boostDir\" `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+            -DUSE_Z3=OFF `
+            -DTESTS=OFF `
+            ..
+          if ($LASTEXITCODE -ne 0) { throw "CMake configure failed." }
+          $configureSeconds = [math]::Round(((Get-Date) - $configureStart).TotalSeconds, 1)
+
+          $buildStart = Get-Date
+          & ..\deps\cmake\bin\cmake `
+            --build . `
+            --config Release `
+            --target solc `
+            --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "solc build failed." }
+          $buildSeconds = [math]::Round(((Get-Date) - $buildStart).TotalSeconds, 1)
+
+          "configure_seconds=$configureSeconds" >> $env:GITHUB_OUTPUT
+          "build_seconds=$buildSeconds" >> $env:GITHUB_OUTPUT
+          "### Windows solc-only timing" >> $env:GITHUB_STEP_SUMMARY
+          "- Configure: ${configureSeconds}s" >> $env:GITHUB_STEP_SUMMARY
+          "- Build: ${buildSeconds}s" >> $env:GITHUB_STEP_SUMMARY
+          "- Total configure + build: $($configureSeconds + $buildSeconds)s" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Verify Windows binary
+        shell: powershell
+        run: |
+          $solc = Resolve-Path .\build\solc\Release\solc.exe
+          & $solc --version
+          if ($LASTEXITCODE -ne 0) { throw "solc --version failed." }
+
+          @'
+          contract Smoke { function answer() external pure returns (uint) { return 42; } }
+          '@ | Set-Content -Encoding ascii smoke.sol
+          & $solc --bin smoke.sol
+          if ($LASTEXITCODE -ne 0) { throw "solc smoke compilation failed." }
+
+          Get-Item $solc | Format-List Name,Length,VersionInfo
+          Get-FileHash -Algorithm SHA256 $solc
+          Write-Host "Configure: ${{ steps.build.outputs.configure_seconds }} s"
+          Write-Host "Build: ${{ steps.build.outputs.build_seconds }} s"
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-windows-notests
+          path: build\solc\Release\solc.exe
+          if-no-files-found: error

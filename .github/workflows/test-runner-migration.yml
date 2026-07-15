@@ -4,9 +4,6 @@ name: TEST GitHub-hosted runner migration (all platforms)
 # can run without any self-hosted runners. It deliberately does not write to S3.
 
 on:
-  push:
-    branches:
-      - "ci-test/**"
   workflow_dispatch:
 
 permissions:
