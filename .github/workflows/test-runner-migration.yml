@@ -1,0 +1,115 @@
+name: TEST GitHub-hosted runner migration (linux + ems)
+
+# Throwaway workflow to check whether the b_linux / b_ems build jobs can run
+# on GitHub-hosted runners instead of the self-hosted ones. Triggered only on
+# ci-test/** branches, uses no secrets and no self-hosted runners, and uploads
+# the produced binaries as run artifacts instead of pushing to S3.
+
+on:
+  push:
+    branches:
+      - "ci-test/**"
+  workflow_dispatch:
+
+jobs:
+  b_linux:
+    runs-on: ubuntu-latest
+
+    env:
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
+      TERM: xterm
+      # GitHub standard runner has 4 vCPUs; self-hosted used -j 10.
+      MAKEFLAGS: -j 4
+
+    container:
+      # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404-3
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Runner diagnostics (before)
+        run: |
+          echo "nproc = $(nproc)"
+          free -h || true
+          df -h / "${GITHUB_WORKSPACE}" || true
+
+      - name: Run build script
+        run: |
+          start=$(date +%s)
+          .github/workflows/build.sh
+          echo "===> linux build took $(( $(date +%s) - start )) s"
+
+      - name: Verify binary
+        run: |
+          ./build/solc/solc --version
+          file ./build/solc/solc || true
+          ls -la ./build/solc/solc
+          # Confirm it is statically linked (no dynamic deps expected).
+          ldd ./build/solc/solc || true
+
+      - name: Runner diagnostics (after)
+        run: df -h / "${GITHUB_WORKSPACE}" || true
+
+      - name: Prepare artifact
+        run: |
+          mkdir github/
+          cp build/solc/solc github/solc-static-linux
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-static-linux
+          path: github/solc-static-linux
+          if-no-files-found: error
+
+  b_ems:
+    runs-on: ubuntu-latest
+
+    env:
+      TERM: xterm
+      MAKEFLAGS: -j 4
+
+    container:
+      # solbuildpackpusher/solidity-buildpack-deps:emscripten-20
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:98f963ed799a0d206ef8e7b5475f847e0dea53b7fdea9618bbc6106a62730bd2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Runner diagnostics (before)
+        run: |
+          echo "nproc = $(nproc)"
+          free -h || true
+          df -h / "${GITHUB_WORKSPACE}" || true
+
+      - name: Run build script
+        run: |
+          start=$(date +%s)
+          .github/workflows/build_ems.sh
+          echo "===> ems build took $(( $(date +%s) - start )) s"
+
+      - name: Verify soljson.js
+        run: |
+          ls -la upload/soljson.js
+          bytes=$(stat -c%s upload/soljson.js)
+          echo "soljson.js size = ${bytes} bytes"
+          test "${bytes}" -gt 1000000
+
+      - name: Runner diagnostics (after)
+        run: df -h / "${GITHUB_WORKSPACE}" || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: soljson.js
+          path: upload/soljson.js
+          if-no-files-found: error
