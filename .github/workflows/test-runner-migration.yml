@@ -1,11 +1,7 @@
-name: TEST linux build speed (skip tests)
+name: TEST GitHub-hosted runner migration (all platforms)
 
-# Throwaway workflow: verify that skipping test compilation does NOT change the
-# produced solc binary. Three jobs build the SAME commit three ways, hash the
-# resulting build/solc/solc, and upload it as an artifact for byte comparison.
-#   linux_baseline  - TESTS=ON,  make        (current behaviour)
-#   linux_notests   - TESTS=OFF, make        (skip test/ subdir)
-#   linux_solc_only - TESTS=OFF, make solc   (only the solc target)
+# Throwaway workflow: verify that the complete binary build and packaging flow
+# can run without any self-hosted runners. It deliberately does not write to S3.
 
 on:
   push:
@@ -13,87 +9,338 @@ on:
       - "ci-test/**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  linux_baseline:
+  s3_read_check:
+    name: S3 access check (read-only)
     runs-on: ubuntu-latest
     env:
-      TERM: xterm
-      MAKEFLAGS: -j 4
-      CMAKE_OPTIONS: -DSOLC_LINK_STATIC=ON
-    container:
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
+      S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
+      S3_BUCKET_TEST: ${{ secrets.S3_BUCKET_TEST }}
+      SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v5
-      - run: git config --global --add safe.directory '*'
-      - name: "Build: TESTS=ON, make all (current)"
+      - name: Check credentials and bucket access without writing
         run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release $CMAKE_OPTIONS -G "Unix Makefiles"
-          start=$(date +%s)
-          make
-          echo "===> baseline (TESTS=ON, all) took $(( $(date +%s) - start )) s"
-      - name: "Hash solc"
-        run: |
-          ./build/solc/solc --version
-          echo "SHA256_baseline: $(sha256sum build/solc/solc | awk '{print $1}')"
-          cp build/solc/solc solc-baseline
-      - uses: actions/upload-artifact@v4
-        with:
-          name: solc-baseline
-          path: solc-baseline
+          if [[ -z "${S3_BUCKET_PROD}" || -z "${S3_BUCKET_TEST}" ]]; then
+            echo "::notice::S3 secrets are unavailable on this branch/repository; skipping the read-only check."
+            exit 0
+          fi
 
-  linux_notests:
-    runs-on: ubuntu-latest
-    env:
-      TERM: xterm
-      MAKEFLAGS: -j 4
-      CMAKE_OPTIONS: -DSOLC_LINK_STATIC=ON -DTESTS=OFF
-    container:
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
-    steps:
-      - uses: actions/checkout@v5
-      - run: git config --global --add safe.directory '*'
-      - name: "Build: TESTS=OFF, make all"
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release $CMAKE_OPTIONS -G "Unix Makefiles"
-          start=$(date +%s)
-          make
-          echo "===> notests (TESTS=OFF, all) took $(( $(date +%s) - start )) s"
-      - name: "Hash solc"
-        run: |
-          ./build/solc/solc --version
-          echo "SHA256_notests: $(sha256sum build/solc/solc | awk '{print $1}')"
-          cp build/solc/solc solc-notests
-      - uses: actions/upload-artifact@v4
-        with:
-          name: solc-notests
-          path: solc-notests
+          aws sts get-caller-identity
+          for bucket in "${S3_BUCKET_PROD}" "${S3_BUCKET_TEST}"; do
+            aws s3api head-bucket --bucket "${bucket}"
+            if aws s3api head-object \
+              --bucket "${bucket}" \
+              --key "${SHA}/soljson.js" >/dev/null 2>&1
+            then
+              echo "Found prior build for ${SHA} in ${bucket}."
+            else
+              echo "No prior soljson.js for ${SHA} in ${bucket}."
+            fi
+          done
 
-  linux_solc_only:
+  b_windows:
+    name: Windows x64 build
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v5
+        with:
+          path: .\deps
+          key: hosted-dependencies-win-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: powershell
+        run: .\scripts\install_deps.ps1
+
+      - name: Build
+        shell: powershell
+        run: .\.github\workflows\build_win.ps1
+
+      - name: Verify Windows binary
+        shell: powershell
+        run: |
+          $solc = Resolve-Path .\build\solc\Release\solc.exe
+          & $solc --version
+          if ($LASTEXITCODE -ne 0) { throw "solc --version failed." }
+
+          @'
+          contract Smoke { function answer() external pure returns (uint) { return 42; } }
+          '@ | Set-Content -Encoding ascii smoke.sol
+          & $solc --bin smoke.sol
+          if ($LASTEXITCODE -ne 0) { throw "solc smoke compilation failed." }
+
+          Get-Item $solc | Format-List Name,Length,VersionInfo
+          Get-FileHash -Algorithm SHA256 $solc
+
+      - name: Prepare Windows binary
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force github | Out-Null
+          Copy-Item build\solc\Release\solc.exe github\solc-windows.exe
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-windows
+          path: github\solc-windows.exe
+          if-no-files-found: error
+
+  b_macos:
+    name: macOS universal build
+    runs-on: macos-15
+    env:
+      CMAKE_BUILD_TYPE: Release
+      CMAKE_OPTIONS: -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64;arm64 -DBoost_ROOT=${{ github.workspace }}/deps/boost -DBoost_NO_SYSTEM_PATHS=ON
+      TERM: xterm
+      MAKEFLAGS: -j 3
+      CPUs: 3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Select pinned macOS toolchain
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+          bash .circleci/install_cmake.sh 3.29.3
+          xcodebuild -version
+          clang --version
+          cmake --version
+
+      - name: Cache universal Boost
+        id: cache-boost
+        uses: actions/cache@v5
+        with:
+          path: deps/boost
+          key: hosted-boost-macos-universal-1.84.0-xcode16.4-v1
+
+      - name: Build universal Boost
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        run: |
+          boost_version=1.84.0
+          boost_dir="boost_${boost_version//./_}"
+          boost_archive="${RUNNER_TEMP}/${boost_dir}.tar.bz2"
+
+          curl --fail --location --retry 3 \
+            "https://archives.boost.io/release/${boost_version}/source/${boost_dir}.tar.bz2" \
+            --output "${boost_archive}"
+          tar -xjf "${boost_archive}" -C "${RUNNER_TEMP}"
+
+          cd "${RUNNER_TEMP}/${boost_dir}"
+          ./bootstrap.sh \
+            --with-toolset=clang \
+            --with-libraries=filesystem,program_options,system,test
+          ./b2 -j 3 -d0 \
+            link=static \
+            variant=release \
+            threading=multi \
+            address-model=64 \
+            architecture=arm+x86 \
+            --prefix="${GITHUB_WORKSPACE}/deps/boost" \
+            install
+
+      - name: Build
+        run: .github/workflows/build.sh
+
+      - name: Verify universal binary on Apple Silicon
+        run: |
+          solc=build/solc/solc
+          file "${solc}"
+          archs=$(lipo -archs "${solc}")
+          echo "Architectures: ${archs}"
+          [[ " ${archs} " == *" arm64 "* ]]
+          [[ " ${archs} " == *" x86_64 "* ]]
+
+          "./${solc}" --version
+          otool -L "${solc}"
+          if otool -L "${solc}" | tail -n +2 | grep -E '/(opt/homebrew|usr/local)/'; then
+            echo "Unexpected non-system dynamic dependency."
+            exit 1
+          fi
+
+          echo 'contract Smoke { function answer() external pure returns (uint) { return 42; } }' > smoke.sol
+          "./${solc}" --bin smoke.sol
+          shasum -a 256 "${solc}"
+
+      - name: Prepare macOS binary
+        run: |
+          mkdir github
+          cp build/solc/solc github/solc-macos
+
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-macos
+          path: github/solc-macos
+          if-no-files-found: error
+
+  verify_macos_intel:
+    name: Run macOS x86_64 slice
+    needs: b_macos
+    runs-on: macos-15-intel
+    steps:
+      - name: Download macOS binary
+        uses: actions/download-artifact@v4
+        with:
+          name: solc-macos
+          path: github
+
+      - name: Verify on Intel macOS
+        run: |
+          chmod +x github/solc-macos
+          file github/solc-macos
+          lipo -archs github/solc-macos
+          arch -x86_64 github/solc-macos --version
+          echo 'contract Smoke { function answer() external pure returns (uint) { return 42; } }' > smoke.sol
+          arch -x86_64 github/solc-macos --bin smoke.sol
+
+  b_linux:
+    name: Linux static build
+    runs-on: ubuntu-latest
+    env:
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
+      TERM: xterm
+      MAKEFLAGS: -j 4
+      CPUs: 4
+    container:
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Build
+        run: .github/workflows/build.sh
+
+      - name: Verify Linux binary
+        run: |
+          ./build/solc/solc --version
+          file build/solc/solc
+          echo 'contract Smoke { function answer() external pure returns (uint) { return 42; } }' > smoke.sol
+          ./build/solc/solc --bin smoke.sol
+          sha256sum build/solc/solc
+
+      - name: Prepare Linux binary
+        run: |
+          mkdir github
+          cp build/solc/solc github/solc-static-linux
+
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-linux
+          path: github/solc-static-linux
+          if-no-files-found: error
+
+  b_ems:
+    name: Emscripten build
     runs-on: ubuntu-latest
     env:
       TERM: xterm
       MAKEFLAGS: -j 4
-      CMAKE_OPTIONS: -DSOLC_LINK_STATIC=ON -DTESTS=OFF
+      CPUs: 4
     container:
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
+      image: solbuildpackpusher/solidity-buildpack-deps@sha256:98f963ed799a0d206ef8e7b5475f847e0dea53b7fdea9618bbc6106a62730bd2
     steps:
-      - uses: actions/checkout@v5
-      - run: git config --global --add safe.directory '*'
-      - name: "Build: TESTS=OFF, target solc only"
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release $CMAKE_OPTIONS -G "Unix Makefiles"
-          start=$(date +%s)
-          make solc
-          echo "===> solc-only (TESTS=OFF, target solc) took $(( $(date +%s) - start )) s"
-      - name: "Hash solc"
-        run: |
-          ./build/solc/solc --version
-          echo "SHA256_solc_only: $(sha256sum build/solc/solc | awk '{print $1}')"
-          cp build/solc/solc solc-solc-only
-      - uses: actions/upload-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v5
         with:
-          name: solc-solc-only
-          path: solc-solc-only
+          submodules: true
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Build
+        run: .github/workflows/build_ems.sh
+
+      - name: Verify soljson.js
+        run: |
+          test -f upload/soljson.js
+          bytes=$(stat -c%s upload/soljson.js)
+          echo "soljson.js size: ${bytes} bytes"
+          test "${bytes}" -gt 1000000
+          sha256sum upload/soljson.js
+
+      - name: Upload Emscripten binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-ems
+          path: upload/soljson.js
+          if-no-files-found: error
+
+  package:
+    name: Package all hosted-runner binaries
+    needs: [b_windows, b_macos, verify_macos_intel, b_linux, b_ems]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: solc-windows
+          path: github
+
+      - name: Download macOS binary
+        uses: actions/download-artifact@v4
+        with:
+          name: solc-macos
+          path: github
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: solc-linux
+          path: github
+
+      - name: Download Emscripten binary
+        uses: actions/download-artifact@v4
+        with:
+          name: solc-ems
+          path: github
+
+      - name: Create release-format archives
+        run: |
+          chmod +x github/solc-static-linux github/solc-macos
+          full_version=$(
+            github/solc-static-linux --version |
+            sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
+          )
+          test -n "${full_version}"
+          echo "Full version: ${full_version}"
+
+          tar --create --file github-binaries.tar -C github \
+            solc-windows.exe solc-macos solc-static-linux soljson.js
+
+          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
+          cp github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
+          cp github/solc-macos "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
+          cp github/solc-windows.exe "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
+          cp github/soljson.js "solc-bin/bin/soljson-v${full_version}.js"
+          tar --create --file solc-bin-binaries.tar -C solc-bin .
+
+          tar -tf github-binaries.tar
+          tar -tf solc-bin-binaries.tar
+          sha256sum github-binaries.tar solc-bin-binaries.tar
+
+      - name: Upload packaged archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-runner-packages
+          path: |
+            github-binaries.tar
+            solc-bin-binaries.tar
+          if-no-files-found: error
