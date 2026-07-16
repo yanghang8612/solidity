@@ -31,6 +31,7 @@
 #include <liblangutil/ErrorReporter.h>
 
 #include <range/v3/action/reverse.hpp>
+#include <range/v3/view/reverse.hpp>
 
 #include <limits>
 
@@ -209,7 +210,7 @@ namespace
 
 VariableDeclaration const* findLastStorageVariable(ContractDefinition const& _contract)
 {
-	for (ContractDefinition const* baseContract: ranges::actions::reverse(_contract.annotation().linearizedBaseContracts))
+	for (ContractDefinition const* baseContract: ranges::views::reverse(_contract.annotation().linearizedBaseContracts))
 		for (VariableDeclaration const* stateVariable: ranges::actions::reverse(baseContract->stateVariables()))
 			if (stateVariable->referenceLocation() == VariableDeclaration::Location::Unspecified)
 				return stateVariable;
