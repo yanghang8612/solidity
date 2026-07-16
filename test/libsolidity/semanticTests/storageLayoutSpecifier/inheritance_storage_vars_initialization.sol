@@ -20,8 +20,6 @@ contract F {
 // gas legacy code: 63400
 // gas legacyOptimized: 121966
 // gas legacyOptimized code: 23800
-// gas ssaCFGOptimized: 121771
-// gas ssaCFGOptimized code: 29400
 // withoutSpecifier() -> 1, 10, 15
 // gas irOptimized: 121768
 // gas irOptimized code: 27600
@@ -29,5 +27,3 @@ contract F {
 // gas legacy code: 40400
 // gas legacyOptimized: 121916
 // gas legacyOptimized code: 20600
-// gas ssaCFGOptimized: 121722
-// gas ssaCFGOptimized code: 26200
