@@ -1,0 +1,11 @@
+{
+    "errors": [
+        {
+            "component": "general",
+            "formattedMessage": "\"settings.eofVersion\" is currently disabled for TRON solidity compiler.",
+            "message": "\"settings.eofVersion\" is currently disabled for TRON solidity compiler.",
+            "severity": "error",
+            "type": "JSONError"
+        }
+    ]
+}

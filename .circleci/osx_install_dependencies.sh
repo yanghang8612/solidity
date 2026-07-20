@@ -50,7 +50,7 @@ if [ ! -f /usr/local/lib/libz3.a ] # if this file does not exists (cache was not
 then
   brew update
   brew upgrade
-#  brew install cmake
+  brew install cmake
   brew install wget
   brew install coreutils
   brew install diffutils
@@ -59,9 +59,8 @@ then
   brew install openjdk@11
   brew install unzip
 
-  # install historical cmake
-  chmod +x .circleci/install_cmake.sh
-  .circleci/install_cmake.sh 3.29.3
+  # writing to /usr/local/lib need administrative privileges.
+  sudo ./scripts/install_obsolete_jsoncpp_1_7_4.sh
 
   # boost
   boost_version="1.84.0"
@@ -86,38 +85,35 @@ then
   rm -rf /tmp/{eldarica,eld_binaries.zip}
 
   #cvc5
-  cvc5_version="1.1.2"
-  wget "https://github.com/cvc5/cvc5/releases/download/cvc5-${cvc5_version}/cvc5-macOS-arm64-static.zip" -O /tmp/cvc5.zip
-  validate_checksum /tmp/cvc5.zip 2017d683d924676cb713865c6d4fcf70115c65b7ec2848f242ab938902f115b5
-  unzip /tmp/cvc5.zip -x "cvc5-macOS-arm64-static/lib/cmake/*" -d /tmp
-  sudo mv /tmp/cvc5-macOS-arm64-static/bin/* /usr/local/bin
-  sudo mv /tmp/cvc5-macOS-arm64-static/include/* /usr/local/include
-  sudo mv /tmp/cvc5-macOS-arm64-static/lib/* /usr/local/lib
-  rm -rf /tmp/{cvc5-macOS-arm64-static,cvc5.zip}
+  cvc5_version="1.2.0"
+  cvc5_archive_name="cvc5-macOS-arm64-static"
+  wget "https://github.com/cvc5/cvc5/releases/download/cvc5-${cvc5_version}/${cvc5_archive_name}.zip" -O /tmp/cvc5.zip
+  validate_checksum /tmp/cvc5.zip 57d2d4855af3f3865110a254e415098b4e150a655f297010e27eb292f48f7da7
+  sudo unzip -j /tmp/cvc5.zip "${cvc5_archive_name}/bin/cvc5" -d /usr/local/bin
+  rm -f /tmp/cvc5.zip
 
   # z3
-  z3_version="4.12.1"
+  z3_version="4.13.3"
   z3_dir="z3-z3-$z3_version"
   z3_package="z3-$z3_version.tar.gz"
   wget "https://github.com/Z3Prover/z3/archive/refs/tags/$z3_package"
-  validate_checksum "$z3_package" a3735fabf00e1341adcc70394993c05fd3e2ae167a3e9bb46045e33084eb64a3
+  validate_checksum "$z3_package" f59c9cf600ea57fb64ffeffbffd0f2d2b896854f339e846f48f069d23bc14ba0
   tar xf "$z3_package"
   rm "$z3_package"
   cd "$z3_dir"
   mkdir build
   cd build
-  # Force to support for CMake 3.5, should be delete in the future version
-  cmake -DCMAKE_OSX_ARCHITECTURES:STRING="x86_64;arm64" -DZ3_BUILD_LIBZ3_SHARED=false -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
-  make -j
+  cmake -DCMAKE_OSX_ARCHITECTURES:STRING="x86_64;arm64" -DZ3_BUILD_LIBZ3_SHARED=false ..
+  make -j "$(nproc)"
   sudo make install
   cd ../..
   rm -rf "$z3_dir"
 
   # evmone
-  evmone_version="0.12.0"
+  evmone_version="0.13.0"
   evmone_package="evmone-${evmone_version}-darwin-arm64.tar.gz"
   wget "https://github.com/ethereum/evmone/releases/download/v${evmone_version}/${evmone_package}"
-  validate_checksum "$evmone_package" e164e0d2b985cc1cca07b501538b2e804bf872d1d8d531f9241d518a886234a6
+  validate_checksum "$evmone_package" 49fe6cc35e0e13c48ca2f29a6b85a47f7b25dcd427e14254000d3bc29cddf2a6
   sudo tar xzpf "$evmone_package" -C /usr/local
   rm "$evmone_package"
 fi
