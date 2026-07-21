@@ -110,6 +110,40 @@ jobs:
           path: github/solc-static-linux
           key: solc-linux-${{ github.run_id }}
 
+  b_linux_arm:
+    runs-on: ubuntu-24.04-arm
+
+    env:
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
+      TERM: xterm
+      MAKEFLAGS: -j 4
+      CPUs: 4
+
+    container:
+      # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-1
+      image: ghcr.io/argotorg/solidity-buildpack-deps@sha256:6cdb928fa8743d0b5d515c2c489b8d545c541f2370af28d5d3a71532056a0f22
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Run build script
+        run: .github/workflows/build.sh
+
+      - name: Prepare artifact for caching
+        run: |
+          mkdir github/
+          cp build/solc/solc github/solc-static-linux-arm
+
+      - name: Save artifact to cache
+        uses: actions/cache/save@v5
+        with:
+          path: github/solc-static-linux-arm
+          key: solc-linux-arm-${{ github.run_id }}
+
   b_ems:
     runs-on: [ self-hosted, Linux, for-ems ]
 
@@ -145,7 +179,7 @@ jobs:
           key: solc-ems-${{ github.run_id }}
 
   upload-to-s3:
-    needs: [ b_windows, b_macos, b_linux, b_ems ]
+    needs: [ b_windows, b_macos, b_linux, b_linux_arm, b_ems ]
 
     runs-on: [ self-hosted, macOS ]
 
@@ -174,6 +208,12 @@ jobs:
           path: github/solc-static-linux
           key: solc-linux-${{ github.run_id }}
 
+      - name: Restore solc-linux-arm
+        uses: actions/cache/restore@v5
+        with:
+          path: github/solc-static-linux-arm
+          key: solc-linux-arm-${{ github.run_id }}
+
       - name: Restore solc-ems
         uses: actions/cache/restore@v5
         with:
@@ -196,12 +236,13 @@ jobs:
             sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
           )
 
-          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
+          mkdir -p solc-bin/{linux-amd64,linux-arm64,macosx-amd64,windows-amd64,bin}
 
-          cp github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
-          cp github/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
-          cp github/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
-          cp github/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
+          cp github/solc-static-linux-arm "solc-bin/linux-arm64/solc-linux-arm64-v${full_version}"
+          cp github/solc-static-linux     "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
+          cp github/solc-macos            "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
+          cp github/solc-windows.exe      "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
+          cp github/soljson.js            "solc-bin/bin/soljson-v${full_version}.js"
 
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *
@@ -224,6 +265,7 @@ jobs:
           aws s3 cp solc-windows.exe "s3://${bucket}/${{ github.sha }}/" --only-show-errors
           aws s3 cp solc-macos "s3://${bucket}/${{ github.sha }}/" --only-show-errors
           aws s3 cp solc-static-linux "s3://${bucket}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-static-linux-arm "s3://${bucket}/${{ github.sha }}/" --only-show-errors
           aws s3 cp soljson.js "s3://${bucket}/${{ github.sha }}/" --only-show-errors
           
           cd .. && rm -rf github solc-bin *.tar
