@@ -302,22 +302,16 @@ jobs:
       - name: Upload to S3
         shell: bash
         env:
-          S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
-          S3_BUCKET_TEST: ${{ secrets.S3_BUCKET_TEST }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_PROD }}
         run: |
-          case "${GITHUB_REF_NAME}" in
-            develop)   bucket="${S3_BUCKET_PROD}" ;;
-            release_*) bucket="${S3_BUCKET_TEST}" ;;
-          esac
-          
-          aws s3 cp github-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-bin-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp github-binaries.tar "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-bin-binaries.tar "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
           
           cd github
-          aws s3 cp solc-windows.exe "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-macos "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-static-linux "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-static-linux-arm "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp soljson.js "s3://${bucket}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-windows.exe "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-macos "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-static-linux "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-static-linux-arm "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp soljson.js "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
           
           cd .. && rm -rf github solc-bin *.tar
