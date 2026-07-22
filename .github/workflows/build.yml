@@ -40,7 +40,7 @@ jobs:
           cp build/solc/Release/solc.exe github/solc-windows.exe
 
       - name: Upload Windows binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: solc-windows
           path: github/solc-windows.exe
@@ -112,7 +112,7 @@ jobs:
           cp build/solc/solc github/solc-macos
 
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: solc-macos
           path: github/solc-macos
@@ -149,7 +149,7 @@ jobs:
           cp build/solc/solc github/solc-static-linux
 
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: solc-linux
           path: github/solc-static-linux
@@ -186,7 +186,7 @@ jobs:
           cp build/solc/solc github/solc-static-linux-arm
 
       - name: Upload Linux ARM64 binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: solc-linux-arm
           path: github/solc-static-linux-arm
@@ -223,7 +223,7 @@ jobs:
           cp upload/soljson.js github/soljson.js
 
       - name: Upload Emscripten binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: solc-ems
           path: github/soljson.js
@@ -232,7 +232,7 @@ jobs:
   upload-to-s3:
     needs: [ b_windows, b_macos, b_linux, b_linux_arm, b_ems ]
 
-    runs-on: [ self-hosted, Linux ]
+    runs-on: [ self-hosted, Linux, for-linux ]
 
     permissions:
       actions: read
@@ -240,31 +240,31 @@ jobs:
 
     steps:
       - name: Download solc-windows
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: solc-windows
           path: github
 
       - name: Download solc-macos
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: solc-macos
           path: github
 
       - name: Download solc-linux
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: solc-linux
           path: github
 
       - name: Download solc-linux-arm
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: solc-linux-arm
           path: github
 
       - name: Download solc-ems
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: solc-ems
           path: github
