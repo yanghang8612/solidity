@@ -64,7 +64,7 @@ def append_entry(list_json_text: str, entry: dict) -> str:
 
 
 def open_solcbin_pr(run: Run, solcbin_repo: str, man: Manifest, workdir: str,
-                     dry_run: bool) -> str:
+                     dry_run: bool, reuse_checkout: bool = False) -> str:
     """Push this release's binaries to a `solc-bin` branch and open the PR.
 
     Re-runnable: an `apply` invocation that already got this far in a
@@ -116,7 +116,24 @@ def open_solcbin_pr(run: Run, solcbin_repo: str, man: Manifest, workdir: str,
         return existing
 
     checkout = os.path.join(workdir, "solc-bin")
-    run(["gh", "repo", "clone", solcbin_repo, checkout, "--", "--depth", "1"])
+    if reuse_checkout and os.path.isdir(os.path.join(checkout, ".git")):
+        origin = run(["git", "-C", checkout, "remote", "get-url", "origin"]).strip()
+        accepted_origins = {
+            f"https://github.com/{solcbin_repo}",
+            f"https://github.com/{solcbin_repo}.git",
+            f"git@github.com:{solcbin_repo}",
+            f"git@github.com:{solcbin_repo}.git",
+            f"ssh://git@github.com/{solcbin_repo}",
+            f"ssh://git@github.com/{solcbin_repo}.git",
+        }
+        if origin not in accepted_origins:
+            raise ValueError(
+                f"refusing reused solc-bin checkout with origin {origin!r}; "
+                f"expected {solcbin_repo!r}"
+            )
+        print(f"reusing solc-bin checkout from {checkout}")
+    else:
+        run(["gh", "repo", "clone", solcbin_repo, checkout, "--", "--depth", "1"])
     run(["git", "-C", checkout, "checkout", "-b", branch])
     run(["git", "-C", checkout, "config", "user.name", "tron-release-bot"])
     run([

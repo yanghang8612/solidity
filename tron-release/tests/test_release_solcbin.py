@@ -208,6 +208,9 @@ class TestOpenSolcbinPr(unittest.TestCase):
     def clone_argv(self):
         return ("gh", "repo", "clone", SOLCBIN_REPO, self.checkout, "--", "--depth", "1")
 
+    def origin_argv(self):
+        return ("git", "-C", self.checkout, "remote", "get-url", "origin")
+
     def checkout_branch_argv(self):
         return ("git", "-C", self.checkout, "checkout", "-b", self.branch)
 
@@ -401,6 +404,42 @@ class TestOpenSolcbinPr(unittest.TestCase):
         with open(list_path, "r", encoding="utf-8") as handle:
             data = json.load(handle)
         self.assertEqual(len(data["builds"]), 1)
+
+    def test_explicitly_reuses_checkout_with_matching_origin(self):
+        seed_checkout(self.checkout)
+        os.makedirs(os.path.join(self.checkout, ".git"))
+        run = FakeRun({
+            self.list_argv(): "[]\n",
+            self.origin_argv(): f"https://github.com/{SOLCBIN_REPO}.git\n",
+            self.checkout_branch_argv(): "",
+            self.config_name_argv(): "",
+            self.config_email_argv(): "",
+            self.add_argv(): "",
+            self.commit_argv(): "",
+        })
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            solcbin.open_solcbin_pr(
+                run, SOLCBIN_REPO, self.man, self.workdir,
+                dry_run=True, reuse_checkout=True,
+            )
+
+        self.assertNotIn(list(self.clone_argv()), run.calls)
+        self.assertIn(list(self.origin_argv()), run.calls)
+
+    def test_reused_checkout_rejects_wrong_origin(self):
+        seed_checkout(self.checkout)
+        os.makedirs(os.path.join(self.checkout, ".git"))
+        run = FakeRun({
+            self.list_argv(): "[]\n",
+            self.origin_argv(): "https://github.com/attacker/solc-bin.git\n",
+        })
+
+        with self.assertRaisesRegex(ValueError, "refusing reused.*origin"):
+            solcbin.open_solcbin_pr(
+                run, SOLCBIN_REPO, self.man, self.workdir,
+                dry_run=True, reuse_checkout=True,
+            )
 
 if __name__ == "__main__":
     unittest.main()

@@ -420,7 +420,10 @@ def cmd_apply(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
     gates.g6_asset_digests(workdir, man)
     print("G5/G6 passed")
 
-    pr_url = solcbin.open_solcbin_pr(run, solcbin_repo, man, workdir, dry_run=args.dry_run)
+    pr_url = solcbin.open_solcbin_pr(
+        run, solcbin_repo, man, workdir, dry_run=args.dry_run,
+        reuse_checkout=getattr(args, "reuse_workdir", False),
+    )
 
     release = github.release_view(run, repo, args.tag)
     if release["targetCommitish"] != man.commit:
