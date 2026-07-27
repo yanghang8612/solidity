@@ -1,0 +1,61 @@
+name: Release / publish
+
+# Manual-only and irreversible on the non-dry-run path.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Draft release tag, e.g. tv_0.8.30"
+        required: true
+      solc_bin_repo:
+        description: "Repository containing the reviewed binaries PR"
+        required: true
+      solcbin_pr:
+        description: "solc-bin PR number to merge (optional)"
+        required: false
+      approved:
+        description: "I confirm the draft release and solc-bin PR were reviewed"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Re-verify everything without publishing or merging"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Python dependencies
+        run: python3 -m pip install -r tron-release/release/requirements.txt
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.SOLC_BIN_TOKEN }}
+          TRON_RELEASE_REPO: ${{ github.repository }}
+          TRON_RELEASE_SOLC_BIN_REPO: ${{ inputs.solc_bin_repo }}
+          TRON_RELEASE_SIGNING_KEY_FINGERPRINT: ${{ vars.TRON_RELEASE_SIGNING_KEY_FINGERPRINT }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_SOLCBIN_PR: ${{ inputs.solcbin_pr }}
+          RELEASE_APPROVED: ${{ inputs.approved }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$RELEASE_DRY_RUN" != "true" ] && [ "$RELEASE_APPROVED" != "true" ]; then
+            echo "Refusing to publish without explicit approval confirmation" >&2
+            exit 1
+          fi
+
+          args=("$RELEASE_TAG")
+          if [ -n "$RELEASE_SOLCBIN_PR" ]; then
+            args+=(--solcbin-pr "$RELEASE_SOLCBIN_PR")
+          fi
+          if [ "$RELEASE_DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          PYTHONPATH="$PWD/tron-release" python3 -m release.cli publish "${args[@]}"

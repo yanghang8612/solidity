@@ -230,6 +230,9 @@ jobs:
           if-no-files-found: error
 
   upload-to-s3:
+    # Fork rehearsals keep all build artifacts in GitHub Actions and must not
+    # consume the production self-hosted runner or production S3 credentials.
+    if: github.repository == 'tronprotocol/solidity'
     needs: [ b_windows, b_macos, b_linux, b_linux_arm, b_ems ]
 
     runs-on: [ self-hosted, Linux, for-linux ]
@@ -300,13 +303,13 @@ jobs:
             sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
           )
 
-          mkdir -p solc-bin/{linux-amd64,linux-arm64,macosx-amd64,windows-amd64,bin}
+          mkdir -p solc-bin/{linux-amd64,linux-arm64,macosx-amd64,windows-amd64,wasm}
 
           cp github/solc-static-linux-arm "solc-bin/linux-arm64/solc-linux-arm64-v${full_version}"
           cp github/solc-static-linux     "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
           cp github/solc-macos            "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
           cp github/solc-windows.exe      "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
-          cp github/soljson.js            "solc-bin/bin/soljson-v${full_version}.js"
+          cp github/soljson.js            "solc-bin/wasm/soljson-v${full_version}.js"
 
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *

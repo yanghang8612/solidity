@@ -1,0 +1,58 @@
+name: Release / prepare draft
+
+# Manual-only: this workflow can create a draft release with a write token.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Merge commit to release"
+        required: true
+      build_run_id:
+        description: "Successful build.yml run ID for exactly that commit"
+        required: true
+      release_branch:
+        description: "Branch that must contain the merge commit"
+        required: true
+        default: "develop"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TRON_RELEASE_REPO: ${{ github.repository }}
+      TRON_RELEASE_QA_REVIEWERS: ${{ vars.TRON_RELEASE_QA_REVIEWERS }}
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Fetch release branch for ancestry check
+        env:
+          RELEASE_BRANCH: ${{ inputs.release_branch }}
+        run: |
+          [[ "$RELEASE_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]
+          git fetch origin "+refs/heads/${RELEASE_BRANCH}:refs/remotes/origin/${RELEASE_BRANCH}"
+
+      - name: Install Python dependencies
+        run: python3 -m pip install -r tron-release/release/requirements.txt
+
+      - name: Prepare draft release
+        env:
+          RELEASE_COMMIT: ${{ inputs.commit }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          RELEASE_REF: origin/${{ inputs.release_branch }}
+        run: |
+          PYTHONPATH="$PWD/tron-release" python3 -m release.cli prepare \
+            "$RELEASE_COMMIT" \
+            --build-run-id "$BUILD_RUN_ID" \
+            --release-ref "$RELEASE_REF"

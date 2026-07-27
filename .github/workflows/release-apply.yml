@@ -1,0 +1,45 @@
+name: Release / apply
+
+# Manual-only: the non-dry-run path pushes to the selected solc-bin fork and
+# opens a pull request. It never sends email and never publishes the release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Draft release tag, e.g. tv_0.8.30"
+        required: true
+      solc_bin_repo:
+        description: "Target repository, e.g. tronprotocol/solc-bin or yanghang8612/solc-bin"
+        required: true
+      dry_run:
+        description: "Build and commit the solc-bin projection locally without push or PR"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Python dependencies
+        run: python3 -m pip install -r tron-release/release/requirements.txt
+
+      - name: Apply
+        env:
+          GH_TOKEN: ${{ secrets.SOLC_BIN_TOKEN }}
+          TRON_RELEASE_REPO: ${{ github.repository }}
+          TRON_RELEASE_SOLC_BIN_REPO: ${{ inputs.solc_bin_repo }}
+          TRON_RELEASE_SIGNING_KEY_FINGERPRINT: ${{ vars.TRON_RELEASE_SIGNING_KEY_FINGERPRINT }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=("$RELEASE_TAG" --workdir "$RUNNER_TEMP/apply")
+          if [ "$RELEASE_DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          PYTHONPATH="$PWD/tron-release" python3 -m release.cli apply "${args[@]}"
