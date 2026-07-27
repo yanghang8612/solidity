@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import errno
 import os
 import unittest
 
@@ -42,6 +43,27 @@ class TestExecutableEvidence(unittest.TestCase):
         with self.assertRaises(ValueError):
             evidence.extract(run, "solc-static-linux", "/tmp/solc-static-linux")
 
+    def test_linux_binary_falls_back_to_strings_on_foreign_host(self):
+        path = os.path.join(FIXTURES, "fake-static-binary")
+
+        def incompatible_executable(_argv):
+            raise OSError(errno.ENOEXEC, "Exec format error", path)
+
+        self.assertEqual(
+            evidence.extract(incompatible_executable, "solc-static-linux", path,
+                             version="0.8.27", short_commit=SHORT),
+            "0.8.27|19164bed",
+        )
+
+    def test_linux_binary_does_not_hide_other_os_errors(self):
+        def permission_denied(_argv):
+            raise OSError(errno.EACCES, "Permission denied")
+
+        with self.assertRaises(OSError) as caught:
+            evidence.extract(permission_denied, "solc-static-linux", "/tmp/solc",
+                             version="0.8.27", short_commit=SHORT)
+        self.assertEqual(caught.exception.errno, errno.EACCES)
+
 
 class TestStringEvidence(unittest.TestCase):
     def test_static_binary_yields_version_and_commit(self):
@@ -81,6 +103,11 @@ class TestG4(unittest.TestCase):
 
     def test_accepts_consistent_evidence(self):
         gates.g4_version_evidence(self.ok(), LONG, SHORT)
+
+    def test_accepts_linux_embedded_evidence_for_cross_host_rehearsal(self):
+        values = self.ok()
+        values["solc-static-linux"] = "0.8.27|19164bed"
+        gates.g4_version_evidence(values, LONG, SHORT)
 
     def test_rejects_executable_built_from_another_commit(self):
         bad = self.ok()

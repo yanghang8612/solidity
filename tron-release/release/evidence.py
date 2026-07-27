@@ -5,6 +5,7 @@ version string; cross-platform binaries yield only grep-able fragments. The weak
 case is backstopped by the S3 key, which is the commit sha itself.
 """
 
+import errno
 import re
 from typing import Callable, List, Optional
 
@@ -45,7 +46,18 @@ def extract(
 ) -> str:
     """Evidence text for artifact `name` stored at `path`."""
     if name == "solc-static-linux":
-        return _from_solc(run, path)
+        try:
+            return _from_solc(run, path)
+        except OSError as exc:
+            # A developer may rehearse `prepare` from macOS or another host
+            # that cannot execute the Linux x86-64 artifact.  Preserve the
+            # stronger `--version` check on the Ubuntu release runner, but
+            # fall back to the same embedded version/commit evidence used for
+            # the other cross-platform binaries when the kernel reports an
+            # incompatible executable format.
+            if exc.errno != errno.ENOEXEC:
+                raise
+            return _from_strings(path, version, short_commit)
     if name == "soljson.js":
         return _from_soljson(run, path)
     if name in ("solc-macos", "solc-static-linux-arm", "solc-windows.exe"):

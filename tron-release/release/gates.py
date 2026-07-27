@@ -82,9 +82,10 @@ def g3_artifacts_present(present: List[str]) -> None:
 
 
 # `prepare` runs on a GitHub-hosted x86-64 Linux runner. Execute the native
-# Linux compiler and soljson for strong evidence; inspect embedded strings in
-# the cross-platform macOS, Linux ARM64, and Windows binaries.
-_EXECUTABLE_ARTIFACTS = ("solc-static-linux", "soljson.js")
+# Linux compiler and soljson for strong evidence there. A local rehearsal on
+# another OS may report embedded-string evidence for the Linux binary instead;
+# the cross-platform macOS, Linux ARM64, and Windows binaries always do so.
+_EXECUTABLE_ARTIFACTS = ("soljson.js",)
 _STRING_ARTIFACTS = ("solc-macos", "solc-static-linux-arm", "solc-windows.exe")
 
 
@@ -93,6 +94,19 @@ def g4_version_evidence(
 ) -> None:
     """G4: every artifact must carry evidence of the release commit."""
     version = long_version.split("+")[0]
+
+    if "solc-static-linux" not in evidence_by_name:
+        raise GateError("G4: missing evidence for solc-static-linux")
+    linux_evidence = evidence_by_name["solc-static-linux"]
+    if not (
+        linux_evidence.startswith(long_version + ".")
+        or linux_evidence == f"{version}|{short_commit}"
+    ):
+        raise GateError(
+            f"G4: solc-static-linux reports {linux_evidence!r}; expected native "
+            f"version evidence starting with {long_version + '.'!r} or embedded "
+            f"evidence {version + '|' + short_commit!r}"
+        )
 
     for name in _EXECUTABLE_ARTIFACTS:
         if name not in evidence_by_name:
