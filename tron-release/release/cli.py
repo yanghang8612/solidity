@@ -308,6 +308,35 @@ def verify_downloaded(artifacts_dir: str, shasum_text: str) -> None:
         raise GateError(f"shasum.txt does not cover: {missing}")
 
 
+def download_release_assets(
+    run: Run,
+    repo: str,
+    tag: str,
+    workdir: str,
+    names: List[str],
+    reuse_workdir: bool = False,
+) -> None:
+    """Download named release assets, or explicitly reuse a complete workdir.
+
+    Reuse is opt-in because signing and publishing should normally fetch fresh
+    bytes from GitHub. It is useful for a constrained local rehearsal where a
+    proxy cannot reliably sustain gh's concurrent large-asset downloads. The
+    complete-name check fails closed before any verification or signing step.
+    """
+    if reuse_workdir:
+        missing = [name for name in names if not os.path.isfile(os.path.join(workdir, name))]
+        if missing:
+            raise GateError(f"--reuse-workdir is missing release assets: {missing}")
+        print(f"reusing {len(names)} release assets from {workdir}")
+        return
+
+    patterns = []
+    for name in names:
+        patterns += ["-p", name]
+    run(["gh", "release", "download", tag, "--repo", repo,
+         "-D", workdir, "--clobber"] + patterns)
+
+
 def cmd_sign(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
     """Download a draft release's binaries, verify them, and sign them.
 
@@ -322,11 +351,10 @@ def cmd_sign(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
     workdir = args.workdir or tempfile.mkdtemp(prefix="tron-sign-")
     names = [name for name, _, _ in ARTIFACT_SPECS]
 
-    patterns = []
-    for name in names + ["shasum.txt", "manifest.json"]:
-        patterns += ["-p", name]
-    run(["gh", "release", "download", args.tag, "--repo", repo,
-         "-D", workdir, "--clobber"] + patterns)
+    download_release_assets(
+        run, repo, args.tag, workdir, names + ["shasum.txt", "manifest.json"],
+        reuse_workdir=getattr(args, "reuse_workdir", False),
+    )
 
     with open(os.path.join(workdir, "shasum.txt"), "r", encoding="utf-8") as handle:
         verify_downloaded(workdir, handle.read())
@@ -371,15 +399,17 @@ def cmd_apply(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
     names = [name for name, _, _ in ARTIFACT_SPECS]
 
     workdir = args.workdir or tempfile.mkdtemp(prefix="tron-apply-")
-    patterns = []
+    requested = []
     for name in names:
-        patterns += ["-p", name, "-p", name + ".sig"]
-    patterns += [
-        "-p", "shasum.txt", "-p", "keccak256.txt",
-        "-p", "manifest.json", "-p", "manifest.json.sig", "-p", "signing-key.asc",
+        requested += [name, name + ".sig"]
+    requested += [
+        "shasum.txt", "keccak256.txt", "manifest.json", "manifest.json.sig",
+        "signing-key.asc",
     ]
-    run(["gh", "release", "download", args.tag, "--repo", repo,
-         "-D", workdir, "--clobber"] + patterns)
+    download_release_assets(
+        run, repo, args.tag, workdir, requested,
+        reuse_workdir=getattr(args, "reuse_workdir", False),
+    )
 
     with open(os.path.join(workdir, "manifest.json"), "r", encoding="utf-8") as handle:
         man = Manifest.from_json(handle.read())
@@ -449,14 +479,16 @@ def cmd_publish(args, run: Run = run, repo_root: str = REPO_ROOT) -> int:
 
     names = [name for name, _, _ in ARTIFACT_SPECS]
     workdir = args.workdir or tempfile.mkdtemp(prefix="tron-publish-")
-    patterns = []
+    requested = []
     for name in names:
-        patterns += ["-p", name, "-p", name + ".sig"]
-    patterns += [
-        "-p", "manifest.json", "-p", "manifest.json.sig", "-p", "signing-key.asc",
+        requested += [name, name + ".sig"]
+    requested += [
+        "manifest.json", "manifest.json.sig", "signing-key.asc",
     ]
-    run(["gh", "release", "download", args.tag, "--repo", repo,
-         "-D", workdir, "--clobber"] + patterns)
+    download_release_assets(
+        run, repo, args.tag, workdir, requested,
+        reuse_workdir=getattr(args, "reuse_workdir", False),
+    )
 
     with open(os.path.join(workdir, "manifest.json"), "r", encoding="utf-8") as handle:
         man = Manifest.from_json(handle.read())
@@ -515,6 +547,8 @@ def main(argv=None) -> int:
     sign.add_argument("tag", help="e.g. tv_0.8.27")
     sign.add_argument("--workdir", default=None,
                        help="directory to download artifacts into (default: a fresh tmpdir)")
+    sign.add_argument("--reuse-workdir", action="store_true",
+                       help="use a complete preloaded --workdir instead of downloading")
     sign.add_argument("--dry-run", action="store_true",
                        help="sign but do not upload the signatures")
     sign.set_defaults(func=cmd_sign)
@@ -525,6 +559,8 @@ def main(argv=None) -> int:
     apply_cmd.add_argument("tag", help="e.g. tv_0.8.27")
     apply_cmd.add_argument("--workdir", default=None,
                             help="directory to download artifacts into (default: a fresh tmpdir)")
+    apply_cmd.add_argument("--reuse-workdir", action="store_true",
+                            help="use a complete preloaded --workdir instead of downloading")
     apply_cmd.add_argument("--dry-run", action="store_true",
                             help="commit the solc-bin projection locally, but do not push "
                                  "or open the PR")
@@ -539,6 +575,8 @@ def main(argv=None) -> int:
     publish.add_argument("--workdir", default=None,
                           help="directory to download and re-verify assets into "
                                "(default: a fresh tmpdir)")
+    publish.add_argument("--reuse-workdir", action="store_true",
+                          help="use a complete preloaded --workdir instead of downloading")
     publish.add_argument("--dry-run", action="store_true",
                           help="do everything except publish the release or merge the PR")
     publish.set_defaults(func=cmd_publish)

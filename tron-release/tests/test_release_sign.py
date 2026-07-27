@@ -246,6 +246,29 @@ class TestCmdSign(unittest.TestCase):
         self.assertIn(upload_argv(self.sig_paths, self.public_key), run.calls)
         self.assertIn(f"uploaded {len(self.sig_paths)} signatures", captured.getvalue())
 
+    def test_explicitly_reuses_complete_workdir_without_downloading(self):
+        args = self.args(dry_run=True)
+        args.reuse_workdir = True
+        run = self.build_run(include_upload=False)
+        del run.table[tuple(download_argv(self.workdir))]
+
+        captured = io.StringIO()
+        with contextlib.redirect_stdout(captured):
+            result = cli.cmd_sign(args, run=run, repo_root=self.root)
+
+        self.assertEqual(result, 0)
+        self.assertFalse(any(call[:3] == ["gh", "release", "download"]
+                             for call in run.calls))
+        self.assertIn("reusing", captured.getvalue())
+
+    def test_reuse_workdir_fails_closed_when_an_asset_is_missing(self):
+        os.unlink(os.path.join(self.workdir, "soljson.js"))
+        args = self.args(dry_run=True)
+        args.reuse_workdir = True
+
+        with self.assertRaisesRegex(GateError, "soljson.js"):
+            cli.cmd_sign(args, run=FakeRun({}), repo_root=self.root)
+
     def test_removes_stale_signature_before_signing(self):
         stale = self.sig_paths[0]
         with open(stale, "wb") as handle:
