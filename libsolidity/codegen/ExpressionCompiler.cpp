@@ -1646,6 +1646,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			break;
         case FunctionType::Kind::Freeze:
         {
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
             _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i){
                 acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
@@ -1657,6 +1658,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
         case FunctionType::Kind::Unfreeze:
 		{
+			solAssert(arguments.size() == 1 && function.parameterTypes().size() == 1, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i)
 			{
@@ -1669,6 +1671,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
         case FunctionType::Kind::FreezeExpireTime:
         {
+			solAssert(arguments.size() == 1 && function.parameterTypes().size() == 1, "");
             _functionCall.expression().accept(*this);
             for (unsigned i = 0; i < arguments.size(); ++i)
             {
@@ -1679,6 +1682,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
         }
 		case FunctionType::Kind::Vote:
 		{
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i)
 			{
@@ -1692,11 +1696,13 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::WithdrawReward:
 		{
+			solAssert(arguments.empty() && function.parameterTypes().empty(), "");
 			m_context << Instruction::NATIVEWITHDRAWREWARD;
 			break;
 		}
 		case FunctionType::Kind::FreezeBalanceV2:
 		{
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i){
 				acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
@@ -1708,6 +1714,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::UnfreezeBalanceV2:
 		{
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i){
 				acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
@@ -1719,16 +1726,19 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
         case FunctionType::Kind::CancelAllUnfreezeV2:
         {
+			solAssert(arguments.empty() && function.parameterTypes().empty(), "");
             m_context << Instruction::NATIVECANCELALLUNFREEZEV2;
             break;
         }
 		case FunctionType::Kind::WithdrawExpireUnfreeze:
 		{
+			solAssert(arguments.empty() && function.parameterTypes().empty(), "");
 			m_context << Instruction::NATIVEWITHDRAWEXPIREUNFREEZE;
 			break;
 		}
 		case FunctionType::Kind::DelegateResource:
 		{
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i){
 				acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
@@ -1740,6 +1750,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		}
 		case FunctionType::Kind::UnDelegateResource:
 		{
+			solAssert(arguments.size() == 2 && function.parameterTypes().size() == 2, "");
 			_functionCall.expression().accept(*this);
 			for (unsigned i = 0; i < arguments.size(); ++i){
 				acceptAndConvert(*arguments[i], *function.parameterTypes()[i]);
