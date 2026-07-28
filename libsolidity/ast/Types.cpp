@@ -3875,7 +3875,6 @@ bool FunctionType::isPure() const
 	return
 		m_kind == Kind::KECCAK256 ||
 		m_kind == Kind::ECRecover ||
-		m_kind == Kind::ValidateMultiSign ||
 		m_kind == Kind::BatchValidateSign ||
 		m_kind == Kind::VerifyBurnProof ||
 		m_kind == Kind::VerifyTransferProof ||

@@ -379,7 +379,7 @@ void GlobalContext::addValidateMultiSignMethod() {
 			parameterNames,
 			returnParameterNames,
 			FunctionType::Kind::ValidateMultiSign,
-			StateMutability::Pure,
+			StateMutability::View,
 			nullptr)
 	));
 }
