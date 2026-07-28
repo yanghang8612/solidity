@@ -513,6 +513,8 @@ std::optional<Json> checkMetadataKeys(Json const& _input)
 			return formatFatalError(Error::Type::JSONError, "\"settings.metadata.appendCBOR\" must be Boolean");
 		if (_input.contains("useLiteralContent") && !_input["useLiteralContent"].is_boolean())
 			return formatFatalError(Error::Type::JSONError, "\"settings.metadata.useLiteralContent\" must be Boolean");
+		if (_input.contains("bytecodeHash") && !_input["bytecodeHash"].is_string())
+			return formatFatalError(Error::Type::JSONError, "\"settings.metadata.bytecodeHash\" must be a string");
 
 		static std::set<std::string> hashes{"ipfs", "bzzr1", "none"};
 		if (_input.contains("bytecodeHash") && !hashes.count(_input["bytecodeHash"].get<std::string>()))
