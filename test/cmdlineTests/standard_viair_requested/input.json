@@ -16,7 +16,6 @@
 		{
 			"*": { "*": ["ir", "evm.bytecode.object", "evm.bytecode.generatedSources", "evm.deployedBytecode.object"] }
 		},
-		"viaIR": true,
-		"experimentalViaIR": true
+		"viaIR": true
 	}
 }

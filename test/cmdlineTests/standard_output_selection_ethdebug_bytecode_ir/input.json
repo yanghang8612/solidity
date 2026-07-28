@@ -10,7 +10,6 @@
   },
   "settings": {
     "viaIR": true,
-    "experimentalViaIR": true,
     "optimizer": {
       "enabled": false
     },
