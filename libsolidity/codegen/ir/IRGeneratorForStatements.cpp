@@ -1760,7 +1760,7 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 		{
 			// @todo The value 10 is not exact and this could be fine-tuned,
 			// but this has worked for years in the old code generator.
-			u256 gasNeededByCaller = evmasm::GasCosts::callGas(m_context.evmVersion()) + 10 + evmasm::GasCosts::callNewAccountGas;
+			u256 gasNeededByCaller = evmasm::GasCosts::callGasInTVM + 10 + evmasm::GasCosts::callNewAccountGas;
 			templ("gas", "sub(gas(), " + formatNumber(gasNeededByCaller) + ")");
 		}
 
@@ -3189,7 +3189,7 @@ void IRGeneratorForStatements::appendExternalFunctionCall(
 	{
 		// send all gas except the amount needed to execute "SUB" and "CALL"
 		// @todo this retains too much gas for now, needs to be fine-tuned.
-		u256 gasNeededByCaller = evmasm::GasCosts::callGas(m_context.evmVersion()) + 10;
+		u256 gasNeededByCaller = evmasm::GasCosts::callGasInTVM + 10;
 		if (funType.valueSet())
 			gasNeededByCaller += evmasm::GasCosts::callValueTransferGas;
 		if (!checkExtcodesize)
@@ -3298,7 +3298,7 @@ void IRGeneratorForStatements::appendBareCall(
 	{
 		// send all gas except the amount needed to execute "SUB" and "CALL"
 		// @todo this retains too much gas for now, needs to be fine-tuned.
-		u256 gasNeededByCaller = evmasm::GasCosts::callGas(m_context.evmVersion()) + 10;
+		u256 gasNeededByCaller = evmasm::GasCosts::callGasInTVM + 10;
 		if (funType.valueSet())
 			gasNeededByCaller += evmasm::GasCosts::callValueTransferGas;
 		gasNeededByCaller += evmasm::GasCosts::callNewAccountGas; // we never know
