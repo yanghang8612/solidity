@@ -3256,7 +3256,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	{
 		// send all gas except the amount needed to execute "SUB" and "CALL"
 		// @todo this retains too much gas for now, needs to be fine-tuned.
-		u256 gasNeededByCaller = evmasm::GasCosts::tvmCallGas + 10;
+		u256 gasNeededByCaller = evmasm::GasCosts::callGasInTVM + 10;
 		if (_functionType.valueSet())
 			gasNeededByCaller += evmasm::GasCosts::callValueTransferGas;
 		if (!existenceChecked)

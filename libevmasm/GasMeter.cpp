@@ -71,13 +71,13 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				m_state->storageContent().count(slot) &&
 				classes.knownNonZero(m_state->storageContent().at(slot))
 			))
-				gas = GasCosts::tvmSstoreResetGas; //@todo take refunds into account
+				gas = GasCosts::sstoreResetGasInTVM; //@todo take refunds into account
 			else
-				gas = GasCosts::tvmSstoreSetGas;
+				gas = GasCosts::sstoreSetGasInTVM;
 			break;
 		}
 		case Instruction::SLOAD:
-			gas = GasCosts::tvmSloadGas;
+			gas = GasCosts::sloadGasInTVM;
 			break;
 		case Instruction::RETURN:
 		case Instruction::REVERT:
@@ -122,13 +122,13 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		}
 		case Instruction::EXTCODESIZE:
-			gas = GasCosts::tvmExtCodeSizeGas;
+			gas = GasCosts::extCodeSizeGasInTVM;
 			break;
 		case Instruction::EXTCODEHASH:
-			gas = GasCosts::tvmExtCodeHashGas;
+			gas = GasCosts::extCodeHashGasInTVM;
 			break;
 		case Instruction::EXTCODECOPY:
-			gas = GasCosts::tvmExtCodeCopyGas;
+			gas = GasCosts::extCodeCopyGasInTVM;
 			gas += memoryGas(-1, -3);
 			gas += wordGas(GasCosts::copyGas, m_state->relativeStackElement(-3));
 			break;
@@ -157,7 +157,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				gas = GasConsumption::infinite();
 			else
 			{
-				gas = GasCosts::tvmCallGas;
+				gas = GasCosts::callGasInTVM;
 				if (u256 const* value = classes.knownConstant(m_state->relativeStackElement(0)))
 					gas += (*value);
 				else
@@ -180,7 +180,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		}
 		case Instruction::SELFDESTRUCT:
-			gas = GasCosts::tvmSelfdestructGas;
+			gas = GasCosts::selfdestructGasInTVM;
 			gas += GasCosts::callNewAccountGas; // We very rarely know whether the address exists.
 			break;
 		case Instruction::CREATE:
@@ -211,27 +211,27 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::BALANCE:
 		case Instruction::TOKENBALANCE:
 		case Instruction::ISCONTRACT:
-			gas = GasCosts::tvmBalanceGas;
+			gas = GasCosts::balanceGasInTVM;
 			break;
 		case Instruction::NATIVEFREEZE:
-			gas = GasCosts::freezeV1Gas;
+			gas = GasCosts::freezeV1GasInTVM;
 			gas += GasCosts::callNewAccountGas;
 			break;
 		case Instruction::NATIVEUNFREEZE:
-			gas = GasCosts::freezeV1Gas;
+			gas = GasCosts::freezeV1GasInTVM;
 			break;
 		case Instruction::NATIVEFREEZEEXPIRETIME:
-			gas = GasCosts::expireTimeGas;
+			gas = GasCosts::freezeExpireTimeGasInTVM;
 			break;
 		case Instruction::NATIVEVOTE:
-			gas = GasCosts::voteGas;
+			gas = GasCosts::voteGasInTVM;
 			// NATIVEVOTE reads two Solidity memory arrays. The stack length values are element
 			// counts, not byte lengths, so include the array length slot and 32 bytes per element.
 			gas += memoryGasForWordArray(-3, -2);
 			gas += memoryGasForWordArray(-1, 0);
 			break;
 		case Instruction::NATIVEWITHDRAWREWARD:
-			gas = GasCosts::withdrawGas;
+			gas = GasCosts::withdrawRewardGasInTVM;
 			break;
 		case Instruction::NATIVEFREEZEBALANCEV2:
 		case Instruction::NATIVEUNFREEZEBALANCEV2:
@@ -239,7 +239,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::NATIVEWITHDRAWEXPIREUNFREEZE:
 		case Instruction::NATIVEDELEGATERESOURCE:
 		case Instruction::NATIVEUNDELEGATERESOURCE:
-			gas = GasCosts::freezeV2Gas;
+			gas = GasCosts::freezeV2GasInTVM;
 			break;
 		case Instruction::CHAINID:
 			gas = runGas(Instruction::CHAINID, m_evmVersion);

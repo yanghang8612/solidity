@@ -94,23 +94,23 @@ BOOST_AUTO_TEST_SUITE(EvmasmGasMeter)
 BOOST_AUTO_TEST_CASE(tvm_fixed_instruction_prices_do_not_depend_on_evm_version)
 {
 	std::vector<std::tuple<Instruction, size_t, unsigned>> const fixedCosts{
-		{Instruction::SLOAD, 1, GasCosts::tvmSloadGas},
-		{Instruction::BALANCE, 1, GasCosts::tvmBalanceGas},
-		{Instruction::TOKENBALANCE, 2, GasCosts::tvmBalanceGas},
-		{Instruction::ISCONTRACT, 1, GasCosts::tvmBalanceGas},
-		{Instruction::EXTCODESIZE, 1, GasCosts::tvmExtCodeSizeGas},
-		{Instruction::EXTCODECOPY, 4, GasCosts::tvmExtCodeCopyGas},
-		{Instruction::EXTCODEHASH, 1, GasCosts::tvmExtCodeHashGas},
-		{Instruction::NATIVEFREEZE, 3, GasCosts::freezeV1Gas + GasCosts::callNewAccountGas},
-		{Instruction::NATIVEUNFREEZE, 2, GasCosts::freezeV1Gas},
-		{Instruction::NATIVEFREEZEEXPIRETIME, 2, GasCosts::expireTimeGas},
-		{Instruction::NATIVEWITHDRAWREWARD, 0, GasCosts::withdrawGas},
-		{Instruction::NATIVEFREEZEBALANCEV2, 2, GasCosts::freezeV2Gas},
-		{Instruction::NATIVEUNFREEZEBALANCEV2, 2, GasCosts::freezeV2Gas},
-		{Instruction::NATIVECANCELALLUNFREEZEV2, 0, GasCosts::freezeV2Gas},
-		{Instruction::NATIVEWITHDRAWEXPIREUNFREEZE, 0, GasCosts::freezeV2Gas},
-		{Instruction::NATIVEDELEGATERESOURCE, 3, GasCosts::freezeV2Gas},
-		{Instruction::NATIVEUNDELEGATERESOURCE, 3, GasCosts::freezeV2Gas}
+		{Instruction::SLOAD, 1, GasCosts::sloadGasInTVM},
+		{Instruction::BALANCE, 1, GasCosts::balanceGasInTVM},
+		{Instruction::TOKENBALANCE, 2, GasCosts::balanceGasInTVM},
+		{Instruction::ISCONTRACT, 1, GasCosts::balanceGasInTVM},
+		{Instruction::EXTCODESIZE, 1, GasCosts::extCodeSizeGasInTVM},
+		{Instruction::EXTCODECOPY, 4, GasCosts::extCodeCopyGasInTVM},
+		{Instruction::EXTCODEHASH, 1, GasCosts::extCodeHashGasInTVM},
+		{Instruction::NATIVEFREEZE, 3, GasCosts::freezeV1GasInTVM + GasCosts::callNewAccountGas},
+		{Instruction::NATIVEUNFREEZE, 2, GasCosts::freezeV1GasInTVM},
+		{Instruction::NATIVEFREEZEEXPIRETIME, 2, GasCosts::freezeExpireTimeGasInTVM},
+		{Instruction::NATIVEWITHDRAWREWARD, 0, GasCosts::withdrawRewardGasInTVM},
+		{Instruction::NATIVEFREEZEBALANCEV2, 2, GasCosts::freezeV2GasInTVM},
+		{Instruction::NATIVEUNFREEZEBALANCEV2, 2, GasCosts::freezeV2GasInTVM},
+		{Instruction::NATIVECANCELALLUNFREEZEV2, 0, GasCosts::freezeV2GasInTVM},
+		{Instruction::NATIVEWITHDRAWEXPIREUNFREEZE, 0, GasCosts::freezeV2GasInTVM},
+		{Instruction::NATIVEDELEGATERESOURCE, 3, GasCosts::freezeV2GasInTVM},
+		{Instruction::NATIVEUNDELEGATERESOURCE, 3, GasCosts::freezeV2GasInTVM}
 	};
 
 	for (EVMVersion const& evmVersion: EVMVersion::allVersions())
@@ -131,11 +131,11 @@ BOOST_AUTO_TEST_CASE(tvm_sstore_uses_java_tron_set_and_reset_prices)
 {
 	GasMeter::GasConsumption set = estimateInstruction(Instruction::SSTORE, {u256(1), u256(0)});
 	BOOST_REQUIRE(!set.isInfinite);
-	BOOST_CHECK_EQUAL(set.value, u256(GasCosts::tvmSstoreSetGas));
+	BOOST_CHECK_EQUAL(set.value, u256(GasCosts::sstoreSetGasInTVM));
 
 	GasMeter::GasConsumption reset = estimateInstruction(Instruction::SSTORE, {u256(0), u256(0)});
 	BOOST_REQUIRE(!reset.isInfinite);
-	BOOST_CHECK_EQUAL(reset.value, u256(GasCosts::tvmSstoreResetGas));
+	BOOST_CHECK_EQUAL(reset.value, u256(GasCosts::sstoreResetGasInTVM));
 }
 
 BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_prices)
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_pr
 	{
 		GasMeter::GasConsumption gas = estimateInstruction(instruction, zeroArguments(6), false);
 		BOOST_REQUIRE(!gas.isInfinite);
-		BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::tvmCallGas));
+		BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::callGasInTVM));
 	}
 
 	GasMeter::GasConsumption zeroValueCall = estimateInstruction(
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_pr
 		false
 	);
 	BOOST_REQUIRE(!zeroValueCall.isInfinite);
-	BOOST_CHECK_EQUAL(zeroValueCall.value, u256(GasCosts::tvmCallGas));
+	BOOST_CHECK_EQUAL(zeroValueCall.value, u256(GasCosts::callGasInTVM));
 
 	GasMeter::GasConsumption valueCall = estimateInstruction(
 		Instruction::CALL,
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_pr
 	BOOST_REQUIRE(!valueCall.isInfinite);
 	BOOST_CHECK_EQUAL(
 		valueCall.value,
-		u256(GasCosts::tvmCallGas + GasCosts::callValueTransferGas + GasCosts::callNewAccountGas)
+		u256(GasCosts::callGasInTVM + GasCosts::callValueTransferGas + GasCosts::callNewAccountGas)
 	);
 
 	GasMeter::GasConsumption valueCallCode = estimateInstruction(
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_pr
 		false
 	);
 	BOOST_REQUIRE(!valueCallCode.isInfinite);
-	BOOST_CHECK_EQUAL(valueCallCode.value, u256(GasCosts::tvmCallGas + GasCosts::callValueTransferGas));
+	BOOST_CHECK_EQUAL(valueCallCode.value, u256(GasCosts::callGasInTVM + GasCosts::callValueTransferGas));
 }
 
 BOOST_AUTO_TEST_CASE(tvm_calltoken_uses_fixed_base_and_conditional_transfer_prices)
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(tvm_calltoken_uses_fixed_base_and_conditional_transfer_pric
 		false
 	);
 	BOOST_REQUIRE(!zeroValue.isInfinite);
-	BOOST_CHECK_EQUAL(zeroValue.value, u256(GasCosts::tvmCallGas));
+	BOOST_CHECK_EQUAL(zeroValue.value, u256(GasCosts::callGasInTVM));
 
 	GasMeter::GasConsumption nonZeroValue = estimateInstruction(
 		Instruction::CALLTOKEN,
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(tvm_calltoken_uses_fixed_base_and_conditional_transfer_pric
 	BOOST_REQUIRE(!nonZeroValue.isInfinite);
 	BOOST_CHECK_EQUAL(
 		nonZeroValue.value,
-		u256(GasCosts::tvmCallGas + GasCosts::callValueTransferGas + GasCosts::callNewAccountGas)
+		u256(GasCosts::callGasInTVM + GasCosts::callValueTransferGas + GasCosts::callNewAccountGas)
 	);
 }
 
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(tvm_selfdestruct_uses_fixed_price_plus_new_account_cost)
 	// conservatively always adds the new-account cost.
 	GasMeter::GasConsumption gas = estimateInstruction(Instruction::SELFDESTRUCT, zeroArguments(1));
 	BOOST_REQUIRE(!gas.isInfinite);
-	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::tvmSelfdestructGas + GasCosts::callNewAccountGas));
+	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::selfdestructGasInTVM + GasCosts::callNewAccountGas));
 }
 
 BOOST_AUTO_TEST_CASE(nativevote_charges_memory_expansion_for_word_arrays)
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(nativevote_charges_memory_expansion_for_word_arrays)
 	// i.e. 7 and 11 words: 3 * 11 = 33 on top of the flat vote cost.
 	GasMeter::GasConsumption gas = estimateVote(u256(128), u256(2), u256(256), u256(2));
 	BOOST_REQUIRE(!gas.isInfinite);
-	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::voteGas + 33));
+	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::voteGasInTVM + 33));
 }
 
 BOOST_AUTO_TEST_CASE(nativevote_charges_length_slot_for_empty_arrays)
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(nativevote_charges_length_slot_for_empty_arrays)
 	// ends are 128+32 and 512+32 bytes, i.e. 5 and 17 words: 3 * 17 = 51.
 	GasMeter::GasConsumption gas = estimateVote(u256(128), u256(0), u256(512), u256(0));
 	BOOST_REQUIRE(!gas.isInfinite);
-	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::voteGas + 51));
+	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::voteGasInTVM + 51));
 }
 
 BOOST_AUTO_TEST_CASE(nativevote_with_unknown_element_count_is_unbounded)

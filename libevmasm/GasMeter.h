@@ -181,21 +181,21 @@ namespace GasCosts
 
 	// TVM keeps fixed Energy prices for these instructions. Do not derive them
 	// from Ethereum hard-fork-dependent EVM prices when estimating TRON code.
-	static unsigned const tvmSloadGas = 50;
-	static unsigned const tvmSstoreSetGas = 20000;
-	static unsigned const tvmSstoreResetGas = 5000;
-	static unsigned const tvmBalanceGas = 20;
-	static unsigned const tvmExtCodeSizeGas = 20;
-	static unsigned const tvmExtCodeCopyGas = 20;
-	static unsigned const tvmExtCodeHashGas = 400;
-	static unsigned const tvmCallGas = 40;
-	static unsigned const tvmSelfdestructGas = 5000;
+	static unsigned const sloadGasInTVM = 50;
+	static unsigned const sstoreSetGasInTVM = 20000;
+	static unsigned const sstoreResetGasInTVM = 5000;
+	static unsigned const balanceGasInTVM = 20;
+	static unsigned const extCodeSizeGasInTVM = 20;
+	static unsigned const extCodeCopyGasInTVM = 20;
+	static unsigned const extCodeHashGasInTVM = 400;
+	static unsigned const callGasInTVM = 40;
+	static unsigned const selfdestructGasInTVM = 5000;
 
-	static unsigned const freezeV1Gas = 20000;
-	static unsigned const expireTimeGas = 50;
-	static unsigned const freezeV2Gas = 10000;
-	static unsigned const withdrawGas = 20000;
-	static unsigned const voteGas = 30000;
+	static unsigned const freezeV1GasInTVM = 20000;
+	static unsigned const freezeExpireTimeGasInTVM = 50;
+	static unsigned const freezeV2GasInTVM = 10000;
+	static unsigned const withdrawRewardGasInTVM = 20000;
+	static unsigned const voteGasInTVM = 30000;
 }
 
 /**
