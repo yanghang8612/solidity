@@ -4056,7 +4056,9 @@ std::string YulUtilFunctions::validatorFunction(Type const& _type, bool _revertO
 		case Type::Category::Address:
         case Type::Category::Contract:
 		{
-			templ("condition", "eq(value, " + cleanupFunction(IntegerType(168)) + "(value))");
+			// Accept the canonical 20-byte form and TRON's 0x41-prefixed 21-byte form.
+			// Comparing all high bits at once also rejects values wider than 168 bits.
+			templ("condition", "or(iszero(div(value, 0x10000000000000000000000000000000000000000)), eq(div(value, 0x10000000000000000000000000000000000000000), 0x41))");
 			break;
 		}
 		case Type::Category::Integer:

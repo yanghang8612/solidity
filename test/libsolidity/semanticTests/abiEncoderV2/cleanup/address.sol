@@ -21,6 +21,10 @@ contract C {
 // g(address): 0xabcdef0123456789abcdef0123456789abcdefff -> 0xabcdef0123456789abcdef0123456789abcdefff
 // f(uint256): 0xffffffffffffffffffffffffffffffffffffffff -> 0xffffffffffffffffffffffffffffffffffffffff
 // g(address): 0xffffffffffffffffffffffffffffffffffffffff -> 0xffffffffffffffffffffffffffffffffffffffff
+// f(uint256): 0x41abcdef0123456789abcdef0123456789abcdefff -> 0xabcdef0123456789abcdef0123456789abcdefff
+// g(address): 0x41abcdef0123456789abcdef0123456789abcdefff -> 0xabcdef0123456789abcdef0123456789abcdefff
+// f(uint256): 0x42abcdef0123456789abcdef0123456789abcdefff -> 0xabcdef0123456789abcdef0123456789abcdefff
+// g(address): 0x42abcdef0123456789abcdef0123456789abcdefff -> FAILURE
 // f(uint256): 0x010000000000000000000000000000000000000000 -> 0
 // g(address): 0x010000000000000000000000000000000000000000 -> FAILURE
 // f(uint256): 0x01abcdef0123456789abcdef0123456789abcdefff -> 0xabcdef0123456789abcdef0123456789abcdefff
