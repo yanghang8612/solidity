@@ -1,0 +1,16 @@
+{
+    "errors": [
+        {
+            "component": "general",
+            "formattedMessage": "The via-IR pipeline is experimental in the TRON Solidity compiler. Set \"settings.experimentalViaIR\" to true to acknowledge this and suppress this warning.",
+            "message": "The via-IR pipeline is experimental in the TRON Solidity compiler. Set \"settings.experimentalViaIR\" to true to acknowledge this and suppress this warning.",
+            "severity": "warning",
+            "type": "Warning"
+        }
+    ],
+    "sources": {
+        "A.sol": {
+            "id": 0
+        }
+    }
+}

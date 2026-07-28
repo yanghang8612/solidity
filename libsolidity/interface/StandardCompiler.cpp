@@ -430,7 +430,7 @@ std::optional<Json> checkAuxiliaryInputKeys(Json const& _input)
 
 std::optional<Json> checkSettingsKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
+	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "experimentalViaIR", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
 	return checkKeys(_input, keys, "settings");
 }
 
@@ -820,6 +820,19 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 			return formatFatalError(Error::Type::JSONError, "\"settings.viaIR\" must be a Boolean.");
 		ret.viaIR = settings["viaIR"].get<bool>();
 	}
+	bool experimentalViaIRAcknowledged = false;
+	if (settings.contains("experimentalViaIR"))
+	{
+		if (!settings["experimentalViaIR"].is_boolean())
+			return formatFatalError(Error::Type::JSONError, "\"settings.experimentalViaIR\" must be a Boolean.");
+		experimentalViaIRAcknowledged = settings["experimentalViaIR"].get<bool>();
+	}
+	if (ret.viaIR && !experimentalViaIRAcknowledged)
+		ret.errors.emplace_back(formatError(
+			Error::Type::Warning,
+			"general",
+			"The via-IR pipeline is experimental in the TRON Solidity compiler. Set \"settings.experimentalViaIR\" to true to acknowledge this and suppress this warning."
+		));
 
 	if (settings.contains("evmVersion"))
 	{

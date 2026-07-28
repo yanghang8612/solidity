@@ -5,6 +5,7 @@
     },
     "settings": {
         "viaIR": true,
+        "experimentalViaIR": true,
         "outputSelection": {
             "*": {"*": ["evm.bytecode"]}
         }

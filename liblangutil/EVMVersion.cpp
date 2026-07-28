@@ -61,6 +61,24 @@ bool EVMVersion::hasOpcode(Instruction _opcode, std::optional<uint8_t> _eofVersi
 	case Instruction::TSTORE:
 	case Instruction::TLOAD:
 		return supportsTransientStorage();
+	// TRON-specific instructions are not part of the EOF instruction set.
+	case Instruction::CALLTOKEN:
+	case Instruction::TOKENBALANCE:
+	case Instruction::CALLTOKENVALUE:
+	case Instruction::CALLTOKENID:
+	case Instruction::ISCONTRACT:
+	case Instruction::NATIVEFREEZE:
+	case Instruction::NATIVEUNFREEZE:
+	case Instruction::NATIVEFREEZEEXPIRETIME:
+	case Instruction::NATIVEVOTE:
+	case Instruction::NATIVEWITHDRAWREWARD:
+	case Instruction::NATIVEFREEZEBALANCEV2:
+	case Instruction::NATIVEUNFREEZEBALANCEV2:
+	case Instruction::NATIVECANCELALLUNFREEZEV2:
+	case Instruction::NATIVEWITHDRAWEXPIREUNFREEZE:
+	case Instruction::NATIVEDELEGATERESOURCE:
+	case Instruction::NATIVEUNDELEGATERESOURCE:
+		return !_eofVersion.has_value();
 	// Instructions below are deprecated in EOF
 	case Instruction::CALL:
 	case Instruction::CALLCODE:

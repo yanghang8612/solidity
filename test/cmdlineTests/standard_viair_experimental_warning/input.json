@@ -1,0 +1,12 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "A.sol": {
+            "content": "// SPDX-License-Identifier: UNLICENSED\npragma solidity >=0.0; contract A {}"
+        }
+    },
+    "settings": {
+        "viaIR": true,
+        "outputSelection": {}
+    }
+}

@@ -8,6 +8,7 @@
 			"enabled": true
 		},
 		"viaIR": true,
+		"experimentalViaIR": true,
 		"outputSelection": {"*": {"*": ["yulCFGJson"]}}
 	}
 }
