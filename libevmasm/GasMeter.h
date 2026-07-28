@@ -179,6 +179,18 @@ namespace GasCosts
 	static unsigned const copyGas = 3;
 	static unsigned const rjumpiGas = 4;
 
+	// TVM keeps fixed Energy prices for these instructions. Do not derive them
+	// from Ethereum hard-fork-dependent EVM prices when estimating TRON code.
+	static unsigned const tvmSloadGas = 50;
+	static unsigned const tvmSstoreSetGas = 20000;
+	static unsigned const tvmSstoreResetGas = 5000;
+	static unsigned const tvmBalanceGas = 20;
+	static unsigned const tvmExtCodeSizeGas = 20;
+	static unsigned const tvmExtCodeCopyGas = 20;
+	static unsigned const tvmExtCodeHashGas = 400;
+	static unsigned const tvmCallGas = 40;
+	static unsigned const tvmSelfdestructGas = 5000;
+
 	static unsigned const freezeV1Gas = 20000;
 	static unsigned const expireTimeGas = 50;
 	static unsigned const freezeV2Gas = 10000;

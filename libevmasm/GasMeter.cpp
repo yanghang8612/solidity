@@ -71,13 +71,13 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				m_state->storageContent().count(slot) &&
 				classes.knownNonZero(m_state->storageContent().at(slot))
 			))
-				gas = GasCosts::totalSstoreResetGas(m_evmVersion); //@todo take refunds into account
+				gas = GasCosts::tvmSstoreResetGas; //@todo take refunds into account
 			else
-				gas = GasCosts::totalSstoreSetGas(m_evmVersion);
+				gas = GasCosts::tvmSstoreSetGas;
 			break;
 		}
 		case Instruction::SLOAD:
-			gas = GasCosts::sloadGas(m_evmVersion);
+			gas = GasCosts::tvmSloadGas;
 			break;
 		case Instruction::RETURN:
 		case Instruction::REVERT:
@@ -122,13 +122,13 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		}
 		case Instruction::EXTCODESIZE:
-			gas = GasCosts::extCodeGas(m_evmVersion);
+			gas = GasCosts::tvmExtCodeSizeGas;
 			break;
 		case Instruction::EXTCODEHASH:
-			gas = GasCosts::balanceGas(m_evmVersion);
+			gas = GasCosts::tvmExtCodeHashGas;
 			break;
 		case Instruction::EXTCODECOPY:
-			gas = GasCosts::extCodeGas(m_evmVersion);
+			gas = GasCosts::tvmExtCodeCopyGas;
 			gas += memoryGas(-1, -3);
 			gas += wordGas(GasCosts::copyGas, m_state->relativeStackElement(-3));
 			break;
@@ -157,18 +157,20 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				gas = GasConsumption::infinite();
 			else
 			{
-				gas = GasCosts::callGas(m_evmVersion);
+				gas = GasCosts::tvmCallGas;
 				if (u256 const* value = classes.knownConstant(m_state->relativeStackElement(0)))
 					gas += (*value);
 				else
 					gas = GasConsumption::infinite();
-				if (_item.instruction() == Instruction::CALL || _item.instruction() == Instruction::CALLTOKEN)
-					gas += GasCosts::callNewAccountGas; // We very rarely know whether the address exists.
 				int valueSize = 1;
 				if (_item.instruction() == Instruction::DELEGATECALL || _item.instruction() == Instruction::STATICCALL)
 					valueSize = 0;
 				else if (!classes.knownZero(m_state->relativeStackElement(-1 - valueSize)))
+				{
 					gas += GasCosts::callValueTransferGas;
+					if (_item.instruction() == Instruction::CALL || _item.instruction() == Instruction::CALLTOKEN)
+						gas += GasCosts::callNewAccountGas; // We very rarely know whether the address exists.
+				}
 				int tokenIdSize = 0;
 				if (_item.instruction() == Instruction::CALLTOKEN)
 					tokenIdSize = 1;
@@ -178,7 +180,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		}
 		case Instruction::SELFDESTRUCT:
-			gas = GasCosts::selfdestructGas(m_evmVersion);
+			gas = GasCosts::tvmSelfdestructGas;
 			gas += GasCosts::callNewAccountGas; // We very rarely know whether the address exists.
 			break;
 		case Instruction::CREATE:
@@ -209,7 +211,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::BALANCE:
 		case Instruction::TOKENBALANCE:
 		case Instruction::ISCONTRACT:
-			gas = GasCosts::balanceGas(m_evmVersion);
+			gas = GasCosts::tvmBalanceGas;
 			break;
 		case Instruction::NATIVEFREEZE:
 			gas = GasCosts::freezeV1Gas;
