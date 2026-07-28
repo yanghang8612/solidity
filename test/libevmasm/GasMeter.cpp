@@ -197,6 +197,16 @@ BOOST_AUTO_TEST_CASE(tvm_calltoken_uses_fixed_base_and_conditional_transfer_pric
 	);
 }
 
+BOOST_AUTO_TEST_CASE(tvm_selfdestruct_uses_fixed_price_plus_new_account_cost)
+{
+	// java-tron (EnergyCost.getSuicideCost3) charges SUICIDE_V2 plus
+	// NEW_ACCT_CALL when the inheritor is a dead account. The estimator
+	// conservatively always adds the new-account cost.
+	GasMeter::GasConsumption gas = estimateInstruction(Instruction::SELFDESTRUCT, zeroArguments(1));
+	BOOST_REQUIRE(!gas.isInfinite);
+	BOOST_CHECK_EQUAL(gas.value, u256(GasCosts::tvmSelfdestructGas + GasCosts::callNewAccountGas));
+}
+
 BOOST_AUTO_TEST_CASE(nativevote_charges_memory_expansion_for_word_arrays)
 {
 	// java-tron (EnergyCost.getVoteWitnessCost2/3) charges per array
