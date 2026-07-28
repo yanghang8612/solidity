@@ -598,6 +598,42 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 	);
 }
 
+BOOST_AUTO_TEST_CASE(tron_builtin_via_ir_codegen_guards)
+{
+	Json input = createLanguageAndSourcesSection("Solidity", {{"A.sol", R"(
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.30;
+contract C {
+    function validate(address account, bytes32 content, bytes[] memory signatures) public view returns (bool) {
+        return validatemultisign(account, 0, content, signatures);
+    }
+    function transfer(address payable target, uint256 value, trcToken tokenId) public {
+        target.transferToken(value, tokenId);
+    }
+    function mint(
+        bytes32[9] memory output,
+        bytes32[2] memory bindingSignature,
+        uint64 value,
+        bytes32 signHash,
+        bytes32[33] memory frontier,
+        uint256 leafCount
+    ) public pure returns (bytes32[] memory) {
+        return verifyMintProof(output, bindingSignature, value, signHash, frontier, leafCount);
+    }
+}
+)"}});
+	input["settings"]["viaIR"] = true;
+	input["settings"]["outputSelection"]["*"]["*"] = Json::array({"ir"});
+
+	Json const output = compile(input.dump());
+	BOOST_REQUIRE(containsAtMostWarnings(output));
+	std::string const ir = output["contracts"]["A.sol"]["C"]["ir"].get<std::string>();
+	BOOST_TEST(ir.find("if iszero(gt(0x8000000000000000") != std::string::npos);
+	BOOST_TEST(ir.find("exp(2, 63)") == std::string::npos);
+	BOOST_TEST(ir.find("if lt(returndatasize(), 0x20)") != std::string::npos);
+	BOOST_TEST(ir.find("if mod(returndatasize(), 0x20) { revert(0, 0) }") != std::string::npos);
+}
+
 BOOST_AUTO_TEST_CASE(compilation_error)
 {
 	char const* input = R"(

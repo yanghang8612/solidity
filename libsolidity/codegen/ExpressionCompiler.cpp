@@ -3319,6 +3319,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 				switch v case 0 {
 					v := 0x60
 				} default {
+					if mod(returndatasize(), 0x20) { revert(0, 0) }
 					v := mload(0x40)
 					mstore(0x40, add(v, and(add(returndatasize(), 0x3f), not(0x1f))))
 					mstore(v, div(returndatasize(), 0x20))
