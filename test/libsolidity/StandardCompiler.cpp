@@ -1816,6 +1816,56 @@ BOOST_AUTO_TEST_CASE(stopAfter_ast_output)
 	BOOST_CHECK(result["sources"]["a.sol"]["ast"].is_object());
 }
 
+BOOST_AUTO_TEST_CASE(solidity_ast_rejects_ethereum_subdenominations)
+{
+	frontend::StandardCompiler compiler;
+	Json sourceInput = createLanguageAndSourcesSection("Solidity", {{
+		"A.sol",
+		"contract C { function f() public pure returns (uint256) { return 1 trx; } }"
+	}});
+	sourceInput["settings"]["outputSelection"]["*"][""] = Json::array({"ast"});
+
+	Json sourceResult = compiler.compile(sourceInput);
+	BOOST_REQUIRE(containsAtMostWarnings(sourceResult));
+	BOOST_REQUIRE(sourceResult["sources"]["A.sol"]["ast"].is_object());
+
+	for (std::string const& subdenomination: {"wei"s, "gwei"s, "ether"s})
+	{
+		Json ast = sourceResult["sources"]["A.sol"]["ast"];
+		bool literalFound = false;
+		auto replaceSubdenomination = [&](auto&& _replaceSubdenomination, Json& _node) -> void {
+			if (_node.is_object())
+			{
+				if (_node.value("nodeType", "") == "Literal" && _node.value("subdenomination", "") == "trx")
+				{
+					_node["subdenomination"] = subdenomination;
+					literalFound = true;
+				}
+				for (Json& value: _node)
+					_replaceSubdenomination(_replaceSubdenomination, value);
+			}
+			else if (_node.is_array())
+				for (Json& value: _node)
+					_replaceSubdenomination(_replaceSubdenomination, value);
+		};
+		replaceSubdenomination(replaceSubdenomination, ast);
+		BOOST_REQUIRE(literalFound);
+
+		Json astInput = Json::object();
+		astInput["language"] = "SolidityAST";
+		astInput["sources"]["A.sol"]["ast"] = std::move(ast);
+		astInput["settings"]["outputSelection"]["*"]["*"] = Json::array({"evm.bytecode.object"});
+
+		Json astResult = compiler.compile(astInput);
+		BOOST_CHECK(containsError(
+			astResult,
+			"JSONError",
+			"Failed to import AST: Ether unit denomination is not supported by the compiler"
+		));
+		BOOST_CHECK(!astResult.contains("contracts"));
+	}
+}
+
 BOOST_AUTO_TEST_CASE(dependency_tracking_of_abstract_contract)
 {
 	char const* input = R"(
