@@ -1385,6 +1385,16 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 				if (binariesRequested)
 					compilerStack.compile();
 			}
+			catch (InvalidAstError const& _exc)
+			{
+				errors.emplace_back(formatErrorWithException(
+					compilerStack,
+					_exc,
+					Error::Type::JSONError,
+					"general",
+					"Failed to import AST"
+				));
+			}
 			catch (util::Exception const& _exc)
 			{
 				solThrow(util::Exception, "Failed to import AST: "s + _exc.what());
