@@ -649,6 +649,8 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 	if (auto result = checkRootKeys(_input))
 		return *result;
 
+	if (_input.contains("language") && !_input["language"].is_string())
+		return formatFatalError(Error::Type::JSONError, "\"language\" must be a string.");
 	ret.language = _input.value<std::string>("language", "");
 
 	Json const& sources = _input.value<Json>("sources", Json());
@@ -772,31 +774,28 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 	if (!auxInputs.empty())
 	{
 		Json const& smtlib2Responses = auxInputs.value("smtlib2responses", Json::object());
-		if (!smtlib2Responses.empty())
+		if (!smtlib2Responses.is_object())
+			return formatFatalError(Error::Type::JSONError, "\"auxiliaryInput.smtlib2responses\" must be an object.");
+
+		for (auto const& [hashString, response]: smtlib2Responses.items())
 		{
-			if (!smtlib2Responses.is_object())
-				return formatFatalError(Error::Type::JSONError, "\"auxiliaryInput.smtlib2responses\" must be an object.");
-
-			for (auto const& [hashString, response]: smtlib2Responses.items())
+			util::h256 hash;
+			try
 			{
-				util::h256 hash;
-				try
-				{
-					hash = util::h256(hashString);
-				}
-				catch (util::BadHexCharacter const&)
-				{
-					return formatFatalError(Error::Type::JSONError, "Invalid hex encoding of SMTLib2 auxiliary input.");
-				}
-
-				if (!response.is_string())
-					return formatFatalError(
-						Error::Type::JSONError,
-						"\"smtlib2Responses." + hashString + "\" must be a string."
-					);
-
-				ret.smtLib2Responses[hash] = response.get<std::string>();
+				hash = util::h256(hashString);
 			}
+			catch (util::BadHexCharacter const&)
+			{
+				return formatFatalError(Error::Type::JSONError, "Invalid hex encoding of SMTLib2 auxiliary input.");
+			}
+
+			if (!response.is_string())
+				return formatFatalError(
+					Error::Type::JSONError,
+					"\"smtlib2Responses." + hashString + "\" must be a string."
+				);
+
+			ret.smtLib2Responses[hash] = response.get<std::string>();
 		}
 	}
 
@@ -872,7 +871,11 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 
 			std::vector<std::string> components;
 			for (Json const& arrayValue: settings["debug"]["debugInfo"])
+			{
+				if (!arrayValue.is_string())
+					return formatFatalError(Error::Type::JSONError, "Every value in settings.debug.debugInfo must be a string.");
 				components.push_back(arrayValue.get<std::string>());
+			}
 
 			std::optional<DebugInfoSelection> debugInfoSelection = DebugInfoSelection::fromComponents(
 				components,

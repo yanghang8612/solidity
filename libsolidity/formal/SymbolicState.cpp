@@ -257,7 +257,11 @@ smtutil::Expression SymbolicState::txNonPayableConstraint() const
 
 smtutil::Expression SymbolicState::txFunctionConstraints(FunctionDefinition const& _function) const
 {
-	smtutil::Expression conj = _function.isPayable() ? smtutil::Expression(true) : txNonPayableConstraint();
+	// Library functions inherit the caller's transaction values through DELEGATECALL.
+	smtutil::Expression conj =
+		(_function.isPayable() || _function.libraryFunction()) ?
+		smtutil::Expression(true) :
+		txNonPayableConstraint();
 	if (_function.isPartOfExternalInterface())
 	{
 		auto sig = TypeProvider::function(_function)->externalIdentifier();
