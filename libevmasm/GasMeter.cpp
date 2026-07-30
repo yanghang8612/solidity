@@ -20,6 +20,8 @@
 
 #include <libevmasm/KnownState.h>
 
+#include <algorithm>
+
 using namespace solidity;
 using namespace solidity::util;
 using namespace solidity::evmasm;
@@ -87,17 +89,11 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::MLOAD:
 		case Instruction::MSTORE:
 			gas = runGas(_item.instruction(), m_evmVersion);
-			gas += memoryGas(classes.find(Instruction::ADD, {
-				m_state->relativeStackElement(0),
-				classes.find(AssemblyItem(32))
-			}));
+			gas += memoryGas(m_state->relativeStackElement(0), u256(32));
 			break;
 		case Instruction::MSTORE8:
 			gas = runGas(_item.instruction(), m_evmVersion);
-			gas += memoryGas(classes.find(Instruction::ADD, {
-				m_state->relativeStackElement(0),
-				classes.find(AssemblyItem(1))
-			}));
+			gas += memoryGas(m_state->relativeStackElement(0), u256(1));
 			break;
 		case Instruction::KECCAK256:
 			gas = GasCosts::keccak256Gas;
@@ -113,11 +109,18 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		case Instruction::MCOPY:
 		{
-			GasConsumption memoryGasFromRead = memoryGas(-1, -2);
-			GasConsumption memoryGasFromWrite = memoryGas(0, -2);
-
 			gas = runGas(_item.instruction(), m_evmVersion);
-			gas += (memoryGasFromRead < memoryGasFromWrite ? memoryGasFromWrite : memoryGasFromRead);
+			ExpressionClasses::Id sizeExpression = m_state->relativeStackElement(-2);
+			if (!classes.knownZero(sizeExpression))
+			{
+				u256 const* source = classes.knownConstant(m_state->relativeStackElement(-1));
+				u256 const* destination = classes.knownConstant(m_state->relativeStackElement(0));
+				u256 const* size = classes.knownConstant(sizeExpression);
+				if (!source || !destination || !size)
+					gas = GasConsumption::infinite();
+				else
+					gas += memoryGas(bigint(std::max(*source, *destination)) + *size);
+			}
 			gas += wordGas(GasCosts::copyGas, m_state->relativeStackElement(-2));
 			break;
 		}
@@ -192,6 +195,8 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			{
 				gas = GasCosts::createGas;
 				gas += memoryGas(-1, -2);
+				if (_item.instruction() == Instruction::CREATE2)
+					gas += wordGas(GasCosts::create2WordGasInTVM, m_state->relativeStackElement(-2));
 			}
 			break;
 		case Instruction::EXP:
@@ -202,11 +207,11 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 				{
 					// Note: msb() counts from 0 and throws on 0 as input.
 					unsigned const significantByteCount  = (static_cast<unsigned>(boost::multiprecision::msb(*value)) + 1u + 7u) / 8u;
-					gas += GasCosts::expByteGas(m_evmVersion) * significantByteCount;
+					gas += GasCosts::expByteGasInTVM * significantByteCount;
 				}
 			}
 			else
-				gas += GasCosts::expByteGas(m_evmVersion) * 32;
+				gas += GasCosts::expByteGasInTVM * 32;
 			break;
 		case Instruction::BALANCE:
 		case Instruction::TOKENBALANCE:
@@ -267,36 +272,53 @@ GasMeter::GasConsumption GasMeter::wordGas(u256 const& _multiplier, ExpressionCl
 	u256 const* value = m_state->expressionClasses().knownConstant(_value);
 	if (!value)
 		return GasConsumption::infinite();
-	return GasConsumption(_multiplier * ((*value + 31) / 32));
+	bigint gas = bigint(_multiplier) * ((bigint(*value) + 31) / 32);
+	if (gas > std::numeric_limits<u256>::max())
+		return GasConsumption::infinite();
+	return GasConsumption(u256(gas));
 }
 
-GasMeter::GasConsumption GasMeter::memoryGas(ExpressionClasses::Id _position)
+GasMeter::GasConsumption GasMeter::memoryGas(bigint const& _position)
 {
-	u256 const* value = m_state->expressionClasses().knownConstant(_position);
-	if (!value)
+	if (
+		_position < 0 ||
+		_position > GasCosts::memorySizeLimitInTVM ||
+		bigint(m_largestMemoryAccess) > GasCosts::memorySizeLimitInTVM
+	)
 		return GasConsumption::infinite();
-	if (*value < m_largestMemoryAccess)
+	u256 const value = u256(_position);
+	if (value < m_largestMemoryAccess)
 		return GasConsumption(0);
 	u256 previous = m_largestMemoryAccess;
-	m_largestMemoryAccess = *value;
+	m_largestMemoryAccess = value;
 	auto memGas = [=](u256 const& pos) -> u256
 	{
 		u256 size = (pos + 31) / 32;
 		return GasCosts::memoryGas * size + size * size / GasCosts::quadCoeffDiv;
 	};
-	return memGas(*value) - memGas(previous);
+	return memGas(value) - memGas(previous);
+}
+
+GasMeter::GasConsumption GasMeter::memoryGas(ExpressionClasses::Id _offset, u256 const& _size)
+{
+	u256 const* offset = m_state->expressionClasses().knownConstant(_offset);
+	if (!offset)
+		return GasConsumption::infinite();
+	return memoryGas(bigint(*offset) + _size);
 }
 
 GasMeter::GasConsumption GasMeter::memoryGas(int _stackPosOffset, int _stackPosSize)
 {
 	ExpressionClasses& classes = m_state->expressionClasses();
-	if (classes.knownZero(m_state->relativeStackElement(_stackPosSize)))
+	ExpressionClasses::Id offsetExpression = m_state->relativeStackElement(_stackPosOffset);
+	ExpressionClasses::Id sizeExpression = m_state->relativeStackElement(_stackPosSize);
+	if (classes.knownZero(sizeExpression))
 		return GasConsumption(0);
-	else
-		return memoryGas(classes.find(Instruction::ADD, {
-			m_state->relativeStackElement(_stackPosOffset),
-			m_state->relativeStackElement(_stackPosSize)
-		}));
+	u256 const* offset = classes.knownConstant(offsetExpression);
+	u256 const* size = classes.knownConstant(sizeExpression);
+	if (!offset || !size)
+		return GasConsumption::infinite();
+	return memoryGas(bigint(*offset) + *size);
 }
 
 GasMeter::GasConsumption GasMeter::memoryGasForWordArray(int _stackPosOffset, int _stackPosElementCount)
@@ -304,18 +326,12 @@ GasMeter::GasConsumption GasMeter::memoryGasForWordArray(int _stackPosOffset, in
 	ExpressionClasses& classes = m_state->expressionClasses();
 	// The TVM reads and charges the 32-byte length slot even for empty arrays,
 	// so unlike memoryGas(int, int) there is no zero-size shortcut here.
-	ExpressionClasses::Id byteSize = classes.find(Instruction::MUL, {
-		m_state->relativeStackElement(_stackPosElementCount),
-		classes.find(u256(32))
-	});
-	ExpressionClasses::Id byteSizeWithLengthSlot = classes.find(Instruction::ADD, {
-		byteSize,
-		classes.find(u256(32))
-	});
-	return memoryGas(classes.find(Instruction::ADD, {
-		m_state->relativeStackElement(_stackPosOffset),
-		byteSizeWithLengthSlot
-	}));
+	u256 const* offset = classes.knownConstant(m_state->relativeStackElement(_stackPosOffset));
+	u256 const* elementCount = classes.knownConstant(m_state->relativeStackElement(_stackPosElementCount));
+	if (!offset || !elementCount)
+		return GasConsumption::infinite();
+	bigint const byteSizeWithLengthSlot = bigint(*elementCount) * 32 + 32;
+	return memoryGas(bigint(*offset) + byteSizeWithLengthSlot);
 }
 
 namespace

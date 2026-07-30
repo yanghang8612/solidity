@@ -323,6 +323,42 @@ BOOST_AUTO_TEST_CASE(assume_object_input)
 	BOOST_CHECK(!containsAtMostWarnings(result));
 }
 
+BOOST_AUTO_TEST_CASE(settings_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidSettings: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"] = invalidSettings;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings\" must be an object"));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(metadata_settings_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidMetadataSettings: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"]["metadata"] = invalidMetadataSettings;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings.metadata\" must be an object"));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(output_selection_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidOutputSelection: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"]["outputSelection"] = invalidOutputSelection;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings.outputSelection\" must be an object"));
+	}
+}
+
 BOOST_AUTO_TEST_CASE(invalid_language)
 {
 	char const* input = R"(
