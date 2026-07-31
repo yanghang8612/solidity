@@ -323,6 +323,78 @@ BOOST_AUTO_TEST_CASE(assume_object_input)
 	BOOST_CHECK(!containsAtMostWarnings(result));
 }
 
+BOOST_AUTO_TEST_CASE(settings_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidSettings: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"] = invalidSettings;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings\" must be an object"));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(metadata_settings_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidMetadataSettings: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"]["metadata"] = invalidMetadataSettings;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings.metadata\" must be an object"));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(output_selection_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidOutputSelection: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["settings"]["outputSelection"] = invalidOutputSelection;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"settings.outputSelection\" must be an object"));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(language_must_be_a_string)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidLanguage: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["language"] = invalidLanguage;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"language\" must be a string."));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(smtlib2responses_must_be_an_object)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidResponses: {Json(nullptr), Json::array()})
+	{
+		Json input = SolidityCode().json();
+		input["auxiliaryInput"]["smtlib2responses"] = invalidResponses;
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "\"auxiliaryInput.smtlib2responses\" must be an object."));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(debug_info_components_must_be_strings)
+{
+	frontend::StandardCompiler compiler;
+	for (Json const& invalidComponent: {Json(nullptr), Json(1)})
+	{
+		Json input = SolidityCode().json();
+		input["settings"]["debug"]["debugInfo"] = Json::array({invalidComponent});
+		Json result = compiler.compile(input);
+		BOOST_CHECK(containsError(result, "JSONError", "Every value in settings.debug.debugInfo must be a string."));
+	}
+}
+
 BOOST_AUTO_TEST_CASE(invalid_language)
 {
 	char const* input = R"(
@@ -528,9 +600,9 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 	BOOST_CHECK(contract["evm"]["bytecode"]["object"].is_string());
 	BOOST_CHECK_EQUAL(
 		solidity::test::bytecodeSansMetadata(contract["evm"]["bytecode"]["object"].get<std::string>()),
-		std::string("6080604052348015600e575f5ffd5b5060") +
+		std::string("6080604052348015600e575f5ffd5b50d380156019575f5ffd5b50d280156024575f5ffd5b5060") +
 		(VersionIsRelease ? "3e" : util::toHex(bytes{uint8_t(60 + VersionStringStrict.size())})) +
-		"80601a5f395ff3fe60806040525f5ffdfe"
+		"8060305f395ff3fe60806040525f5ffdfe"
 	);
 	BOOST_CHECK(contract["evm"]["assembly"].is_string());
 	BOOST_CHECK(contract["evm"]["assembly"].get<std::string>().find(
@@ -538,10 +610,16 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 		"callvalue\n  dup1\n  "
 		"iszero\n  tag_1\n  jumpi\n  "
 		"revert(0x00, 0x00)\n"
-		"tag_1:\n  pop\n  dataSize(sub_0)\n  dup1\n  "
+		"tag_1:\n  pop\n  calltokenid\n  dup1\n  "
+		"iszero\n  tag_2\n  jumpi\n  "
+		"revert(0x00, 0x00)\n"
+		"tag_2:\n  pop\n  calltokenvalue\n  dup1\n  "
+		"iszero\n  tag_3\n  jumpi\n  "
+		"revert(0x00, 0x00)\n"
+		"tag_3:\n  pop\n  dataSize(sub_0)\n  dup1\n  "
 		"dataOffset(sub_0)\n  0x00\n  codecopy\n  0x00\n  return\nstop\n\nsub_0: assembly {\n        "
 		"/* \"fileA\":0:14  contract A { } */\n      mstore(0x40, 0x80)\n      "
-		"revert(0x00, 0x00)\n\n    auxdata: 0xa26469706673582212"
+		"revert(0x00, 0x00)\n\n    auxdata: 0xa26474726f6e582212"
 	) == 0);
 	BOOST_CHECK(contract["evm"]["gasEstimates"].is_object());
 	BOOST_CHECK_EQUAL(contract["evm"]["gasEstimates"].size(), 1);
@@ -573,6 +651,28 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"0\"},"
 		"{\"begin\":0,\"end\":14,\"name\":\"REVERT\",\"source\":0},"
 		"{\"begin\":0,\"end\":14,\"name\":\"tag\",\"source\":0,\"value\":\"1\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"JUMPDEST\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"POP\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"CALLTOKENID\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"DUP1\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"ISZERO\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH [tag]\",\"source\":0,\"value\":\"2\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"JUMPI\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"0\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"0\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"REVERT\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"tag\",\"source\":0,\"value\":\"2\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"JUMPDEST\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"POP\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"CALLTOKENVALUE\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"DUP1\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"ISZERO\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH [tag]\",\"source\":0,\"value\":\"3\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"JUMPI\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"0\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"0\"},"
+		"{\"begin\":0,\"end\":14,\"name\":\"REVERT\",\"source\":0},"
+		"{\"begin\":0,\"end\":14,\"name\":\"tag\",\"source\":0,\"value\":\"3\"},"
 		"{\"begin\":0,\"end\":14,\"name\":\"JUMPDEST\",\"source\":0},"
 		"{\"begin\":0,\"end\":14,\"name\":\"POP\",\"source\":0},"
 		"{\"begin\":0,\"end\":14,\"name\":\"PUSH #[$]\",\"source\":0,\"value\":\"0000000000000000000000000000000000000000000000000000000000000000\"},"

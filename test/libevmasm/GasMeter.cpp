@@ -62,6 +62,12 @@ AssemblyItems zeroArguments(size_t _count)
 	return AssemblyItems(_count, AssemblyItem{u256(0)});
 }
 
+u256 memoryExpansionCost(u256 const& _byteSize)
+{
+	u256 const wordCount = (_byteSize + 31) / 32;
+	return GasCosts::memoryGas * wordCount + wordCount * wordCount / GasCosts::quadCoeffDiv;
+}
+
 /// Feeds the four NATIVEVOTE arguments as constants (or CALLVALUE for an unknown
 /// element count) and returns the estimate for the NATIVEVOTE item itself.
 GasMeter::GasConsumption estimateVote(
@@ -136,6 +142,145 @@ BOOST_AUTO_TEST_CASE(tvm_sstore_uses_java_tron_set_and_reset_prices)
 	GasMeter::GasConsumption reset = estimateInstruction(Instruction::SSTORE, {u256(0), u256(0)});
 	BOOST_REQUIRE(!reset.isInfinite);
 	BOOST_CHECK_EQUAL(reset.value, u256(GasCosts::sstoreResetGasInTVM));
+}
+
+BOOST_AUTO_TEST_CASE(tvm_exp_uses_fixed_byte_price_for_all_evm_versions)
+{
+	for (EVMVersion const& evmVersion: EVMVersion::allVersions())
+	{
+		GasMeter::GasConsumption zeroExponent = estimateInstruction(
+			Instruction::EXP,
+			{u256(0), u256(2)},
+			true,
+			evmVersion
+		);
+		BOOST_REQUIRE(!zeroExponent.isInfinite);
+		BOOST_CHECK_EQUAL(zeroExponent.value, u256(GasCosts::expGas));
+
+		GasMeter::GasConsumption oneByteExponent = estimateInstruction(
+			Instruction::EXP,
+			{u256(1), u256(2)},
+			true,
+			evmVersion
+		);
+		BOOST_REQUIRE(!oneByteExponent.isInfinite);
+		BOOST_CHECK_EQUAL(
+			oneByteExponent.value,
+			u256(GasCosts::expGas + GasCosts::expByteGasInTVM)
+		);
+
+		GasMeter::GasConsumption fullWidthExponent = estimateInstruction(
+			Instruction::EXP,
+			{u256(-1), u256(2)},
+			true,
+			evmVersion
+		);
+		BOOST_REQUIRE(!fullWidthExponent.isInfinite);
+		BOOST_CHECK_EQUAL(
+			fullWidthExponent.value,
+			u256(GasCosts::expGas + 32 * GasCosts::expByteGasInTVM)
+		);
+	}
+
+	GasMeter::GasConsumption unknownExponent = estimateInstruction(
+		Instruction::EXP,
+		{AssemblyItem(Instruction::CALLVALUE), AssemblyItem(u256(2))}
+	);
+	BOOST_REQUIRE(!unknownExponent.isInfinite);
+	BOOST_CHECK_EQUAL(
+		unknownExponent.value,
+		u256(GasCosts::expGas + 32 * GasCosts::expByteGasInTVM)
+	);
+}
+
+BOOST_AUTO_TEST_CASE(tvm_create2_charges_hash_cost_per_init_code_word)
+{
+	for (unsigned size: {0u, 1u, 32u, 33u})
+	{
+		GasMeter::GasConsumption create = estimateInstruction(
+			Instruction::CREATE,
+			{u256(size), u256(0), u256(0)},
+			false
+		);
+		GasMeter::GasConsumption create2 = estimateInstruction(
+			Instruction::CREATE2,
+			{u256(0), u256(size), u256(0), u256(0)},
+			false
+		);
+		BOOST_REQUIRE(!create.isInfinite);
+		BOOST_REQUIRE(!create2.isInfinite);
+		u256 const wordCount = (u256(size) + 31) / 32;
+		u256 const expectedCreateCost = GasCosts::createGas + memoryExpansionCost(size);
+		BOOST_CHECK_EQUAL(create.value, expectedCreateCost);
+		BOOST_CHECK_EQUAL(
+			create2.value,
+			expectedCreateCost + GasCosts::create2WordGasInTVM * wordCount
+		);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(tvm_memory_limit_and_address_overflow_are_unbounded)
+{
+	u256 const memoryLimit = GasCosts::memorySizeLimitInTVM;
+	GasMeter::GasConsumption atLimit = estimateInstruction(
+		Instruction::MSTORE8,
+		{u256(1), memoryLimit - 1}
+	);
+	BOOST_REQUIRE(!atLimit.isInfinite);
+	BOOST_CHECK_EQUAL(
+		atLimit.value,
+		u256(GasMeter::runGas(Instruction::MSTORE8, EVMVersion{})) + memoryExpansionCost(memoryLimit)
+	);
+
+	GasMeter::GasConsumption aboveLimit = estimateInstruction(
+		Instruction::MSTORE8,
+		{u256(1), memoryLimit}
+	);
+	BOOST_CHECK(aboveLimit.isInfinite);
+
+	GasMeter::GasConsumption wrappedEnd = estimateInstruction(
+		Instruction::MSTORE8,
+		{u256(1), u256(-1)}
+	);
+	BOOST_CHECK(wrappedEnd.isInfinite);
+
+	// As in java-tron's memNeeded(), a zero-sized access does not expand memory,
+	// regardless of the offset value.
+	GasMeter::GasConsumption zeroSizeAtMaxOffset = estimateInstruction(
+		Instruction::RETURN,
+		{u256(0), u256(-1)}
+	);
+	BOOST_REQUIRE(!zeroSizeAtMaxOffset.isInfinite);
+	BOOST_CHECK_EQUAL(zeroSizeAtMaxOffset.value, u256(0));
+}
+
+BOOST_AUTO_TEST_CASE(mcopy_charges_memory_expansion_to_the_larger_end)
+{
+	GasMeter::GasConsumption overlappingRanges = estimateInstruction(
+		Instruction::MCOPY,
+		{u256(64), u256(0), u256(32)},
+		true,
+		EVMVersion::cancun()
+	);
+	BOOST_REQUIRE(!overlappingRanges.isInfinite);
+	BOOST_CHECK_EQUAL(
+		overlappingRanges.value,
+		u256(GasMeter::runGas(Instruction::MCOPY, EVMVersion::cancun())) +
+			2 * GasCosts::copyGas +
+			memoryExpansionCost(96)
+	);
+
+	GasMeter::GasConsumption zeroSizeAtMaxOffsets = estimateInstruction(
+		Instruction::MCOPY,
+		{u256(0), u256(-1), u256(-1)},
+		true,
+		EVMVersion::cancun()
+	);
+	BOOST_REQUIRE(!zeroSizeAtMaxOffsets.isInfinite);
+	BOOST_CHECK_EQUAL(
+		zeroSizeAtMaxOffsets.value,
+		u256(GasMeter::runGas(Instruction::MCOPY, EVMVersion::cancun()))
+	);
 }
 
 BOOST_AUTO_TEST_CASE(tvm_call_family_uses_fixed_base_and_conditional_transfer_prices)
@@ -231,6 +376,28 @@ BOOST_AUTO_TEST_CASE(nativevote_with_unknown_element_count_is_unbounded)
 {
 	GasMeter::GasConsumption gas = estimateVote(u256(128), u256(2), u256(256), std::nullopt);
 	BOOST_CHECK(gas.isInfinite);
+}
+
+BOOST_AUTO_TEST_CASE(nativevote_checks_memory_limit_without_u256_wraparound)
+{
+	u256 const maxElementCount = GasCosts::memorySizeLimitInTVM / 32 - 1;
+	GasMeter::GasConsumption atLimit = estimateVote(u256(0), maxElementCount, u256(0), u256(0));
+	BOOST_REQUIRE(!atLimit.isInfinite);
+	BOOST_CHECK_EQUAL(
+		atLimit.value,
+		u256(GasCosts::voteGasInTVM) + memoryExpansionCost(GasCosts::memorySizeLimitInTVM)
+	);
+
+	GasMeter::GasConsumption aboveLimit = estimateVote(u256(0), maxElementCount + 1, u256(0), u256(0));
+	BOOST_CHECK(aboveLimit.isInfinite);
+
+	GasMeter::GasConsumption wrappedProduct = estimateVote(
+		u256(0),
+		u256(1) << 251,
+		u256(0),
+		u256(0)
+	);
+	BOOST_CHECK(wrappedProduct.isInfinite);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

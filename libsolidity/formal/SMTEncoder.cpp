@@ -741,6 +741,8 @@ void SMTEncoder::endVisit(FunctionCall const& _funCall)
 		// not modeled explicitly, conservatively invalidate the symbolic blockchain
 		// state so balances and other observable state cannot remain falsely stable.
 		state().newState();
+		if (!funType.returnParameterTypes().empty())
+			setSymbolicUnknownValue(*m_context.expression(_funCall), m_context);
 		m_unsupportedErrors.warning(
 			4588_error,
 			_funCall.location(),
@@ -1470,7 +1472,7 @@ bool SMTEncoder::visit(MemberAccess const& _memberAccess)
 		if (auto const* identifier = dynamic_cast<Identifier const*>(&memberExpr))
 		{
 			auto const& name = identifier->name();
-			solAssert(name == "block" || name == "msg" || name == "tx", "");
+			solAssert(name == "block" || name == "chain" || name == "msg" || name == "tx", "");
 			auto memberName = _memberAccess.memberName();
 
 			// TODO remove this for 0.9.0
