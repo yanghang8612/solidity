@@ -18,6 +18,8 @@ add_executable(isoltest
 	../EVMHost.cpp
 	../TestCase.cpp
 	../TestCaseReader.cpp
+	../libevmasm/EVMAssemblyTest.cpp
+	../libevmasm/PlainAssemblyParser.cpp
 	../libsolidity/util/BytesUtils.cpp
 	../libsolidity/util/Common.cpp
 	../libsolidity/util/ContractABIUtils.cpp
@@ -38,6 +40,7 @@ add_executable(isoltest
 	../libsolidity/ASTPropertyTest.cpp
 	../libsolidity/FunctionDependencyGraphTest.cpp
 	../libsolidity/SMTCheckerTest.cpp
+	../libyul/CallGraphTest.cpp
 	../libyul/Common.cpp
 	../libyul/ControlFlowGraphTest.cpp
 	../libyul/SSAControlFlowGraphTest.cpp

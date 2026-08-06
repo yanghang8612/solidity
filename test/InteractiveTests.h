@@ -34,6 +34,7 @@
 #include <test/libyul/SSAControlFlowGraphTest.h>
 #include <test/libyul/EVMCodeTransformTest.h>
 #include <test/libyul/YulOptimizerTest.h>
+#include <test/libyul/CallGraphTest.h>
 #include <test/libyul/YulInterpreterTest.h>
 #include <test/libyul/ObjectCompilerTest.h>
 #include <test/libyul/ControlFlowSideEffectsTest.h>
@@ -41,6 +42,8 @@
 #include <test/libyul/StackLayoutGeneratorTest.h>
 #include <test/libyul/StackShufflingTest.h>
 #include <test/libyul/SyntaxTest.h>
+
+#include <test/libevmasm/EVMAssemblyTest.h>
 
 #include <boost/filesystem.hpp>
 
@@ -64,11 +67,13 @@ struct Testsuite
 Testsuite const g_interactiveTestsuites[] = {
 /*
 	Title                           Path           Subpath                          SMT   NeedsVM Creator function */
+	{"EVM Assembly",                "libevmasm",   "evmAssemblyTests",              false, false, &evmasm::test::EVMAssemblyTest::create},
 	{"Yul Optimizer",               "libyul",      "yulOptimizerTests",             false, false, &yul::test::YulOptimizerTest::create},
 	{"Yul Interpreter",             "libyul",      "yulInterpreterTests",           false, false, &yul::test::YulInterpreterTest::create},
 	{"Yul Object Compiler",         "libyul",      "objectCompiler",                false, false, &yul::test::ObjectCompilerTest::create},
 	{"Yul Control Flow Graph",      "libyul",      "yulControlFlowGraph",           false, false, &yul::test::ControlFlowGraphTest::create},
 	{"Yul SSA Control Flow Graph",  "libyul",      "yulSSAControlFlowGraph",        false, false, &yul::test::SSAControlFlowGraphTest::create},
+	{"Yul Call Graph",              "libyul",      "yulCallGraph",                  false, false, &yul::test::CallGraphTest::create},
 	{"Yul Stack Layout",            "libyul",      "yulStackLayout",                false, false, &yul::test::StackLayoutGeneratorTest::create},
 	{"Yul Stack Shuffling",         "libyul",      "yulStackShuffling",             false, false, &yul::test::StackShufflingTest::create},
 	{"Control Flow Side Effects",   "libyul",      "controlFlowSideEffects",        false, false, &yul::test::ControlFlowSideEffectsTest::create},

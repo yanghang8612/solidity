@@ -726,16 +726,68 @@ void SMTEncoder::endVisit(FunctionCall const& _funCall)
 				" with the CHC engine."
 			);
 		break;
+	case FunctionType::Kind::TransferToken:
+	case FunctionType::Kind::Freeze:
+	case FunctionType::Kind::Unfreeze:
+	case FunctionType::Kind::Vote:
+	case FunctionType::Kind::WithdrawReward:
+	case FunctionType::Kind::FreezeBalanceV2:
+	case FunctionType::Kind::UnfreezeBalanceV2:
+	case FunctionType::Kind::CancelAllUnfreezeV2:
+	case FunctionType::Kind::WithdrawExpireUnfreeze:
+	case FunctionType::Kind::DelegateResource:
+	case FunctionType::Kind::UnDelegateResource:
+		// These operations mutate TRON account or resource state. Since that state is
+		// not modeled explicitly, conservatively invalidate the symbolic blockchain
+		// state so balances and other observable state cannot remain falsely stable.
+		state().newState();
+		if (!funType.returnParameterTypes().empty())
+			setSymbolicUnknownValue(*m_context.expression(_funCall), m_context);
+		m_unsupportedErrors.warning(
+			4588_error,
+			_funCall.location(),
+			"Assertion checker does not yet implement this type of function call. Its state effects are modeled conservatively."
+		);
+		break;
+	case FunctionType::Kind::TokenBalance:
+	case FunctionType::Kind::FreezeExpireTime:
+	case FunctionType::Kind::ValidateMultiSign:
+	case FunctionType::Kind::BatchValidateSign:
+	case FunctionType::Kind::VerifyBurnProof:
+	case FunctionType::Kind::VerifyTransferProof:
+	case FunctionType::Kind::VerifyMintProof:
+	case FunctionType::Kind::PedersenHash:
+	case FunctionType::Kind::RewardBalance:
+	case FunctionType::Kind::IsSrCandidate:
+	case FunctionType::Kind::VoteCount:
+	case FunctionType::Kind::UsedVoteCount:
+	case FunctionType::Kind::ReceivedVoteCount:
+	case FunctionType::Kind::TotalVoteCount:
+	case FunctionType::Kind::GetChainParameter:
+	case FunctionType::Kind::AvailableUnfreezeV2Size:
+	case FunctionType::Kind::UnfreezableBalanceV2:
+	case FunctionType::Kind::ExpireUnfreezeBalanceV2:
+	case FunctionType::Kind::DelegatableResource:
+	case FunctionType::Kind::ResourceV2:
+	case FunctionType::Kind::CheckUnDelegateResource:
+	case FunctionType::Kind::ResourceUsage:
+	case FunctionType::Kind::TotalResource:
+	case FunctionType::Kind::TotalDelegatedResource:
+	case FunctionType::Kind::TotalAcquiredResource:
+		// Keep unsupported TRON queries and precompiles unconstrained, while still
+		// applying the range/shape constraints of their Solidity return types.
+		if (!funType.returnParameterTypes().empty())
+			setSymbolicUnknownValue(*m_context.expression(_funCall), m_context);
+		m_unsupportedErrors.warning(
+			4588_error,
+			_funCall.location(),
+			"Assertion checker does not yet implement this type of function call."
+		);
+		break;
 	case FunctionType::Kind::DelegateCall:
 	case FunctionType::Kind::BareCallCode:
 	case FunctionType::Kind::BareDelegateCall:
 	default:
-		// The TRON-specific builtins (freeze/unfreeze, vote, the various V2 calls,
-		// validatemultisign/batchvalidatesign, the zk-proof verifiers, pedersenhash, ...)
-		// are not modeled here: we only emit the warning below. Their state side effects
-		// are not havoc'd in this branch; soundness for state mutation across unmodeled
-		// calls is instead handled by the engine-level reset logic (CHC::unknownFunctionCall
-		// / makeOutsideFunctionCall and BMC's resetStateVariables paths).
 		m_unsupportedErrors.warning(
 			4588_error,
 			_funCall.location(),
@@ -762,7 +814,6 @@ void SMTEncoder::initContract(ContractDefinition const& _contract)
 	m_context.pushSolver();
 	createStateVariables(_contract);
 	clearIndices(m_currentContract, nullptr);
-	m_variableUsage.setCurrentContract(_contract);
 	m_checked = true;
 }
 
@@ -935,8 +986,10 @@ void SMTEncoder::visitAddMulMod(FunctionCall const& _funCall)
 void SMTEncoder::visitWrapUnwrap(FunctionCall const& _funCall)
 {
 	auto const& args = _funCall.arguments();
-	solAssert(args.size() == 1, "");
-	defineExpr(_funCall, expr(*args.front()));
+	smtAssert(args.size() == 1, "Expected exactly one argument to wrap/unwrap");
+	auto const& funType = dynamic_cast<FunctionType const&>(*_funCall.expression().annotation().type);
+	auto const* argType = funType.parameterTypes().front();
+	defineExpr(_funCall, expr(*args.front(), argType));
 }
 
 void SMTEncoder::visitObjectCreation(FunctionCall const& _funCall)
@@ -1098,19 +1151,24 @@ void SMTEncoder::visitPublicGetter(FunctionCall const& _funCall)
 	}
 }
 
-bool SMTEncoder::shouldAnalyze(SourceUnit const& _source) const
+bool SMTEncoder::shouldEncode(ContractDefinition const& _contract) const
+{
+	return _contract.canBeDeployed();
+}
+
+bool SMTEncoder::shouldAnalyzeVerificationTargetsFor(SourceUnit const& _source) const
 {
 	return m_settings.contracts.isDefault() ||
 		m_settings.contracts.has(*_source.annotation().path);
 }
 
-bool SMTEncoder::shouldAnalyze(ContractDefinition const& _contract) const
+bool SMTEncoder::shouldAnalyzeVerificationTargetsFor(ContractDefinition const& _contract) const
 {
-	if (!_contract.canBeDeployed())
+	if (!shouldEncode(_contract))
 		return false;
 
 	return m_settings.contracts.isDefault() ||
-		m_settings.contracts.has(_contract.sourceUnitName());
+		m_settings.contracts.has(_contract.sourceUnitName(), _contract.name());
 }
 
 void SMTEncoder::visitTypeConversion(FunctionCall const& _funCall)
@@ -1414,7 +1472,7 @@ bool SMTEncoder::visit(MemberAccess const& _memberAccess)
 		if (auto const* identifier = dynamic_cast<Identifier const*>(&memberExpr))
 		{
 			auto const& name = identifier->name();
-			solAssert(name == "block" || name == "msg" || name == "tx", "");
+			solAssert(name == "block" || name == "chain" || name == "msg" || name == "tx", "");
 			auto memberName = _memberAccess.memberName();
 
 			// TODO remove this for 0.9.0
@@ -2810,14 +2868,6 @@ Expression const* SMTEncoder::cleanExpression(Expression const& _expr)
 		}
 	solAssert(expr, "");
 	return expr;
-}
-
-std::set<VariableDeclaration const*> SMTEncoder::touchedVariables(ASTNode const& _node)
-{
-	std::vector<CallableDeclaration const*> callStack;
-	for (auto const& call: m_callStack)
-		callStack.push_back(call.first);
-	return m_variableUsage.touchedVariables(_node, callStack);
 }
 
 Declaration const* SMTEncoder::expressionToDeclaration(Expression const& _expr) const

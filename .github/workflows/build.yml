@@ -7,22 +7,22 @@ on:
 
 jobs:
   b_windows:
-    runs-on: [ self-hosted, Windows ]
+    runs-on: windows-2022
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-
-      - name: Fix git safe directory
-        run: git config --global --add safe.directory '*'
+        with:
+          submodules: true
 
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v5
         with:
-          path: .\deps
-          key: dependencies-win-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
-          restore-keys: dependencies-win-${{ runner.arch }}-
+          path: |
+            .\deps\boost
+            .\deps\cmake
+          key: hosted-dependencies-win-v2-${{ runner.arch }}-${{ hashFiles('scripts/install_deps.ps1') }}
 
       - name: Installing dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -39,26 +39,68 @@ jobs:
           mkdir github/
           cp build/solc/Release/solc.exe github/solc-windows.exe
 
-      - name: Save artifact to cache
-        uses: actions/cache/save@v5
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v6
         with:
+          name: solc-windows
           path: github/solc-windows.exe
-          key: solc-windows-${{ github.run_id }}
-          enableCrossOsArchive: true
+          if-no-files-found: error
 
   b_macos:
-    runs-on: [ self-hosted, macOS ]
+    runs-on: macos-15
 
     env:
       CMAKE_BUILD_TYPE: Release
-      CMAKE_OPTIONS: -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64;arm64
+      CMAKE_OPTIONS: -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64;arm64 -DBoost_ROOT=${{ github.workspace }}/deps/boost -DBoost_NO_SYSTEM_PATHS=ON
       TERM: xterm
-      MAKEFLAGS: -j5
-      CPUs: 5
+      MAKEFLAGS: -j 3
+      CPUs: 3
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Select pinned macOS toolchain
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+          bash .circleci/install_cmake.sh 3.29.3
+          xcodebuild -version
+          clang --version
+          cmake --version
+
+      - name: Cache universal Boost
+        id: cache-boost
+        uses: actions/cache@v5
+        with:
+          path: deps/boost
+          key: hosted-boost-macos-universal-1.84.0-xcode16.4-v1
+
+      - name: Build universal Boost
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        run: |
+          boost_version=1.84.0
+          boost_dir="boost_${boost_version//./_}"
+          boost_archive="${RUNNER_TEMP}/${boost_dir}.tar.bz2"
+
+          curl --fail --location --retry 3 \
+            "https://archives.boost.io/release/${boost_version}/source/${boost_dir}.tar.bz2" \
+            --output "${boost_archive}"
+          tar -xjf "${boost_archive}" -C "${RUNNER_TEMP}"
+
+          cd "${RUNNER_TEMP}/${boost_dir}"
+          ./bootstrap.sh \
+            --with-toolset=clang \
+            --with-libraries=filesystem,program_options,system,test
+          ./b2 -j 3 -d0 \
+            link=static \
+            variant=release \
+            threading=multi \
+            address-model=64 \
+            architecture=arm+x86 \
+            --prefix="${GITHUB_WORKSPACE}/deps/boost" \
+            install
 
       - name: Run build script
         shell: bash -el {0}
@@ -69,29 +111,31 @@ jobs:
           mkdir github/
           cp build/solc/solc github/solc-macos
 
-      - name: Save artifact to cache
-        uses: actions/cache/save@v5
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v6
         with:
+          name: solc-macos
           path: github/solc-macos
-          key: solc-macos-${{ github.run_id }}
-          enableCrossOsArchive: true
+          if-no-files-found: error
 
   b_linux:
-    runs-on: [ self-hosted, Linux, for-linux ]
+    runs-on: ubuntu-24.04
 
     env:
       CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
       TERM: xterm
-      MAKEFLAGS: -j 10
-      CPUs: 10
+      MAKEFLAGS: -j 4
+      CPUs: 4
 
     container:
-      # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404-3
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:ef6a91d7f1434c67fb9e05c6136d80f71c0ad9198479e1a88e3437680993cda4
+      # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404-6
+      image: ghcr.io/argotorg/solidity-buildpack-deps@sha256:c0412c53e59ce0c96bde4c08e7332ea12e4cadba9bbac829621947897fa21272
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          submodules: true
 
       - name: Fix git safe directory
         run: git config --global --add safe.directory '*'
@@ -104,28 +148,68 @@ jobs:
           mkdir github/
           cp build/solc/solc github/solc-static-linux
 
-      - name: Save artifact to cache
-        uses: actions/cache/save@v5
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v6
         with:
+          name: solc-linux
           path: github/solc-static-linux
-          key: solc-linux-${{ github.run_id }}
+          if-no-files-found: error
 
-  b_ems:
-    runs-on: [ self-hosted, Linux, for-ems ]
+  b_linux_arm:
+    runs-on: ubuntu-24.04-arm
 
     env:
+      CMAKE_OPTIONS: -DCMAKE_BUILD_TYPE=Release -DSOLC_LINK_STATIC=ON
       TERM: xterm
-      MAKEFLAGS: -j 10
-      CPUs: 5
+      MAKEFLAGS: -j 4
+      CPUs: 4
 
     container:
-      # solbuildpackpusher/solidity-buildpack-deps:emscripten-20
-      # NOTE: Keep in sync with the digest in scripts/build_emscripten.sh
-      image: solbuildpackpusher/solidity-buildpack-deps@sha256:98f963ed799a0d206ef8e7b5475f847e0dea53b7fdea9618bbc6106a62730bd2
+      # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-1
+      image: ghcr.io/argotorg/solidity-buildpack-deps@sha256:6cdb928fa8743d0b5d515c2c489b8d545c541f2370af28d5d3a71532056a0f22
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory '*'
+
+      - name: Run build script
+        run: .github/workflows/build.sh
+
+      - name: Prepare artifact for caching
+        run: |
+          mkdir github/
+          cp build/solc/solc github/solc-static-linux-arm
+
+      - name: Upload Linux ARM64 binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: solc-linux-arm
+          path: github/solc-static-linux-arm
+          if-no-files-found: error
+
+  b_ems:
+    runs-on: ubuntu-24.04
+
+    env:
+      TERM: xterm
+      MAKEFLAGS: -j 4
+      CPUs: 4
+
+    container:
+      # ghcr.io/argotorg/solidity-buildpack-deps:emscripten-21
+      # NOTE: Keep in sync with the digest in scripts/build_emscripten.sh
+      image: ghcr.io/argotorg/solidity-buildpack-deps@sha256:fc53d68a4680ffa7d5f70164e13a903478964f15bcc07434d74833a05f4fbc19
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: true
 
       - name: Fix git safe directory
         run: git config --global --add safe.directory '*'
@@ -138,92 +222,117 @@ jobs:
           mkdir github/
           cp upload/soljson.js github/soljson.js
 
-      - name: Save artifact to cache
-        uses: actions/cache/save@v5
+      - name: Upload Emscripten binary
+        uses: actions/upload-artifact@v6
         with:
+          name: solc-ems
           path: github/soljson.js
-          key: solc-ems-${{ github.run_id }}
+          if-no-files-found: error
 
   upload-to-s3:
-    needs: [ b_windows, b_macos, b_linux, b_ems ]
+    needs: [ b_windows, b_macos, b_linux, b_linux_arm, b_ems ]
 
-    runs-on: [ self-hosted, macOS ]
+    runs-on: [ self-hosted, Linux, for-linux ]
 
     permissions:
       actions: read
       contents: read
 
     steps:
-      - name: Restore solc-windows
-        uses: actions/cache/restore@v5
-        with:
-          path: github/solc-windows.exe
-          key: solc-windows-${{ github.run_id }}
-          enableCrossOsArchive: true
+      - name: Prepare artifact workspace
+        id: artifact-workspace
+        shell: bash
+        run: |
+          artifact_work_dir="${RUNNER_TEMP}/solidity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "${artifact_work_dir}/github"
+          echo "path=${artifact_work_dir}" >> "${GITHUB_OUTPUT}"
 
-      - name: Restore solc-macos
-        uses: actions/cache/restore@v5
+      - name: Download solc-windows
+        uses: actions/download-artifact@v7
         with:
-          path: github/solc-macos
-          key: solc-macos-${{ github.run_id }}
-          enableCrossOsArchive: true
+          name: solc-windows
+          path: ${{ steps.artifact-workspace.outputs.path }}/github
 
-      - name: Restore solc-linux
-        uses: actions/cache/restore@v5
+      - name: Download solc-macos
+        uses: actions/download-artifact@v7
         with:
-          path: github/solc-static-linux
-          key: solc-linux-${{ github.run_id }}
+          name: solc-macos
+          path: ${{ steps.artifact-workspace.outputs.path }}/github
 
-      - name: Restore solc-ems
-        uses: actions/cache/restore@v5
+      - name: Download solc-linux
+        uses: actions/download-artifact@v7
         with:
-          path: github/soljson.js
-          key: solc-ems-${{ github.run_id }}
+          name: solc-linux
+          path: ${{ steps.artifact-workspace.outputs.path }}/github
+
+      - name: Download solc-linux-arm
+        uses: actions/download-artifact@v7
+        with:
+          name: solc-linux-arm
+          path: ${{ steps.artifact-workspace.outputs.path }}/github
+
+      - name: Download solc-ems
+        uses: actions/download-artifact@v7
+        with:
+          name: solc-ems
+          path: ${{ steps.artifact-workspace.outputs.path }}/github
+
+      - name: Restore executable permissions
+        working-directory: ${{ steps.artifact-workspace.outputs.path }}
+        run: chmod +x github/solc-static-linux github/solc-static-linux-arm github/solc-macos
 
       - name: List all artifacts
+        working-directory: ${{ steps.artifact-workspace.outputs.path }}
         run: |
           ls -R github/
 
       - name: Create tarball for use on github
+        working-directory: ${{ steps.artifact-workspace.outputs.path }}
         run: |
           cd github
           tar --create --file ../github-binaries.tar *
 
       - name: Rename binaries to solc-bin naming convention
+        working-directory: ${{ steps.artifact-workspace.outputs.path }}
         run: |
           full_version=$(
-            github/solc-macos --version |
+            github/solc-static-linux --version |
             sed -En 's/^Version: ([0-9.]+.*\+commit\.[0-9a-f]+(\.mod)?).*$/\1/p'
           )
 
-          mkdir -p solc-bin/{linux-amd64,macosx-amd64,windows-amd64,bin}
+          mkdir -p solc-bin/{linux-amd64,linux-arm64,macosx-amd64,windows-amd64,bin}
 
-          cp github/solc-static-linux "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
-          cp github/solc-macos        "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
-          cp github/solc-windows.exe  "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
-          cp github/soljson.js        "solc-bin/bin/soljson-v${full_version}.js"
+          cp github/solc-static-linux-arm "solc-bin/linux-arm64/solc-linux-arm64-v${full_version}"
+          cp github/solc-static-linux     "solc-bin/linux-amd64/solc-linux-amd64-v${full_version}"
+          cp github/solc-macos            "solc-bin/macosx-amd64/solc-macosx-amd64-v${full_version}"
+          cp github/solc-windows.exe      "solc-bin/windows-amd64/solc-windows-amd64-v${full_version}.exe"
+          cp github/soljson.js            "solc-bin/bin/soljson-v${full_version}.js"
 
           cd solc-bin/
           tar --create --file ../solc-bin-binaries.tar *
 
       - name: Upload to S3
-        shell: zsh -el {0}
+        shell: bash
+        working-directory: ${{ steps.artifact-workspace.outputs.path }}
         env:
-          S3_BUCKET_PROD: ${{ secrets.S3_BUCKET_PROD }}
-          S3_BUCKET_TEST: ${{ secrets.S3_BUCKET_TEST }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_PROD }}
         run: |
-          case "${GITHUB_REF_NAME}" in
-            develop)   bucket="${S3_BUCKET_PROD}" ;;
-            release_*) bucket="${S3_BUCKET_TEST}" ;;
-          esac
-          
-          aws s3 cp github-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-bin-binaries.tar "s3://${bucket}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp github-binaries.tar "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-bin-binaries.tar "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
           
           cd github
-          aws s3 cp solc-windows.exe "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-macos "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp solc-static-linux "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          aws s3 cp soljson.js "s3://${bucket}/${{ github.sha }}/" --only-show-errors
-          
-          cd .. && rm -rf github solc-bin *.tar
+          aws s3 cp solc-windows.exe "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-macos "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-static-linux "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp solc-static-linux-arm "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+          aws s3 cp soljson.js "s3://${S3_BUCKET}/${{ github.sha }}/" --only-show-errors
+
+      - name: Clean artifact workspace
+        if: always()
+        shell: bash
+        env:
+          ARTIFACT_WORK_DIR: ${{ steps.artifact-workspace.outputs.path }}
+        run: |
+          if [[ -n "${ARTIFACT_WORK_DIR}" ]]; then
+            rm -rf -- "${ARTIFACT_WORK_DIR}"
+          fi

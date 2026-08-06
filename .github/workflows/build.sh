@@ -14,6 +14,6 @@ mkdir -p build
 cd build
 
 # shellcheck disable=SC2086
-cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" $CMAKE_OPTIONS -G "Unix Makefiles"
+cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" -DTESTS=OFF $CMAKE_OPTIONS -G "Unix Makefiles"
 
-make
+make solc

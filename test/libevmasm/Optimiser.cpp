@@ -30,6 +30,8 @@
 #include <libevmasm/ControlFlowGraph.h>
 #include <libevmasm/BlockDeduplicator.h>
 #include <libevmasm/Assembly.h>
+#include <libevmasm/ConstantOptimiser.h>
+#include <libevmasm/GasMeter.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -48,6 +50,21 @@ namespace solidity::frontend::test
 
 namespace
 {
+	class ComputeMethodProbe: private ComputeMethod
+	{
+	public:
+		static bigint gasNeededFor(AssemblyItems const& _routine, EVMVersion _evmVersion)
+		{
+			u256 value = 0;
+			Params params{/* isCreation = */ false, /* runs = */ 1, /* multiplicity = */ 0, _evmVersion};
+			ComputeMethodProbe probe(params, value);
+			return probe.ComputeMethod::gasNeeded(_routine);
+		}
+
+	private:
+		ComputeMethodProbe(Params const& _params, u256 const& _value): ComputeMethod(_params, _value) {}
+	};
+
 	AssemblyItems addDummyLocations(AssemblyItems const& _input)
 	{
 		// add dummy locations to each item so that we can check that they are not deleted
@@ -156,6 +173,15 @@ namespace
 }
 
 BOOST_AUTO_TEST_SUITE(Optimiser)
+
+BOOST_AUTO_TEST_CASE(constant_optimizer_exp_uses_tvm_fixed_byte_cost)
+{
+	for (EVMVersion const& evmVersion: EVMVersion::allVersions())
+		BOOST_CHECK_EQUAL(
+			ComputeMethodProbe::gasNeededFor({Instruction::EXP}, evmVersion),
+			GasCosts::expGas + GasCosts::expByteGasInTVM
+		);
+}
 
 BOOST_AUTO_TEST_CASE(cse_push_immutable_same)
 {
@@ -1001,6 +1027,182 @@ BOOST_AUTO_TEST_CASE(clear_unreachable_code)
 		AssemblyItem(PushTag, 1),
 		Instruction::JUMP
 	};
+	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+	BOOST_REQUIRE(peepOpt.optimise());
+	BOOST_CHECK_EQUAL_COLLECTIONS(
+		items.begin(), items.end(),
+		expectation.begin(), expectation.end()
+	);
+}
+
+BOOST_AUTO_TEST_CASE(clear_unreachable_code_eof, *boost::unit_test::precondition(onEOF()))
+{
+	for (auto const& blockTerminatingItem:
+		 {
+			AssemblyItem::relativeJumpTo(AssemblyItem(Tag, 1)),
+			AssemblyItem::jumpToFunction(1, 0, 0),
+			AssemblyItem::functionReturn(),
+			AssemblyItem::returnContract(0),
+		}
+ 	)
+	{
+		AssemblyItems items{
+			blockTerminatingItem,
+			u256(0),
+			Instruction::SLOAD,
+			AssemblyItem(Tag, 2),
+			u256(5),
+			u256(6),
+			Instruction::SSTORE,
+			blockTerminatingItem,
+			u256(5),
+			u256(6)
+		};
+		AssemblyItems expectation{
+			blockTerminatingItem,
+			AssemblyItem(Tag, 2),
+			u256(5),
+			u256(6),
+			Instruction::SSTORE,
+			blockTerminatingItem,
+		};
+		PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+		BOOST_REQUIRE(peepOpt.optimise());
+		BOOST_CHECK_EQUAL_COLLECTIONS(
+			items.begin(), items.end(),
+			expectation.begin(), expectation.end()
+		);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(is_zero_is_zero_rjumpi, *boost::unit_test::precondition(onEOF()))
+{
+	AssemblyItems items{
+		u256(1),
+		Instruction::ISZERO,
+		Instruction::ISZERO,
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 1),
+	};
+
+	AssemblyItems expectation{
+		u256(1),
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 1),
+	};
+
+	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+	BOOST_REQUIRE(peepOpt.optimise());
+	BOOST_CHECK_EQUAL_COLLECTIONS(
+		items.begin(), items.end(),
+		expectation.begin(), expectation.end()
+	);
+}
+
+BOOST_AUTO_TEST_CASE(equal_is_zero_rjumpi, *boost::unit_test::precondition(onEOF()))
+{
+	AssemblyItems items{
+		u256(1),
+		u256(2),
+		Instruction::EQ,
+		Instruction::ISZERO,
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 1),
+	};
+
+	AssemblyItems expectation{
+		u256(1),
+		u256(2),
+		Instruction::SUB,
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 1),
+	};
+
+	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+	BOOST_REQUIRE(peepOpt.optimise());
+	BOOST_CHECK_EQUAL_COLLECTIONS(
+		items.begin(), items.end(),
+		expectation.begin(), expectation.end()
+	);
+}
+
+BOOST_AUTO_TEST_CASE(double_rjump, *boost::unit_test::precondition(onEOF()))
+{
+	AssemblyItems items{
+		u256(1),
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		AssemblyItem::relativeJumpTo(AssemblyItem(Tag, 2)),
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 2),
+	};
+
+	AssemblyItems expectation{
+		u256(1),
+		Instruction::ISZERO,
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 2)),
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+		AssemblyItem(Tag, 2),
+	};
+
+	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+	BOOST_REQUIRE(peepOpt.optimise());
+	BOOST_CHECK_EQUAL_COLLECTIONS(
+		items.begin(), items.end(),
+		expectation.begin(), expectation.end()
+	);
+}
+
+BOOST_AUTO_TEST_CASE(rjump_to_next, *boost::unit_test::precondition(onEOF()))
+{
+	AssemblyItems items{
+		AssemblyItem::relativeJumpTo(AssemblyItem(Tag, 1)),
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+	};
+
+	AssemblyItems expectation{
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+	};
+
+	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
+	BOOST_REQUIRE(peepOpt.optimise());
+	BOOST_CHECK_EQUAL_COLLECTIONS(
+		items.begin(), items.end(),
+		expectation.begin(), expectation.end()
+	);
+}
+
+BOOST_AUTO_TEST_CASE(rjumpi_to_next, *boost::unit_test::precondition(onEOF()))
+{
+	AssemblyItems items{
+		AssemblyItem::conditionalRelativeJumpTo(AssemblyItem(Tag, 1)),
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+	};
+
+	AssemblyItems expectation{
+		Instruction::POP,
+		AssemblyItem(Tag, 1),
+		u256(0),
+		Instruction::SLOAD,
+	};
+
 	PeepholeOptimiser peepOpt(items, solidity::test::CommonOptions::get().evmVersion());
 	BOOST_REQUIRE(peepOpt.optimise());
 	BOOST_CHECK_EQUAL_COLLECTIONS(
